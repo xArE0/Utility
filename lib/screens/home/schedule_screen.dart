@@ -1,0 +1,866 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import '../../db_helper.dart';
+
+class ScheduleScreen extends StatefulWidget {
+  const ScheduleScreen({super.key});
+
+  @override
+  State<ScheduleScreen> createState() => _ScheduleScreenState();
+}
+
+class _ScheduleScreenState extends State<ScheduleScreen> {
+  static const int initialIndex = 10000;
+  static final DateFormat dateFormat = DateFormat('yyyy-MM-dd');
+  static final DateFormat dayFormat = DateFormat('EEE');
+  static final DateFormat numFormat = DateFormat('d');
+  final double itemExtent = 120.0;
+
+  List<Event> _allEvents = [];
+  List<Event> _allBirthdays = [];
+  List<Event> _allExams = [];
+  Set<String> _eventDates = {};
+  Set<String> _birthdayMonthDays = {};
+  Set<String> _examMonthDays = {};
+
+  final ScrollController _scrollController = ScrollController();
+
+  DateTime _selectedDate = DateTime.now();
+  bool _isDragging = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _preloadEvents().then((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final idx = _indexFromDate(_selectedDate);
+        _scrollController.jumpTo(idx * itemExtent);
+        setState(() {});
+      });
+    });
+  }
+
+  Future<void> _preloadEvents() async {
+    final db = await DBHelper.database;
+    final maps = await db.query('events');
+    _allEvents = maps.map((e) => Event.fromMap(e)).toList();
+    _allBirthdays = _allEvents.where((e) => e.type == 'birthday').toList();
+    _allExams = _allEvents.where((e) => e.type == 'exam').toList();
+    // _eventDates includes all non-birthday events (normal and exam)
+    _eventDates = _allEvents
+        .where((e) => e.type != 'birthday')
+        .map((e) => e.date)
+        .toSet();
+    _birthdayMonthDays = _allBirthdays
+        .map((e) {
+      final d = DateTime.parse(e.date);
+      return '${d.month}-${d.day}';
+    })
+        .toSet();
+    setState(() {});
+  }
+
+  DateTime _dateFromIndex(int index) {
+    final base = DateTime.now().subtract(Duration(days: initialIndex));
+    return base.add(Duration(days: index));
+  }
+
+  int _indexFromDate(DateTime date) {
+    final base = DateTime.now().subtract(Duration(days: initialIndex));
+    return date.difference(base).inDays;
+  }
+
+  List<Event> _eventsForDate(DateTime date) {
+    final key = dateFormat.format(date);
+    List<Event> events = [];
+
+    // Non-repeating events
+    events.addAll(_allEvents.where((e) =>
+    e.date == key &&
+        e.type != 'birthday' &&
+        e.type != 'exam' &&
+        (e.repeat == null || e.repeat == "none")
+    ));
+
+    // Repeating events (except for birthdays/exams)
+    events.addAll(_allEvents.where((e) {
+      if (e.repeat == null || e.repeat == "none") return false;
+      if (e.type == 'birthday' || e.type == 'exam') return false;
+      final eventDate = DateTime.parse(e.date);
+      if (date.isBefore(eventDate)) return false;
+      switch (e.repeat) {
+        case "daily":
+          return true;
+        case "weekly":
+          return date.weekday == eventDate.weekday;
+        case "monthly":
+          return date.day == eventDate.day;
+        case "yearly":
+          return date.month == eventDate.month && date.day == eventDate.day;
+        case "custom":
+          final interval = e.repeatInterval ?? 1;
+          return date.difference(eventDate).inDays % interval == 0;
+        default:
+          return false;
+      }
+    }));
+
+    // Birthdays (always repeating yearly)
+    final bdays = _allBirthdays.where((e) {
+      final d = DateTime.parse(e.date);
+      return d.month == date.month && d.day == date.day;
+    }).toList();
+
+    // Exams only show on their exact date
+    final exams = _allExams.where((e) => e.date == key).toList();
+
+    return [...events, ...bdays, ...exams];
+  }
+
+  int? _findNearestEventIndex(int from, int direction) {
+    final Set<int> normalIndices = _eventDates.map((d) {
+      return _indexFromDate(DateTime.parse(d));
+    }).toSet();
+
+    final birthdayIndices = <int>{};
+    for (var e in _allBirthdays) {
+      final original = DateTime.parse(e.date);
+      for (int y = _selectedDate.year - 2; y <= _selectedDate.year + 2; y++) {
+        try {
+          final recurring = DateTime(y, original.month, original.day);
+          final idx = _indexFromDate(recurring);
+          birthdayIndices.add(idx);
+        } catch (_) {
+          continue;
+        }
+      }
+    }
+
+    // Exams are one-time only - no year looping
+    final examIndices = _allExams.map((e) {
+      return _indexFromDate(DateTime.parse(e.date));
+    }).toSet();
+
+    final allIndices = {...normalIndices, ...birthdayIndices, ...examIndices}..remove(from);
+    if (allIndices.isEmpty) return null;
+
+    final sorted = allIndices.toList()..sort();
+
+    if (direction > 0) {
+      final found = sorted.where((i) => i > from).toList();
+      return found.isNotEmpty ? found.first : null;
+    } else {
+      final found = sorted.where((i) => i < from).toList();
+      return found.isNotEmpty ? found.last : null;
+    }
+  }
+
+  void _jumpToEvent(int direction) async {
+    final currentIndex = _indexFromDate(_selectedDate);
+    final idx = _findNearestEventIndex(currentIndex, direction);
+    if (idx != null && idx != currentIndex) {
+      await _scrollController.animateTo(
+        idx * itemExtent,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
+      final date = _dateFromIndex(idx);
+      setState(() => _selectedDate = date);
+    }
+  }
+
+  void _jumpToDate(DateTime date) {
+    final idx = _indexFromDate(date);
+    setState(() => _selectedDate = date);
+    _scrollController.animateTo(
+      idx * itemExtent,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _showAddEventDialog() {
+    final taskController = TextEditingController();
+    DateTime chosenDate = _selectedDate;
+    String selectedType = 'normal';
+
+    bool remindMe = false;
+    int remindDaysBefore = 0;
+    TimeOfDay? remindTime;
+
+    // Repeat fields
+    String repeat = "none";
+    int repeatInterval = 1;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            contentPadding: const EdgeInsets.all(16),
+            content: SizedBox(
+              width: 350,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListTile(
+                      title: Text("Date: ${DateFormat('EEE, MMM d, yyyy').format(chosenDate)}"),
+                      trailing: const Icon(Icons.calendar_today),
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: chosenDate,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) setDialogState(() => chosenDate = picked);
+                      },
+                    ),
+                    DropdownButtonFormField<String>(
+                      value: selectedType,
+                      decoration: const InputDecoration(labelText: 'Event Type'),
+                      items: const [
+                        DropdownMenuItem(value: 'normal', child: Text('Normal')),
+                        DropdownMenuItem(value: 'birthday', child: Text('Birthday')),
+                        DropdownMenuItem(value: 'exam', child: Text('Exam')),
+                        DropdownMenuItem(value: 'homework', child: Text('Homework')),
+                      ],
+                      onChanged: (value) => setDialogState(() => selectedType = value!),
+                    ),
+                    TextField(
+                      controller: taskController,
+                      decoration: const InputDecoration(labelText: "Description"),
+                    ),
+                    const SizedBox(height: 16),
+                    SwitchListTile(
+                      title: const Text("Remind Me"),
+                      value: remindMe,
+                      onChanged: (val) => setDialogState(() => remindMe = val),
+                    ),
+                    if (remindMe) ...[
+                      Row(
+                        children: [
+                          const Text("Days before:"),
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 50,
+                            child: TextFormField(
+                              initialValue: "$remindDaysBefore",
+                              keyboardType: TextInputType.number,
+                              onChanged: (v) {
+                                final num = int.tryParse(v) ?? 0;
+                                setDialogState(() => remindDaysBefore = num.clamp(0, 365));
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text("(today included)"),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Text("At: "),
+                          Text(remindTime == null
+                              ? "Select Time"
+                              : remindTime!.format(context)),
+                          IconButton(
+                            icon: const Icon(Icons.access_time),
+                            onPressed: () async {
+                              final t = await showTimePicker(
+                                context: context,
+                                initialTime: TimeOfDay.now(),
+                              );
+                              if (t != null) setDialogState(() => remindTime = t);
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Text("Repeat:"),
+                        const SizedBox(width: 8),
+                        DropdownButton<String>(
+                          value: repeat,
+                          items: const [
+                            DropdownMenuItem(value: "none", child: Text("None")),
+                            DropdownMenuItem(value: "daily", child: Text("Daily")),
+                            DropdownMenuItem(value: "weekly", child: Text("Weekly")),
+                            DropdownMenuItem(value: "monthly", child: Text("Monthly")),
+                            DropdownMenuItem(value: "yearly", child: Text("Yearly")),
+                            DropdownMenuItem(value: "custom", child: Text("Custom...")),
+                          ],
+                          onChanged: (v) => setDialogState(() => repeat = v!),
+                        ),
+                        if (repeat == "custom") ...[
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 40,
+                            child: TextFormField(
+                              initialValue: "$repeatInterval",
+                              keyboardType: TextInputType.number,
+                              onChanged: (v) {
+                                final num = int.tryParse(v) ?? 1;
+                                setDialogState(() => repeatInterval = num.clamp(1, 999));
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Text("days"),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+              ElevatedButton(
+                onPressed: () async {
+                  final task = taskController.text.trim();
+                  if (task.isNotEmpty) {
+                    await DBHelper.insertEvent(Event(
+                      date: dateFormat.format(chosenDate),
+                      task: task,
+                      type: selectedType,
+                      remindMe: remindMe,
+                      remindDaysBefore: remindMe ? remindDaysBefore : null,
+                      remindTime: remindMe && remindTime != null
+                          ? remindTime!.format(context)
+                          : null,
+                      repeat: repeat,
+                      repeatInterval: repeat == "custom" ? repeatInterval : null,
+                    ));
+                    await _preloadEvents();
+                    setState(() => _selectedDate = chosenDate);
+                    Navigator.pop(context);
+                  }
+                },
+                child: const Text("Add"),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _moveEvent(Event event, DateTime newDate) async {
+    final db = await DBHelper.database;
+    await db.update(
+      'events',
+      {'date': dateFormat.format(newDate)},
+      where: 'id = ?',
+      whereArgs: [event.id],
+    );
+    await _preloadEvents();
+  }
+
+  Future<void> _deleteEvent(Event event) async {
+    final db = await DBHelper.database;
+    await db.delete('events', where: 'id = ?', whereArgs: [event.id]);
+    await _preloadEvents();
+  }
+
+  Color _eventColor(Event event) {
+    final hash = (event.task.hashCode + event.date.hashCode).abs();
+    const colors = [
+      Color(0xFFE91E63), // Pink
+      Color(0xFF0097A7), // Cyan
+      Color(0xFFFFA000), // Amber
+      Color(0xFF1976D2), // Blue
+      Color(0xFF8D6E63), // Brown
+      Color(0xFFF44336), // Red
+      Color(0xFF5E35B1), // Deep Purple
+      Color(0xFF43A047), // Green (single, deeper)
+      Color(0xFFFF7043), // Orange
+      Color(0xFF7B1FA2), // Purple
+      Color(0xFF607D8B), // Blue Grey
+      Color(0xFFD32F2F), // Dark Red
+    ];
+    return colors[hash % colors.length];
+  }
+
+  Widget _eventTypeIcon(String type) {
+    switch (type) {
+      case 'birthday':
+        return const Row(
+          children: [
+            Icon(Icons.cake, color: Colors.white, size: 16),
+            SizedBox(width: 4),
+            Text("Birthday", style: TextStyle(color: Colors.white, fontSize: 12)),
+          ],
+        );
+      case 'exam':
+        return const Row(
+          children: [
+            Icon(Icons.school, color: Colors.white, size: 16),
+            SizedBox(width: 4),
+            Text("Exam", style: TextStyle(color: Colors.white, fontSize: 12)),
+          ],
+        );
+      case 'homework':
+        return const Row(
+          children: [
+            Icon(Icons.assignment, color: Colors.white, size: 16),
+            SizedBox(width: 4),
+            Text("Homework", style: TextStyle(color: Colors.white, fontSize: 12)),
+          ],
+        );
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  bool isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  Widget _buildEventContainer(Event event, DateTime currentDate) {
+    final container = Container(
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: _eventColor(event),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            event.task,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          if (event.type == 'birthday' || event.type == 'exam' || event.type == 'homework')
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: _eventTypeIcon(event.type),
+            ),
+          if (event.remindMe == true)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Row(
+                children: [
+                  const Icon(Icons.alarm, color: Colors.white, size: 14),
+                  const SizedBox(width: 2),
+                  Flexible(
+                    child: Text(
+                      "${event.remindDaysBefore ?? 0}d, ${event.remindTime ?? ''}",
+                      style: const TextStyle(color: Colors.white, fontSize: 11),
+                      softWrap: true,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (event.repeat != null && event.repeat != "none")
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Row(
+                children: [
+                  const Icon(Icons.repeat, color: Colors.white, size: 14),
+                  const SizedBox(width: 2),
+                  Text(
+                    event.repeat == "custom"
+                        ? "Every ${event.repeatInterval ?? 1} days"
+                        : (event.repeat![0].toUpperCase() + event.repeat!.substring(1)),
+                    style: const TextStyle(color: Colors.white, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+
+    Widget feedbackContainer = Material(
+      elevation: 4,
+      borderRadius: BorderRadius.circular(8),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 120, minWidth: 80),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: _eventColor(event).withOpacity(0.8),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                event.task,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                softWrap: true,
+              ),
+              if (event.remindMe == true)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.alarm, color: Colors.white, size: 12),
+                      const SizedBox(width: 2),
+                      Flexible(
+                        child: Text(
+                          "${event.remindDaysBefore ?? 0}d, ${event.remindTime ?? ''}",
+                          style: const TextStyle(color: Colors.white, fontSize: 10),
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: true,
+                          maxLines: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (event.repeat != null && event.repeat != "none")
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.repeat, color: Colors.white, size: 12),
+                      const SizedBox(width: 2),
+                      Text(
+                        event.repeat == "custom"
+                            ? "Every ${event.repeatInterval ?? 1} days"
+                            : (event.repeat![0].toUpperCase() + event.repeat!.substring(1)),
+                        style: const TextStyle(color: Colors.white, fontSize: 10),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    Widget childWhenDraggingContainer = Container(
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: _eventColor(event).withOpacity(0.3),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            event.task,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          if (event.type == 'birthday' || event.type == 'exam' || event.type == 'homework')
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: _eventTypeIcon(event.type),
+            ),
+          if (event.remindMe == true)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Row(
+                children: [
+                  const Icon(Icons.alarm, color: Colors.white, size: 14),
+                  const SizedBox(width: 2),
+                  Flexible(
+                    child: Text(
+                      "${event.remindDaysBefore ?? 0}d, ${event.remindTime ?? ''}",
+                      style: const TextStyle(color: Colors.white, fontSize: 11),
+                      softWrap: true,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (event.repeat != null && event.repeat != "none")
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Row(
+                children: [
+                  const Icon(Icons.repeat, color: Colors.white, size: 14),
+                  const SizedBox(width: 2),
+                  Text(
+                    event.repeat == "custom"
+                        ? "Every ${event.repeatInterval ?? 1} days"
+                        : (event.repeat![0].toUpperCase() + event.repeat!.substring(1)),
+                    style: const TextStyle(color: Colors.white, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+
+    if (event.type == 'normal' || event.type == 'homework') {
+      return Draggable<Map<String, dynamic>>(
+        data: {
+          'event': event,
+          'sourceDate': currentDate,
+          'canMove': true,
+        },
+        feedback: feedbackContainer,
+        childWhenDragging: childWhenDraggingContainer,
+        onDragStarted: () {
+          setState(() => _isDragging = true);
+        },
+        onDragEnd: (details) {
+          setState(() => _isDragging = false);
+        },
+        child: container,
+      );
+    } else {
+      return Draggable<Map<String, dynamic>>(
+        data: {
+          'event': event,
+          'sourceDate': currentDate,
+          'canMove': false,
+        },
+        feedback: feedbackContainer,
+        childWhenDragging: childWhenDraggingContainer,
+        onDragStarted: () {
+          setState(() => _isDragging = true);
+        },
+        onDragEnd: (details) {
+          setState(() => _isDragging = false);
+        },
+        child: container,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final todayKey = dateFormat.format(today);
+
+    return Scaffold(
+      backgroundColor: Colors.grey.shade100,
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (notification is ScrollUpdateNotification) {
+                    final offset = notification.metrics.pixels;
+                    final index = (offset / itemExtent).round();
+                    final newDate = _dateFromIndex(index);
+                    if (!isSameDay(_selectedDate, newDate)) {
+                      setState(() {
+                        _selectedDate = newDate;
+                      });
+                    }
+                  }
+                  return false;
+                },
+                child: ListView.builder(
+                  controller: _scrollController,
+                  scrollDirection: Axis.horizontal,
+                  itemExtent: itemExtent,
+                  addAutomaticKeepAlives: false,
+                  addRepaintBoundaries: false,
+                  itemBuilder: (context, index) {
+                    final date = _dateFromIndex(index);
+                    final key = dateFormat.format(date);
+                    final isToday = key == todayKey;
+                    final dateOnly = DateTime(date.year, date.month, date.day);
+                    final dayDiff = dateOnly.difference(today).inDays;
+                    String diffText;
+                    if (dayDiff == 0) {
+                      diffText = "Today";
+                    } else if (dayDiff == -1) {
+                      diffText = "Yesterday";
+                    } else if (dayDiff == 1) {
+                      diffText = "Tomorrow";
+                    } else if (dayDiff < 0) {
+                      diffText = "${-dayDiff} days ago";
+                    } else {
+                      diffText = "in $dayDiff days";
+                    }
+
+                    final events = _eventsForDate(date);
+
+                    return DragTarget<Map<String, dynamic>>(
+                      onWillAccept: (data) {
+                        return data != null && (data['canMove'] == true);
+                      },
+                      onAccept: (data) async {
+                        final event = data['event'] as Event;
+                        final sourceDate = data['sourceDate'] as DateTime;
+
+                        if (!isSameDay(sourceDate, date)) {
+                          await _moveEvent(event, date);
+                        }
+                      },
+                      builder: (context, candidateData, rejectedData) {
+                        final isHighlighted = candidateData.isNotEmpty;
+
+                        return Container(
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              right: BorderSide(color: Colors.grey.shade300, width: 1),
+                            ),
+                            color: isHighlighted
+                                ? Colors.green.shade100
+                                : (isToday ? Colors.blue.shade50 : null),
+                          ),
+                          child: Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(top: 12, bottom: 2),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      numFormat.format(date),
+                                      style: TextStyle(
+                                        fontSize: 32,
+                                        color: isToday ? Colors.teal.shade700 : Colors.grey.shade800,
+                                        fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                                      ),
+                                    ),
+                                    Text(
+                                      dayFormat.format(date),
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: isToday ? Colors.teal.shade700 : Colors.grey.shade600,
+                                        fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      diffText,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Expanded(
+                                child: events.isEmpty
+                                    ? const SizedBox.shrink()
+                                    : ListView.builder(
+                                  itemCount: events.length,
+                                  padding: EdgeInsets.zero,
+                                  itemBuilder: (context, i) {
+                                    final e = events[i];
+                                    return _buildEventContainer(e, date);
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+          if (_isDragging)
+            Positioned(
+              left: 16,
+              bottom: 100,
+              child: DragTarget<Map<String, dynamic>>(
+                onWillAccept: (data) {
+                  return data != null;
+                },
+                onAccept: (data) async {
+                  final event = data['event'] as Event;
+                  await _deleteEvent(event);
+                },
+                builder: (context, candidateData, rejectedData) {
+                  final isHighlighted = candidateData.isNotEmpty;
+
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isHighlighted ? Colors.red.shade600 : Colors.red.shade400,
+                      borderRadius: BorderRadius.circular(50),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.delete,
+                      color: Colors.white,
+                      size: isHighlighted ? 32 : 24,
+                    ),
+                  );
+                },
+              ),
+            ),
+          Positioned(
+            left: 16,
+            bottom: 24,
+            child: Row(
+              children: [
+                FloatingActionButton(
+                  heroTag: 'prev',
+                  mini: true,
+                  backgroundColor: Colors.blue,
+                  onPressed: () => _jumpToEvent(-1),
+                  child: const Icon(Icons.chevron_left, color: Colors.white),
+                ),
+                const SizedBox(width: 8),
+                FloatingActionButton(
+                  heroTag: 'today',
+                  mini: true,
+                  backgroundColor: Colors.red.shade500,
+                  onPressed: () => _jumpToDate(DateTime.now()),
+                  child: const Icon(Icons.fiber_manual_record, color: Colors.white, size: 18),
+                ),
+                const SizedBox(width: 8),
+                FloatingActionButton(
+                  heroTag: 'next',
+                  mini: true,
+                  backgroundColor: Colors.blue,
+                  onPressed: () => _jumpToEvent(1),
+                  child: const Icon(Icons.chevron_right, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddEventDialog,
+        backgroundColor: Colors.green.shade500,
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+    );
+  }
+}
