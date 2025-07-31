@@ -22,8 +22,8 @@ class HomeScreen extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.list),
-              title: const Text("To-Do"),
-              onTap: () => Navigator.pushNamed(context, AppRoutes.todo),
+              title: const Text("Expense Tracker"),
+              onTap: () => Navigator.pushNamed(context, AppRoutes.expense),
             ),
             ListTile(
               leading: const Icon(Icons.touch_app),

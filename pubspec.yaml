@@ -16,6 +16,8 @@ dependencies:
   path: ^1.8.3
   intl: ^0.18.1
   cupertino_icons: ^1.0.8
+  share_plus: ^7.2.1
+  path_provider: ^2.1.2
 
 dev_dependencies:
   flutter_lints: ^5.0.0
@@ -30,4 +32,6 @@ flutter_launcher_icons:
   image_path: "assets/icon/app_icon.png"
 
 flutter:
+  assets:
+    - assets/images/bkgrnd.jpg
   uses-material-design: true
