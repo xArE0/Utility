@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../routes/app_routes.dart';
 import 'schedule_screen.dart';
+import 'package:intl/intl.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -13,11 +14,26 @@ class HomeScreen extends StatelessWidget {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.teal),
-              child: Text(
-                "Your Widgets",
-                style: TextStyle(color: Colors.white, fontSize: 24),
+            DrawerHeader(
+              decoration: const BoxDecoration(color: Colors.teal),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    "Avishek Shrestha",
+                    style: TextStyle(color: Colors.white, fontSize: 24),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    DateFormat('hh:mm a').format(DateTime.now()),
+                    style: const TextStyle(color: Colors.white, fontSize: 18),
+                  ),
+                  Text(
+                    DateFormat('EEEE, MMM d, yyyy').format(DateTime.now()),
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                ],
               ),
             ),
             ListTile(
