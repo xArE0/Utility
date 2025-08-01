@@ -8,6 +8,7 @@ class ExportImportsPage extends StatelessWidget {
   // Replace with your actual DB file names
   final String scheduleDbName = 'schedule.db';
   final String expenseDbName = 'expense_tracker.db';
+  final String dataVaultDbName = 'datavault.db';
 
   const ExportImportsPage({super.key});
 
@@ -45,6 +46,7 @@ class ExportImportsPage extends StatelessWidget {
       appBar: AppBar(title: const Text('Export & Import Databases')),
       body: ListView(
         children: [
+          const Divider(),
           ListTile(
             title: const Text('Export Schedule Database'),
             trailing: IconButton(
@@ -74,6 +76,22 @@ class ExportImportsPage extends StatelessWidget {
               onPressed: () => _importDb(context, expenseDbName),
             ),
           ),
+          const Divider(),
+          ListTile(
+            title: const Text('Export Data Vault'),
+            trailing: IconButton(
+              icon: const Icon(Icons.share),
+              onPressed: () => _exportDb(context, dataVaultDbName),
+            ),
+          ),
+          ListTile(
+            title: const Text('Import Data Vault'),
+            trailing: IconButton(
+              icon: const Icon(Icons.file_upload),
+              onPressed: () => _importDb(context, dataVaultDbName),
+            ),
+          ),
+          const Divider(),
         ],
       ),
     );
