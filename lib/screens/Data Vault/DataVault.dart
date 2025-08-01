@@ -11,6 +11,9 @@ class DataVaultPage extends StatefulWidget {
 
 class _DataVaultPageState extends State<DataVaultPage> {
   List<Map<String, dynamic>> items = [];
+  Set<int> visibleIds = {};
+
+  final List<String> categories = ['Cards', 'Bank Accounts', 'Passwords', 'IDs'];
 
   @override
   void initState() {
@@ -26,6 +29,8 @@ class _DataVaultPageState extends State<DataVaultPage> {
   void _addItem() async {
     final labelController = TextEditingController();
     final valueController = TextEditingController();
+    String selectedCategory = categories[0];
+
     await showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -33,15 +38,36 @@ class _DataVaultPageState extends State<DataVaultPage> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: labelController, decoration: const InputDecoration(labelText: 'Label')),
-            TextField(controller: valueController, decoration: const InputDecoration(labelText: 'Value')),
+            DropdownButtonFormField<String>(
+              value: selectedCategory,
+              items: categories
+                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                  .toList(),
+              onChanged: (val) {
+                if (val != null) selectedCategory = val;
+              },
+              decoration: const InputDecoration(labelText: 'Category'),
+            ),
+            TextField(
+              controller: labelController,
+              decoration: const InputDecoration(labelText: 'Label'),
+            ),
+            TextField(
+              controller: valueController,
+              decoration: const InputDecoration(labelText: 'Value'),
+            ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () async {
-              if (labelController.text.isNotEmpty && valueController.text.isNotEmpty) {
-                await DataVaultDB().addItem(labelController.text, valueController.text);
+              if (labelController.text.isNotEmpty &&
+                  valueController.text.isNotEmpty) {
+                await DataVaultDB().addItem(
+                  labelController.text,
+                  valueController.text,
+                  selectedCategory,
+                );
                 Navigator.pop(context);
                 _loadItems();
               }
@@ -55,25 +81,65 @@ class _DataVaultPageState extends State<DataVaultPage> {
 
   void _copyToClipboard(String value) {
     Clipboard.setData(ClipboardData(text: value));
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copied to clipboard')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Copied to clipboard')),
+    );
+  }
+
+  Widget _buildCategorySection(String category) {
+    final categoryItems = items.where((i) => i['category'] == category).toList();
+    if (categoryItems.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          child: Text(category, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        ),
+        ...categoryItems.map((item) {
+          final id = item['id'] as int;
+          final isVisible = visibleIds.contains(id);
+          return ListTile(
+            title: Text(item['label']),
+            subtitle: Text(
+              isVisible ? item['value'] : '••••••••',
+              style: const TextStyle(letterSpacing: 2),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(isVisible ? Icons.visibility_off : Icons.visibility),
+                  onPressed: () {
+                    setState(() {
+                      if (isVisible) {
+                        visibleIds.remove(id);
+                      } else {
+                        visibleIds.add(id);
+                      }
+                    });
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.copy),
+                  onPressed: () => _copyToClipboard(item['value']),
+                ),
+              ],
+            ),
+          );
+        }),
+        const Divider(thickness: 1),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Data Vault')),
-      body: ListView.separated(
-        itemCount: items.length,
-        separatorBuilder: (_, __) => const Divider(),
-        itemBuilder: (context, i) {
-          final item = items[i];
-          return ListTile(
-            title: Text(item['label']),
-            subtitle: Text('••••••••', style: const TextStyle(letterSpacing: 2)),
-            trailing: const Icon(Icons.copy),
-            onTap: () => _copyToClipboard(item['value']),
-          );
-        },
+      body: ListView(
+        children: categories.map(_buildCategorySection).toList(),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addItem,

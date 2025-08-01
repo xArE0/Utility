@@ -19,15 +19,21 @@ class DataVaultDB {
     final path = join(dbPath, 'datavault.db');
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE vault(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             label TEXT,
-            value TEXT
+            value TEXT,
+            category TEXT
           )
         ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion == 1 && newVersion == 2) {
+          await db.execute("ALTER TABLE vault ADD COLUMN category TEXT");
+        }
       },
     );
   }
@@ -37,8 +43,12 @@ class DataVaultDB {
     return await db.query('vault');
   }
 
-  Future<void> addItem(String label, String value) async {
+  Future<void> addItem(String label, String value, String category) async {
     final db = await database;
-    await db.insert('vault', {'label': label, 'value': value});
+    await db.insert('vault', {
+      'label': label,
+      'value': value,
+      'category': category,
+    });
   }
 }
