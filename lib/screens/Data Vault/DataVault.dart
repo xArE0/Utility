@@ -10,6 +10,7 @@ class DataVaultPage extends StatefulWidget {
 }
 
 class _DataVaultPageState extends State<DataVaultPage> {
+  final db = DataVaultDB(); // ✅ singleton instance
   List<Map<String, dynamic>> items = [];
   Set<int> visibleIds = {};
 
@@ -22,7 +23,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
   }
 
   Future<void> _loadItems() async {
-    final data = await DataVaultDB().getAllItems();
+    final data = await db.getAllItems();
     setState(() => items = data);
   }
 
@@ -33,7 +34,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
 
     await showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (BuildContext dialogContext) => AlertDialog(
         title: const Text('Add Info'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -63,12 +64,12 @@ class _DataVaultPageState extends State<DataVaultPage> {
             onPressed: () async {
               if (labelController.text.isNotEmpty &&
                   valueController.text.isNotEmpty) {
-                await DataVaultDB().addItem(
+                await db.addItem(
                   labelController.text,
                   valueController.text,
                   selectedCategory,
                 );
-                Navigator.pop(context);
+                Navigator.pop(dialogContext);
                 _loadItems();
               }
             },
@@ -83,6 +84,30 @@ class _DataVaultPageState extends State<DataVaultPage> {
     Clipboard.setData(ClipboardData(text: value));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Copied to clipboard')),
+    );
+  }
+
+  void _confirmDelete(int id) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) => AlertDialog(
+        title: const Text('Delete Entry'),
+        content: const Text('Are you sure you want to delete this item?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await db.deleteItem(id);
+              Navigator.pop(dialogContext);
+              _loadItems();
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -124,6 +149,10 @@ class _DataVaultPageState extends State<DataVaultPage> {
                 IconButton(
                   icon: const Icon(Icons.copy),
                   onPressed: () => _copyToClipboard(item['value']),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => _confirmDelete(id),
                 ),
               ],
             ),

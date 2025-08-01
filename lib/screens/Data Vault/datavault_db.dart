@@ -51,4 +51,9 @@ class DataVaultDB {
       'category': category,
     });
   }
+
+  Future<void> deleteItem(int id) async {
+    final db = await database;
+    await db.delete('vault', where: 'id = ?', whereArgs: [id]);
+  }
 }
