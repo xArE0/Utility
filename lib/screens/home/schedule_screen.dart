@@ -839,7 +839,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 FloatingActionButton(
                   heroTag: 'today',
                   mini: true,
-                  backgroundColor: Colors.red.shade500,
+                  backgroundColor: Colors.green,
                   onPressed: () => _jumpToDate(DateTime.now()),
                   child: const Icon(Icons.fiber_manual_record, color: Colors.white, size: 18),
                 ),

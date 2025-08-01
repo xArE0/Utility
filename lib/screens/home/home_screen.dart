@@ -46,6 +46,11 @@ class HomeScreen extends StatelessWidget {
               title: const Text("AutoClicker"),
               onTap: () => Navigator.pushNamed(context, AppRoutes.autoclicker),
             ),
+            ListTile(
+              leading: const Icon(Icons.import_export_sharp),
+              title: const Text("Import/Export"),
+              onTap: () => Navigator.pushNamed(context, AppRoutes.importexport),
+            ),
           ],
         ),
       ),
