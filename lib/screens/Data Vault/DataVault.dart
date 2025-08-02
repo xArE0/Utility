@@ -14,7 +14,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
   List<Map<String, dynamic>> items = [];
   Set<int> visibleIds = {};
 
-  final List<String> categories = ['Cards', 'Bank Accounts', 'Passwords', 'IDs'];
+  final List<String> categories = ['Bank Accounts','IDs','Cards','Passwords'];
 
   @override
   void initState() {

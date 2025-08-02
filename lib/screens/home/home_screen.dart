@@ -42,14 +42,20 @@ class HomeScreen extends StatelessWidget {
               onTap: () => Navigator.pushNamed(context, AppRoutes.expense),
             ),
             ListTile(
-              leading: const Icon(Icons.touch_app),
-              title: const Text("AutoClicker"),
-              onTap: () => Navigator.pushNamed(context, AppRoutes.autoclicker),
-            ),
-            ListTile(
               leading: const Icon(Icons.lock),
               title: const Text("Data Vault"),
               onTap: () => Navigator.pushNamed(context, AppRoutes.datavault),
+            ),
+            // ListTile(
+            //   leading: const Icon(Icons.touch_app),
+            //   title: const Text("AutoClicker"),
+            //   onTap: () => Navigator.pushNamed(context, AppRoutes.autoclicker),
+            // ),
+            ListTile(
+              leading: Icon(Icons.touch_app, color: Colors.grey),
+              title: Text("AutoClicker", style: TextStyle(color: Colors.grey)),
+              enabled: false,
+              onTap: null,
             ),
             ListTile(
               leading: const Icon(Icons.import_export_sharp),

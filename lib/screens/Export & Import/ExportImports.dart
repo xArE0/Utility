@@ -57,7 +57,7 @@ class ExportImportsPage extends StatelessWidget {
           ListTile(
             title: const Text('Import Schedule Database'),
             trailing: IconButton(
-              icon: const Icon(Icons.file_upload),
+              icon: const Icon(Icons.file_download_outlined),
               onPressed: () => _importDb(context, scheduleDbName),
             ),
           ),
@@ -72,7 +72,7 @@ class ExportImportsPage extends StatelessWidget {
           ListTile(
             title: const Text('Import Expense Database'),
             trailing: IconButton(
-              icon: const Icon(Icons.file_upload),
+              icon: const Icon(Icons.file_download_outlined),
               onPressed: () => _importDb(context, expenseDbName),
             ),
           ),
@@ -87,7 +87,7 @@ class ExportImportsPage extends StatelessWidget {
           ListTile(
             title: const Text('Import Data Vault'),
             trailing: IconButton(
-              icon: const Icon(Icons.file_upload),
+              icon: const Icon(Icons.file_download_outlined),
               onPressed: () => _importDb(context, dataVaultDbName),
             ),
           ),

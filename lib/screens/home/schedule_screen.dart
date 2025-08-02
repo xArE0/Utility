@@ -14,6 +14,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   static final DateFormat dateFormat = DateFormat('yyyy-MM-dd');
   static final DateFormat dayFormat = DateFormat('EEE');
   static final DateFormat numFormat = DateFormat('d');
+  static final DateFormat monthFormat = DateFormat('MMM');
+
   final double itemExtent = 120.0;
 
   List<Event> _allEvents = [];
@@ -735,6 +737,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                 padding: const EdgeInsets.only(top: 12, bottom: 2),
                                 child: Column(
                                   children: [
+                                    // Month
+                                    Text(
+                                      monthFormat.format(date),
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: isToday ? Colors.teal.shade700 : Colors.grey.shade600,
+                                        fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                                      ),
+                                    ),
+                                    // Date
                                     Text(
                                       numFormat.format(date),
                                       style: TextStyle(
@@ -743,6 +755,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                         fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
                                       ),
                                     ),
+                                    // Day
                                     Text(
                                       dayFormat.format(date),
                                       style: TextStyle(
@@ -767,16 +780,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                 child: events.isEmpty
                                     ? const SizedBox.shrink()
                                     : ListView.builder(
-                                  itemCount: events.length,
-                                  padding: EdgeInsets.zero,
-                                  itemBuilder: (context, i) {
-                                    final e = events[i];
-                                    return _buildEventContainer(e, date);
-                                  },
-                                ),
+                                        itemCount: events.length,
+                                        padding: EdgeInsets.zero,
+                                        itemBuilder: (context, i) {
+                                          final e = events[i];
+                                          return _buildEventContainer(e, date);
+                                        },
+                                      ),
                               ),
                             ],
-                          ),
+                          )
                         );
                       },
                     );
