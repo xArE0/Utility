@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../db_helper.dart';
+import 'package:nepali_utils/nepali_utils.dart';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -691,6 +692,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     final isToday = key == todayKey;
                     final dateOnly = DateTime(date.year, date.month, date.day);
                     final dayDiff = dateOnly.difference(today).inDays;
+
+                    final nepaliDate = date.toNepaliDateTime();
+                    final nepaliMonth = NepaliUnicode.convert(NepaliDateFormat('MMMM').format(nepaliDate));
+                    final nepaliDay = NepaliUnicode.convert(NepaliDateFormat('d').format(nepaliDate));
+
                     String diffText;
                     if (dayDiff == 0) {
                       diffText = "Today";
@@ -788,6 +794,48 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                         },
                                       ),
                               ),
+                              // Nepali date at the bottom
+                              Container(
+                                margin: const EdgeInsets.only(bottom: 75, top: 4),
+                                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                decoration: BoxDecoration(
+                                  color: isToday ? Colors.teal.shade50 : Colors.orange.shade50,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: isToday ? Colors.teal : Colors.deepOrange.shade200,
+                                    width: isToday ? 2 : 1,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.04),
+                                      blurRadius: 2,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      nepaliMonth,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: isToday ? Colors.teal.shade700 : Colors.deepOrange.shade700,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      nepaliDay,
+                                      style: TextStyle(
+                                        fontSize: 22,
+                                        color: isToday ? Colors.teal.shade900 : Colors.deepOrange.shade900,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
                             ],
                           )
                         );
