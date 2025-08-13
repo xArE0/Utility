@@ -12,6 +12,9 @@ class ScheduleScreen extends StatefulWidget {
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
+
+  bool _showNepaliDates = false;
+
   static const int initialIndex = 10000;
   static final DateFormat dateFormat = DateFormat('yyyy-MM-dd');
   static final DateFormat dayFormat = DateFormat('EEE');
@@ -31,6 +34,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   DateTime _selectedDate = DateTime.now();
   bool _isDragging = false;
+
+  // Cache for Nepali dates to avoid repeated conversions
+  final Map<String, NepaliDateTime> _nepaliDateCache = {};
+  final Map<String, String> _nepaliMonthCache = {};
+  final Map<String, String> _nepaliDayCache = {};
 
   @override
   void initState() {
@@ -72,6 +80,43 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   int _indexFromDate(DateTime date) {
     final base = DateTime.now().subtract(Duration(days: initialIndex));
     return date.difference(base).inDays;
+  }
+
+  Map<String, String> _getNepaliDateInfo(DateTime date) {
+    if (!_showNepaliDates) return {}; // Skip calculation if not visible
+
+    final dateKey = dateFormat.format(date);
+
+    if (!_nepaliMonthCache.containsKey(dateKey) || !_nepaliDayCache.containsKey(dateKey)) {
+      try {
+        final nepaliDate = date.toNepaliDateTime();
+        _nepaliDateCache[dateKey] = nepaliDate;
+        _nepaliMonthCache[dateKey] = NepaliUnicode.convert(NepaliDateFormat('MMMM').format(nepaliDate));
+        _nepaliDayCache[dateKey] = NepaliUnicode.convert(NepaliDateFormat('d').format(nepaliDate));
+      } catch (e) {
+        // Fallback to English date if Nepali conversion fails
+        _nepaliMonthCache[dateKey] = monthFormat.format(date);
+        _nepaliDayCache[dateKey] = numFormat.format(date);
+      }
+    }
+
+    return {
+      'month': _nepaliMonthCache[dateKey]!,
+      'day': _nepaliDayCache[dateKey]!,
+    };
+  }
+
+
+  // Clear cache periodically to prevent memory leaks
+  void _clearOldCache() {
+    if (_nepaliDateCache.length > 200) {
+      final keysToRemove = _nepaliDateCache.keys.take(50).toList();
+      for (final key in keysToRemove) {
+        _nepaliDateCache.remove(key);
+        _nepaliMonthCache.remove(key);
+        _nepaliDayCache.remove(key);
+      }
+    }
   }
 
   List<Event> _eventsForDate(DateTime date) {
@@ -655,6 +700,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final today = DateTime(now.year, now.month, now.day);
     final todayKey = dateFormat.format(today);
 
+    // Clear old cache periodically
+    _clearOldCache();
+
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       body: Stack(
@@ -694,10 +742,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     final dateOnly = DateTime(date.year, date.month, date.day);
                     final dayDiff = dateOnly.difference(today).inDays;
 
-                    final nepaliDate = date.toNepaliDateTime();
-                    final nepaliMonth = NepaliUnicode.convert(NepaliDateFormat('MMMM').format(nepaliDate));
-                    final nepaliDay = NepaliUnicode.convert(NepaliDateFormat('d').format(nepaliDate));
-
                     String diffText;
                     if (dayDiff == 0) {
                       diffText = "Today";
@@ -713,6 +757,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
                     final events = _eventsForDate(date);
 
+                    // Only fetch Nepali date info if the toggle is enabled
+                    String nepaliMonth = '';
+                    String nepaliDay = '';
+                    if (_showNepaliDates) {
+                      final nepaliInfo = _getNepaliDateInfo(date);
+                      nepaliMonth = nepaliInfo['month'] ?? '';
+                      nepaliDay = nepaliInfo['day'] ?? '';
+                    }
+
                     return DragTarget<Map<String, dynamic>>(
                       onWillAccept: (data) {
                         return data != null && (data['canMove'] == true);
@@ -720,7 +773,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       onAccept: (data) async {
                         final event = data['event'] as Event;
                         final sourceDate = data['sourceDate'] as DateTime;
-
                         if (!isSameDay(sourceDate, date)) {
                           await _moveEvent(event, date);
                         }
@@ -795,62 +847,62 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                         },
                                       ),
                               ),
-
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(18),
-                                child: BackdropFilter(
-                                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                                  child: Container(
-                                    margin: const EdgeInsets.only(bottom: 75, top: 4),
-                                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.55),
-                                      borderRadius: BorderRadius.circular(18),
-                                      border: Border.all(
-                                        color: isToday ? Colors.teal.shade400 : Colors.white.withOpacity(0.7),
-                                        width: 1.5,
+                              if (_showNepaliDates)
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(18),
+                                  child: BackdropFilter(
+                                    filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                                    child: Container(
+                                      margin: const EdgeInsets.only(bottom: 75, top: 4),
+                                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.55),
+                                        borderRadius: BorderRadius.circular(18),
+                                        border: Border.all(
+                                          color: isToday ? Colors.teal.shade400 : Colors.white.withOpacity(0.7),
+                                          width: 1.5,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.08),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 3),
+                                          ),
+                                        ],
                                       ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.08),
-                                          blurRadius: 10,
-                                          offset: const Offset(0, 3),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          nepaliMonth,
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: isToday ? Colors.teal.shade700 : Colors.grey.shade700,
-                                            fontWeight: FontWeight.w600,
-                                            letterSpacing: 0.5,
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            nepaliMonth,
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: isToday ? Colors.teal.shade700 : Colors.grey.shade700,
+                                              fontWeight: FontWeight.w600,
+                                              letterSpacing: 0.5,
+                                            ),
                                           ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          nepaliDay,
-                                          style: TextStyle(
-                                            fontSize: 25,
-                                            color: isToday ? Colors.teal.shade900 : Colors.grey.shade900,
-                                            fontWeight: FontWeight.bold,
-                                            letterSpacing: 1,
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            nepaliDay,
+                                            style: TextStyle(
+                                              fontSize: 25,
+                                              color: isToday ? Colors.teal.shade900 : Colors.grey.shade900,
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: 1,
+                                            ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
-                              )
                             ],
-                          )
+                          ),
                         );
                       },
                     );
-                  },
+                  }
                 ),
               ),
             ),
@@ -921,6 +973,21 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   onPressed: () => _jumpToEvent(1),
                   child: const Icon(Icons.chevron_right, color: Colors.white),
                 ),
+                const SizedBox(width: 8),
+                FloatingActionButton(
+                  heroTag: 'toggleNepali',
+                  mini: true,
+                  backgroundColor: Colors.grey.shade700,
+                  onPressed: () {
+                    setState(() {
+                      _showNepaliDates = !_showNepaliDates;
+                    });
+                  },
+                  child: Icon(
+                    _showNepaliDates ? Icons.visibility : Icons.visibility_off,
+                    color: Colors.white,
+                  ),
+                ),
               ],
             ),
           ),
@@ -932,5 +999,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    // Clear caches on dispose to free memory
+    _nepaliDateCache.clear();
+    _nepaliMonthCache.clear();
+    _nepaliDayCache.clear();
+    super.dispose();
   }
 }
