@@ -1,16 +1,32 @@
-# utility
+# All-in-One Mobile App
 
-All in one Just for Avishek
+An **all-in-one mobile application** built with **Flutter, Dart, and Kotlin**, designed to combine multiple productivity and utility tools into a single platform.  
+This app helps users manage daily tasks, track expenses, store notes securely, and even includes advanced features like a vault and autoclicker.
 
-## Getting Started
+---
 
-This project is a starting point for a Flutter application.
+## ✨ Features
+- 📅 **Event Management** – Create, edit, and track events with calendar-style scheduling.  
+- 💰 **Expense Tracker** – Manage income, expenses, and generate summaries of financial activity.  
+- 📝 **Notes** – Write, organize, and manage personal or work notes.  
+- ✅ **To-Do List** – Task management with reminders to stay productive.  
+- 🔒 **Vault** – Securely store sensitive information with encryption.  
+- ⚡ **Autoclicker** – Automate screen taps at specific positions and intervals (non-rooted devices).  
 
-A few resources to get you started if this is your first Flutter project:
+---
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## 🛠️ Tech Stack
+- **Flutter (Dart)** – Cross-platform mobile UI framework  
+- **Kotlin** – Native Android integrations for advanced modules (autoclicker, system-level tasks)  
+- **Firebase** (optional) – For authentication, storage, or cloud features  
+- **SQLite / Hive** – Local database for offline-first support  
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Flutter SDK (latest stable version)  
+- Android Studio or VS Code with Flutter & Dart plugins  
+- Kotlin (for Android native modules)  
+- A device/emulator running Android API 24+  
