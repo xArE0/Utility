@@ -274,6 +274,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         DropdownMenuItem(value: 'birthday', child: Text('Birthday')),
                         DropdownMenuItem(value: 'exam', child: Text('Exam')),
                         DropdownMenuItem(value: 'homework', child: Text('Homework')),
+                        DropdownMenuItem(value: 'event', child: Text('Event')),
                       ],
                       onChanged: (value) => setDialogState(() => selectedType = value!),
                     ),
@@ -452,6 +453,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             Text("Exam", style: TextStyle(color: Colors.white, fontSize: 12)),
           ],
         );
+      case 'event':
+        return const Row(
+          children: [
+            Icon(Icons.event, color: Colors.white, size: 16),
+            SizedBox(width: 4),
+            Text("Event", style: TextStyle(color: Colors.white, fontSize: 12)),
+          ],
+        );
       case 'homework':
         return const Row(
           children: [
@@ -488,6 +497,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             ),
           ),
           if (event.type == 'birthday' || event.type == 'exam' || event.type == 'homework')
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: _eventTypeIcon(event.type),
+            ),
+          if (event.type == 'event')
             Padding(
               padding: const EdgeInsets.only(top: 2),
               child: _eventTypeIcon(event.type),
@@ -615,6 +629,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             ),
           ),
           if (event.type == 'birthday' || event.type == 'exam' || event.type == 'homework')
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: _eventTypeIcon(event.type),
+            ),
+          if (event.type == 'event')
             Padding(
               padding: const EdgeInsets.only(top: 2),
               child: _eventTypeIcon(event.type),

@@ -10,11 +10,11 @@ class DataVaultPage extends StatefulWidget {
 }
 
 class _DataVaultPageState extends State<DataVaultPage> {
-  final db = DataVaultDB(); // ✅ singleton instance
+  final db = DataVaultDB();
   List<Map<String, dynamic>> items = [];
   Set<int> visibleIds = {};
 
-  final List<String> categories = ['Bank Accounts','IDs','Cards','Passwords'];
+  final List<String> categories = ['Passwords','IDs','Cards','Bank Accounts'];
 
   @override
   void initState() {
