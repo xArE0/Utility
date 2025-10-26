@@ -5,10 +5,10 @@ import 'dart:io';
 import 'package:sqflite/sqflite.dart';
 
 class ExportImportsPage extends StatelessWidget {
-  // Replace with your actual DB file names
   final String scheduleDbName = 'schedule.db';
   final String expenseDbName = 'expense_tracker.db';
   final String dataVaultDbName = 'datavault.db';
+  final String potTrackerDbName = 'pottracker_session.db';
 
   const ExportImportsPage({super.key});
 
@@ -89,6 +89,22 @@ class ExportImportsPage extends StatelessWidget {
             trailing: IconButton(
               icon: const Icon(Icons.file_download_outlined),
               onPressed: () => _importDb(context, dataVaultDbName),
+            ),
+          ),
+          const Divider(),
+          // Pot Tracker export/import entries
+          ListTile(
+            title: const Text('Export Pot Tracker Session'),
+            trailing: IconButton(
+              icon: const Icon(Icons.share),
+              onPressed: () => _exportDb(context, potTrackerDbName),
+            ),
+          ),
+          ListTile(
+            title: const Text('Import Pot Tracker Session'),
+            trailing: IconButton(
+              icon: const Icon(Icons.file_download_outlined),
+              onPressed: () => _importDb(context, potTrackerDbName),
             ),
           ),
           const Divider(),

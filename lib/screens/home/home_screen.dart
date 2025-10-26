@@ -46,6 +46,11 @@ class HomeScreen extends StatelessWidget {
               title: const Text("Data Vault"),
               onTap: () => Navigator.pushNamed(context, AppRoutes.datavault),
             ),
+            ListTile(
+              leading: const Icon(Icons.account_balance_wallet),
+              title: const Text("Pot Tracker"),
+              onTap: () => Navigator.pushNamed(context, AppRoutes.pottracker),
+            ),
             // ListTile(
             //   leading: const Icon(Icons.touch_app),
             //   title: const Text("AutoClicker"),

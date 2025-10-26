@@ -4,6 +4,7 @@ import '../screens/home/home_screen.dart';
 import '../screens/expense/expense.dart';
 import '../screens/autoclicker/autoclicker_screen.dart';
 import '../screens/Data Vault/DataVault.dart';
+import '../screens/PotTracker/potTracker.dart';
 
 class AppRoutes {
   static const home = '/';
@@ -12,6 +13,7 @@ class AppRoutes {
   static const autoclicker = '/autoclicker';
   static const schedule = '/schedule';
   static const datavault = '/datavault';
+  static const pottracker = '/pottracker';
 
   static Map<String, WidgetBuilder> get all => {
     home: (_) => const HomeScreen(),
@@ -19,5 +21,6 @@ class AppRoutes {
     autoclicker: (_) => const AutoClickerScreen(),
     importexport: (_) => ExportImportsPage(),
     datavault: (_) => const DataVaultPage(),
+    pottracker: (_) => const PotTrackerPage(),
   };
 }
