@@ -240,26 +240,175 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
     };
   }
 
+  // Simple safe expression evaluator supporting + - * / and parentheses.
+  // Handles unary + and - as well.
+  double _evaluateExpression(String expr) {
+    final tokens = _tokenize(expr);
+    final rpn = _toRPN(tokens);
+    return _evalRPN(rpn);
+  }
+
+  List<String> _tokenize(String s) {
+    final tokens = <String>[];
+    int i = 0;
+
+    bool isOperator(String t) => t == '+' || t == '-' || t == '*' || t == '/';
+
+    while (i < s.length) {
+      final ch = s[i];
+      if (ch == ' ' || ch == '\t') {
+        i++;
+        continue;
+      }
+
+      // number (including decimal)
+      if ((ch.codeUnitAt(0) >= 48 && ch.codeUnitAt(0) <= 57) || ch == '.') {
+        final sb = StringBuffer();
+        while (i < s.length && ((s[i].codeUnitAt(0) >= 48 && s[i].codeUnitAt(0) <= 57) || s[i] == '.')) {
+          sb.write(s[i]);
+          i++;
+        }
+        tokens.add(sb.toString());
+        continue;
+      }
+
+      if (ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '(' || ch == ')') {
+        // handle unary +/-
+        if ((ch == '+' || ch == '-') &&
+            (tokens.isEmpty || isOperator(tokens.last) || tokens.last == '(')) {
+          // treat unary by inserting 0 before it -> "0 - 5" or "0 + 5"
+          tokens.add('0');
+        }
+        tokens.add(ch);
+        i++;
+        continue;
+      }
+
+      // unknown character -> throw so caller can show error
+      throw FormatException('Invalid character in expression: $ch');
+    }
+
+    return tokens;
+  }
+
+  List<String> _toRPN(List<String> tokens) {
+    final output = <String>[];
+    final ops = <String>[];
+
+    int precedence(String op) {
+      if (op == '+' || op == '-') return 1;
+      if (op == '*' || op == '/') return 2;
+      return 0;
+    }
+
+    bool isOperator(String t) => t == '+' || t == '-' || t == '*' || t == '/';
+
+    for (final token in tokens) {
+      if (token.isEmpty) continue;
+      if (double.tryParse(token) != null) {
+        output.add(token);
+      } else if (isOperator(token)) {
+        while (ops.isNotEmpty && isOperator(ops.last) &&
+            ((precedence(ops.last) > precedence(token)) ||
+                (precedence(ops.last) == precedence(token)))) {
+          output.add(ops.removeLast());
+        }
+        ops.add(token);
+      } else if (token == '(') {
+        ops.add(token);
+      } else if (token == ')') {
+        while (ops.isNotEmpty && ops.last != '(') {
+          output.add(ops.removeLast());
+        }
+        if (ops.isEmpty || ops.last != '(') {
+          throw FormatException('Mismatched parentheses');
+        }
+        ops.removeLast(); // pop '('
+      } else {
+        throw FormatException('Unknown token $token');
+      }
+    }
+
+    while (ops.isNotEmpty) {
+      final op = ops.removeLast();
+      if (op == '(' || op == ')') throw FormatException('Mismatched parentheses');
+      output.add(op);
+    }
+
+    return output;
+  }
+
+  double _evalRPN(List<String> rpn) {
+    final stack = <double>[];
+
+    for (final token in rpn) {
+      final num = double.tryParse(token);
+      if (num != null) {
+        stack.add(num);
+      } else if (token == '+' || token == '-' || token == '*' || token == '/') {
+        if (stack.length < 2) throw FormatException('Invalid expression');
+        final b = stack.removeLast();
+        final a = stack.removeLast();
+        double res;
+        switch (token) {
+          case '+':
+            res = a + b;
+            break;
+          case '-':
+            res = a - b;
+            break;
+          case '*':
+            res = a * b;
+            break;
+          case '/':
+            if (b == 0) throw FormatException('Division by zero');
+            res = a / b;
+            break;
+          default:
+            throw FormatException('Unsupported operator $token');
+        }
+        stack.add(res);
+      } else {
+        throw FormatException('Unknown token in RPN: $token');
+      }
+    }
+
+    if (stack.length != 1) throw FormatException('Invalid expression');
+    return stack.single;
+  }
+
   void _handleInputSubmit() {
     final input = _inputController.text.trim();
-    final match = RegExp(r'^([+-]?\d+(\.\d+)?)\s+(.+)$').firstMatch(input);
-    if (match != null) {
-      final amount = double.tryParse(match.group(1)!);
-      final note = match.group(3)!;
-      if (amount != null) {
-        _addTransaction(_selectedPerson!, amount, note);
-        _inputController.clear();
-      } else {
+    if (input.isEmpty || _selectedPerson == null) {
+      _showInputError();
+      return;
+    }
+
+    // find first whitespace to split amount expression and note
+    final firstSpace = input.indexOf(RegExp(r'\s'));
+    if (firstSpace == -1) {
+      _showInputError();
+      return;
+    }
+
+    final amountExpr = input.substring(0, firstSpace).trim();
+    final note = input.substring(firstSpace).trim();
+    try {
+      final amount = _evaluateExpression(amountExpr);
+      if (amount.isNaN) {
         _showInputError();
+        return;
       }
-    } else {
+      _addTransaction(_selectedPerson!, amount, note);
+      _inputController.clear();
+    } catch (e) {
       _showInputError();
     }
   }
 
   void _showInputError() {
     ScaffoldMessenger.of(context as BuildContext).showSnackBar(
-      const SnackBar(content: Text('<Amount> <Note>')),
+      const SnackBar(content: Text('<Amount> <Note>  — amount can be an expression like -900/3')),
     );
   }
 
@@ -774,3 +923,4 @@ class _StatPill extends StatelessWidget {
     );
   }
 }
+
