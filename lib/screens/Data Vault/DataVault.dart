@@ -12,9 +12,12 @@ class DataVaultPage extends StatefulWidget {
 class _DataVaultPageState extends State<DataVaultPage> {
   final db = DataVaultDB();
   List<Map<String, dynamic>> items = [];
-  Set<int> visibleIds = {};
+  Set<int> visibleIds = {}; // Track visibility of password text
+  
+  String searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
-  final List<String> categories = ['Passwords','IDs','Cards','Bank Accounts'];
+  final List<String> categories = ['Passwords', 'IDs', 'Cards', 'Bank Accounts'];
 
   @override
   void initState() {
@@ -22,68 +25,21 @@ class _DataVaultPageState extends State<DataVaultPage> {
     _loadItems();
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadItems() async {
     final data = await db.getAllItems();
     setState(() => items = data);
   }
 
-  void _addItem() async {
-    final labelController = TextEditingController();
-    final valueController = TextEditingController();
-    String selectedCategory = categories[0];
-
-    await showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) => AlertDialog(
-        title: const Text('Add Info'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropdownButtonFormField<String>(
-              value: selectedCategory,
-              items: categories
-                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                  .toList(),
-              onChanged: (val) {
-                if (val != null) selectedCategory = val;
-              },
-              decoration: const InputDecoration(labelText: 'Category'),
-            ),
-            TextField(
-              controller: labelController,
-              decoration: const InputDecoration(labelText: 'Label'),
-            ),
-            TextField(
-              controller: valueController,
-              decoration: const InputDecoration(labelText: 'Value'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              if (labelController.text.isNotEmpty &&
-                  valueController.text.isNotEmpty) {
-                await db.addItem(
-                  labelController.text,
-                  valueController.text,
-                  selectedCategory,
-                );
-                Navigator.pop(dialogContext);
-                _loadItems();
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _copyToClipboard(String value) {
     Clipboard.setData(ClipboardData(text: value));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Copied to clipboard')),
+      const SnackBar(content: Text('Copied to clipboard'), duration: Duration(seconds: 1)),
     );
   }
 
@@ -111,68 +67,360 @@ class _DataVaultPageState extends State<DataVaultPage> {
     );
   }
 
-  Widget _buildCategorySection(String category) {
-    final categoryItems = items.where((i) => i['category'] == category).toList();
-    if (categoryItems.isEmpty) return const SizedBox.shrink();
+  void _showItemDialog({Map<String, dynamic>? item}) async {
+    final isEditing = item != null;
+    final labelController = TextEditingController(text: isEditing ? item['label'] : '');
+    final valueController = TextEditingController(text: isEditing ? item['value'] : '');
+    String selectedCategory = isEditing ? item['category'] : categories[0];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          child: Text(category, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+    if (!categories.contains(selectedCategory)) {
+      selectedCategory = categories[0];
+    }
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) => AlertDialog(
+        title: Text(isEditing ? 'Edit Info' : 'Add Info'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                value: selectedCategory,
+                items: categories
+                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                    .toList(),
+                onChanged: (val) {
+                  if (val != null) selectedCategory = val;
+                },
+                decoration: const InputDecoration(labelText: 'Category'),
+              ),
+              TextField(
+                controller: labelController,
+                decoration: const InputDecoration(labelText: 'Label'),
+                textCapitalization: TextCapitalization.sentences,
+              ),
+              TextField(
+                controller: valueController,
+                decoration: const InputDecoration(labelText: 'Value'),
+              ),
+            ],
+          ),
         ),
-        ...categoryItems.map((item) {
-          final id = item['id'] as int;
-          final isVisible = visibleIds.contains(id);
-          return ListTile(
-            title: Text(item['label']),
-            subtitle: Text(
-              isVisible ? item['value'] : '••••••••',
-              style: const TextStyle(letterSpacing: 2),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (labelController.text.isNotEmpty &&
+                  valueController.text.isNotEmpty) {
+                if (isEditing) {
+                  await db.updateItem(
+                    item['id'],
+                    labelController.text,
+                    valueController.text,
+                    selectedCategory,
+                  );
+                } else {
+                  await db.addItem(
+                    labelController.text,
+                    valueController.text,
+                    selectedCategory,
+                  );
+                }
+                Navigator.pop(dialogContext);
+                _loadItems();
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVaultCard(Map<String, dynamic> item) {
+    final id = item['id'] as int;
+    final isVisible = visibleIds.contains(id);
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left Content: Icon + Label + Value
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.lock, color: Theme.of(context).primaryColor),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          item['label'],
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          // No maxLines, allow wrap
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Value:',
+                    style: TextStyle(
+                      fontSize: 12, 
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isVisible ? item['value'] : '••••••••',
+                    style: TextStyle(
+                      fontSize: 16,
+                      letterSpacing: 2.0, // Requested spacing
+                      fontWeight: FontWeight.bold,
+                      fontFamily: isVisible ? null : 'monospace',
+                    ),
+                    // No maxLines, allow wrap
+                  ),
+                ],
+              ),
             ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: Icon(isVisible ? Icons.visibility_off : Icons.visibility),
-                  onPressed: () {
-                    setState(() {
-                      if (isVisible) {
-                        visibleIds.remove(id);
-                      } else {
-                        visibleIds.add(id);
-                      }
-                    });
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.copy),
-                  onPressed: () => _copyToClipboard(item['value']),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => _confirmDelete(id),
-                ),
-              ],
+            
+            const SizedBox(width: 12),
+            
+            // Right Content: 2x2 Button Matrix
+            Container(
+              decoration: BoxDecoration(
+                 color: Colors.grey[100],
+                 borderRadius: BorderRadius.circular(12),
+                 border: Border.all(color: Colors.grey[300]!)
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _MatrixButton(
+                        icon: isVisible ? Icons.visibility_off : Icons.visibility,
+                        color: Colors.indigo,
+                        onPressed: () {
+                           setState(() {
+                            if (isVisible) {
+                              visibleIds.remove(id);
+                            } else {
+                              visibleIds.add(id);
+                            }
+                          });
+                        },
+                      ),
+                      Container(width: 1, height: 40, color: Colors.grey[300]),
+                      _MatrixButton(
+                        icon: Icons.copy,
+                        color: Colors.blue,
+                        onPressed: () => _copyToClipboard(item['value']),
+                      ),
+                    ],
+                  ),
+                  Container(height: 1, width: 80, color: Colors.grey[300]),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _MatrixButton(
+                        icon: Icons.edit,
+                        color: Colors.orange,
+                        onPressed: () => _showItemDialog(item: item),
+                      ),
+                      Container(width: 1, height: 40, color: Colors.grey[300]),
+                      _MatrixButton(
+                        icon: Icons.delete,
+                        color: Colors.red,
+                        onPressed: () => _confirmDelete(id),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          );
-        }),
-        const Divider(thickness: 1),
-      ],
+          ],
+        ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final filteredItems = items.where((item) {
+      final label = item['label'].toString().toLowerCase();
+      final category = item['category'].toString().toLowerCase();
+      final query = searchQuery.toLowerCase();
+      return label.contains(query) || category.contains(query);
+    }).toList();
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Data Vault')),
-      body: ListView(
-        children: categories.map(_buildCategorySection).toList(),
+      appBar: AppBar(
+        title: const Text('Data Vault'),
+        centerTitle: true,
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addItem,
-        child: const Icon(Icons.add),
+      body: Column(
+        children: [
+          // Styled Search Bar
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search your vault...',
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.grey[100],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                suffixIcon: searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                         _searchController.clear();
+                         setState(() {
+                           searchQuery = '';
+                         });
+                      },
+                    )
+                  : null,
+              ),
+              onChanged: (val) {
+                setState(() {
+                  searchQuery = val;
+                });
+              },
+            ),
+          ),
+          
+          Expanded(
+            child: filteredItems.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.lock_open, size: 60, color: Colors.grey[400]),
+                        const SizedBox(height: 16),
+                        Text(
+                          items.isEmpty 
+                            ? 'Your vault is empty.\nProtect your data now!' 
+                            : 'No matches found.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView(
+                    padding: const EdgeInsets.only(bottom: 80),
+                    children: categories.map((category) {
+                      final categoryItems = filteredItems
+                          .where((i) => i['category'] == category)
+                          .toList();
+                      
+                      if (categoryItems.isEmpty) return const SizedBox.shrink();
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 16, 16, 8),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 4, height: 18, 
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).primaryColor,
+                                    borderRadius: BorderRadius.circular(2)
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  category,
+                                  style: TextStyle(
+                                    fontSize: 16, 
+                                    fontWeight: FontWeight.bold, 
+                                    color: Colors.grey[800],
+                                    letterSpacing: 0.5
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          ...categoryItems.map((item) => _buildVaultCard(item)),
+                        ],
+                      );
+                    }).toList(),
+                  ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showItemDialog(),
+        icon: const Icon(Icons.add),
+        label: const Text('Add Entry'),
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
+      ),
+    );
+  }
+}
+
+class _MatrixButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onPressed;
+
+  const _MatrixButton({
+    required this.icon,
+    required this.color,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 40,
+      height: 40,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        icon: Icon(icon, color: color, size: 20),
+        onPressed: onPressed,
+        splashRadius: 20,
       ),
     );
   }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import '../../db_helper.dart';
 import 'package:nepali_utils/nepali_utils.dart';
 import 'dart:ui';
+import '../../services/notification_service.dart';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -39,6 +41,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   final Map<String, NepaliDateTime> _nepaliDateCache = {};
   final Map<String, String> _nepaliMonthCache = {};
   final Map<String, String> _nepaliDayCache = {};
+  
+  // Loading state for Nepali date computation
+  bool _isLoadingNepaliDates = false;
 
   @override
   void initState() {
@@ -118,18 +123,81 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       }
     }
   }
+  
+  /// Pre-compute Nepali dates in batch using isolate to avoid UI lag
+  Future<void> _precomputeNepaliDates(DateTime centerDate) async {
+    setState(() => _isLoadingNepaliDates = true);
+    
+    try {
+      // Generate list of dates to compute (60 days range)
+      final datesToCompute = <String>[];
+      for (int i = -30; i <= 30; i++) {
+        final date = centerDate.add(Duration(days: i));
+        final key = dateFormat.format(date);
+        if (!_nepaliMonthCache.containsKey(key)) {
+          datesToCompute.add(key);
+        }
+      }
+      
+      if (datesToCompute.isNotEmpty) {
+        // Run conversion in isolate
+        final results = await compute(_computeNepaliDatesBatch, datesToCompute);
+        
+        // Update cache with results
+        for (final entry in results.entries) {
+          _nepaliMonthCache[entry.key] = entry.value['month']!;
+          _nepaliDayCache[entry.key] = entry.value['day']!;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error precomputing Nepali dates: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingNepaliDates = false);
+      }
+    }
+  }
+  
+  /// Static isolate function for batch Nepali date conversion
+  static Map<String, Map<String, String>> _computeNepaliDatesBatch(List<String> dateKeys) {
+    final results = <String, Map<String, String>>{};
+    
+    for (final key in dateKeys) {
+      try {
+        final date = DateTime.parse(key);
+        final nepaliDate = date.toNepaliDateTime();
+        results[key] = {
+          'month': NepaliUnicode.convert(NepaliDateFormat('MMMM').format(nepaliDate)),
+          'day': NepaliUnicode.convert(NepaliDateFormat('d').format(nepaliDate)),
+        };
+      } catch (e) {
+        // Fallback to empty if conversion fails
+        results[key] = {'month': '', 'day': ''};
+      }
+    }
+    
+    return results;
+  }
 
   List<Event> _eventsForDate(DateTime date) {
     final key = dateFormat.format(date);
     List<Event> events = [];
 
-    // Non-repeating events
+    // Non-repeating events (single day)
     events.addAll(_allEvents.where((e) =>
     e.date == key &&
         e.type != 'birthday' &&
         e.type != 'exam' &&
-        (e.repeat == null || e.repeat == "none")
+        (e.repeat == null || e.repeat == "none") &&
+        (e.durationDays == null || e.durationDays! <= 1)
     ));
+    
+    // Multi-day events that span this date
+    events.addAll(_allEvents.where((e) {
+      if (e.type == 'birthday' || e.type == 'exam') return false;
+      if (e.durationDays == null || e.durationDays! <= 1) return false;
+      return e.spansDate(date);
+    }));
 
     // Repeating events (except for birthdays/exams)
     events.addAll(_allEvents.where((e) {
@@ -240,6 +308,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     // Repeat fields
     String repeat = "none";
     int repeatInterval = 1;
+    
+    // Duration field for multi-day events
+    int durationDays = 1;
 
     showDialog(
       context: context,
@@ -363,6 +434,41 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         ],
                       ],
                     ),
+                    const SizedBox(height: 8),
+                    // Duration field for multi-day events
+                    Row(
+                      children: [
+                        const Text("Duration:"),
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 50,
+                          child: TextFormField(
+                            initialValue: "$durationDays",
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                            ),
+                            onChanged: (v) {
+                              final num = int.tryParse(v) ?? 1;
+                              setDialogState(() => durationDays = num.clamp(1, 365));
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          durationDays == 1 ? "day" : "days",
+                          style: TextStyle(color: Colors.grey.shade600),
+                        ),
+                        if (durationDays > 1) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            "(ends ${DateFormat('MMM d').format(chosenDate.add(Duration(days: durationDays - 1)))})",
+                            style: TextStyle(fontSize: 12, color: Colors.teal.shade600),
+                          ),
+                        ],
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -373,7 +479,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 onPressed: () async {
                   final task = taskController.text.trim();
                   if (task.isNotEmpty) {
-                    await DBHelper.insertEvent(Event(
+                    // Request notification permission if remindMe is enabled
+                    if (remindMe) {
+                      await NotificationService().requestPermission();
+                    }
+                    
+                    final newEvent = Event(
                       date: dateFormat.format(chosenDate),
                       task: task,
                       type: selectedType,
@@ -384,7 +495,28 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           : null,
                       repeat: repeat,
                       repeatInterval: repeat == "custom" ? repeatInterval : null,
-                    ));
+                      durationDays: durationDays > 1 ? durationDays : null,
+                    );
+                    
+                    final eventId = await DBHelper.insertEvent(newEvent);
+                    
+                    // Schedule notification if remindMe is enabled
+                    if (remindMe && remindTime != null) {
+                      final eventWithId = Event(
+                        id: eventId,
+                        date: newEvent.date,
+                        task: newEvent.task,
+                        type: newEvent.type,
+                        remindMe: newEvent.remindMe,
+                        remindDaysBefore: newEvent.remindDaysBefore,
+                        remindTime: newEvent.remindTime,
+                        repeat: newEvent.repeat,
+                        repeatInterval: newEvent.repeatInterval,
+                        durationDays: newEvent.durationDays,
+                      );
+                      await NotificationService().scheduleEventNotification(eventWithId);
+                    }
+                    
                     await _preloadEvents();
                     setState(() => _selectedDate = chosenDate);
                     Navigator.pop(context);
@@ -413,6 +545,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Future<void> _deleteEvent(Event event) async {
     final db = await DBHelper.database;
     await db.delete('events', where: 'id = ?', whereArgs: [event.id]);
+    // Cancel any scheduled notification for this event
+    if (event.id != null) {
+      await NotificationService().cancelEventNotification(event.id!);
+    }
     await _preloadEvents();
   }
 
@@ -539,6 +675,29 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   ),
                 ],
               ),
+            ),
+          // Multi-day indicator
+          if (event.durationDays != null && event.durationDays! > 1)
+            Builder(
+              builder: (context) {
+                final dayNum = event.getDayNumber(currentDate);
+                if (dayNum != null) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.date_range, color: Colors.white, size: 14),
+                        const SizedBox(width: 2),
+                        Text(
+                          "Day $dayNum of ${event.durationDays}",
+                          style: const TextStyle(color: Colors.white, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
             ),
         ],
       ),
@@ -889,30 +1048,45 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                           ),
                                         ],
                                       ),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            nepaliMonth,
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              color: isToday ? Colors.teal.shade700 : Colors.grey.shade700,
-                                              fontWeight: FontWeight.w600,
-                                              letterSpacing: 0.5,
+                                      child: _isLoadingNepaliDates && nepaliMonth.isEmpty
+                                          ? const SizedBox(
+                                              height: 45,
+                                              width: 45,
+                                              child: Center(
+                                                child: SizedBox(
+                                                  height: 20,
+                                                  width: 20,
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    color: Colors.teal,
+                                                  ),
+                                                ),
+                                              ),
+                                            )
+                                          : Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  nepaliMonth,
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    color: isToday ? Colors.teal.shade700 : Colors.grey.shade700,
+                                                    fontWeight: FontWeight.w600,
+                                                    letterSpacing: 0.5,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  nepaliDay,
+                                                  style: TextStyle(
+                                                    fontSize: 25,
+                                                    color: isToday ? Colors.teal.shade900 : Colors.grey.shade900,
+                                                    fontWeight: FontWeight.bold,
+                                                    letterSpacing: 1,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            nepaliDay,
-                                            style: TextStyle(
-                                              fontSize: 25,
-                                              color: isToday ? Colors.teal.shade900 : Colors.grey.shade900,
-                                              fontWeight: FontWeight.bold,
-                                              letterSpacing: 1,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
                                     ),
                                   ),
                                 ),
@@ -996,16 +1170,35 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 FloatingActionButton(
                   heroTag: 'toggleNepali',
                   mini: true,
-                  backgroundColor: Colors.grey.shade700,
-                  onPressed: () {
+                  backgroundColor: _isLoadingNepaliDates 
+                      ? Colors.orange.shade700 
+                      : Colors.grey.shade700,
+                  onPressed: () async {
+                    if (_isLoadingNepaliDates) return; // Prevent double-tap
+                    
+                    final newValue = !_showNepaliDates;
                     setState(() {
-                      _showNepaliDates = !_showNepaliDates;
+                      _showNepaliDates = newValue;
                     });
+                    
+                    // Precompute Nepali dates in background when enabled
+                    if (newValue) {
+                      await _precomputeNepaliDates(_selectedDate);
+                    }
                   },
-                  child: Icon(
-                    _showNepaliDates ? Icons.visibility : Icons.visibility_off,
-                    color: Colors.white,
-                  ),
+                  child: _isLoadingNepaliDates
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Icon(
+                          _showNepaliDates ? Icons.visibility : Icons.visibility_off,
+                          color: Colors.white,
+                        ),
                 ),
               ],
             ),

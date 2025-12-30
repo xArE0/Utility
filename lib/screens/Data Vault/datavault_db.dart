@@ -56,4 +56,18 @@ class DataVaultDB {
     final db = await database;
     await db.delete('vault', where: 'id = ?', whereArgs: [id]);
   }
+
+  Future<void> updateItem(int id, String label, String value, String category) async {
+    final db = await database;
+    await db.update(
+      'vault',
+      {
+        'label': label,
+        'value': value,
+        'category': category,
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
 }

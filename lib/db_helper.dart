@@ -11,6 +11,7 @@ class Event {
   final String? remindTime;
   final String? repeat; // e.g. "none", "daily", "weekly", "monthly", "yearly"
   final int? repeatInterval; // for custom e.g. every x days
+  final int? durationDays; // for multi-day events: null or 1 = single day, 2+ = multi-day
 
   Event({
     this.id,
@@ -22,6 +23,7 @@ class Event {
     this.remindTime,
     this.repeat = "none",
     this.repeatInterval,
+    this.durationDays,
   });
 
   Map<String, dynamic> toMap() {
@@ -35,6 +37,7 @@ class Event {
       'remindTime': remindTime,
       'repeat': repeat,
       'repeatInterval': repeatInterval,
+      'durationDays': durationDays,
     };
   }
 
@@ -49,7 +52,33 @@ class Event {
       remindTime: map['remindTime'],
       repeat: map['repeat'] ?? "none",
       repeatInterval: map['repeatInterval'],
+      durationDays: map['durationDays'],
     );
+  }
+  
+  /// Check if this event spans the given date
+  bool spansDate(DateTime targetDate) {
+    final startDate = DateTime.parse(date);
+    final duration = durationDays ?? 1;
+    if (duration <= 1) {
+      // Single day event - only matches exact date
+      return false;
+    }
+    final endDate = startDate.add(Duration(days: duration - 1));
+    return !targetDate.isBefore(startDate) && !targetDate.isAfter(endDate);
+  }
+  
+  /// Get day number (1-indexed) for a given date within this event span
+  int? getDayNumber(DateTime targetDate) {
+    final startDate = DateTime.parse(date);
+    final duration = durationDays ?? 1;
+    if (duration <= 1) return null;
+    
+    final daysDiff = targetDate.difference(startDate).inDays;
+    if (daysDiff >= 0 && daysDiff < duration) {
+      return daysDiff + 1; // 1-indexed
+    }
+    return null;
   }
 }
 
@@ -66,7 +95,7 @@ class DBHelper {
     final dbPath = await getDatabasesPath();
     return openDatabase(
         join(dbPath, 'schedule.db'),
-        version: 3,
+        version: 4,
         onCreate: (db, version) async {
           await db.execute('''
           CREATE TABLE events(
@@ -78,7 +107,8 @@ class DBHelper {
             remindDaysBefore INTEGER,
             remindTime TEXT,
             repeat TEXT,
-            repeatInterval INTEGER
+            repeatInterval INTEGER,
+            durationDays INTEGER
           )
         ''');
         },
@@ -91,6 +121,9 @@ class DBHelper {
           if (oldVersion < 3) {
             await db.execute('ALTER TABLE events ADD COLUMN repeat TEXT DEFAULT "none"');
             await db.execute('ALTER TABLE events ADD COLUMN repeatInterval INTEGER');
+          }
+          if (oldVersion < 4) {
+            await db.execute('ALTER TABLE events ADD COLUMN durationDays INTEGER');
           }
         }
     );
