@@ -15,9 +15,12 @@ class ScheduleScreen extends StatefulWidget {
   State<ScheduleScreen> createState() => _ScheduleScreenState();
 }
 
+enum ScheduleView { timeline, week, month }
+
 class _ScheduleScreenState extends State<ScheduleScreen> {
 
   bool _showNepaliDates = false;
+  ScheduleView _viewMode = ScheduleView.timeline;
 
   static const int initialIndex = 10000;
   static final DateFormat dateFormat = DateFormat('yyyy-MM-dd');
@@ -46,6 +49,33 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   
   // Loading state for Nepali date computation
   bool _isLoadingNepaliDates = false;
+
+  Widget _buildViewSwitcher(bool isDark) {
+    Color active = AppColors.govGreen;
+    Color inactive = isDark ? AppColors.slate400 : AppColors.slate600;
+    return Row(
+      children: [
+        IconButton(
+          tooltip: "Timeline view",
+          onPressed: () => setState(() => _viewMode = ScheduleView.timeline),
+          icon: Icon(Icons.view_agenda,
+              color: _viewMode == ScheduleView.timeline ? active : inactive),
+        ),
+        IconButton(
+          tooltip: "Week view",
+          onPressed: () => setState(() => _viewMode = ScheduleView.week),
+          icon: Icon(Icons.calendar_view_week,
+              color: _viewMode == ScheduleView.week ? active : inactive),
+        ),
+        IconButton(
+          tooltip: "Month view",
+          onPressed: () => setState(() => _viewMode = ScheduleView.month),
+          icon: Icon(Icons.calendar_month,
+              color: _viewMode == ScheduleView.month ? active : inactive),
+        ),
+      ],
+    );
+  }
 
   @override
   void initState() {
@@ -628,22 +658,19 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   Color _eventColor(Event event) {
-    final hash = (event.task.hashCode + event.date.hashCode).abs();
-    const colors = [
-      Color(0xFFE91E63), // Pink
-      Color(0xFF0097A7), // Cyan
-      Color(0xFFFFA000), // Amber
-      Color(0xFF1976D2), // Blue
-      Color(0xFF8D6E63), // Brown
-      Color(0xFFF44336), // Red
-      Color(0xFF5E35B1), // Deep Purple
-      Color(0xFF43A047), // Green (single, deeper)
-      Color(0xFFFF7043), // Orange
-      Color(0xFF7B1FA2), // Purple
-      Color(0xFF607D8B), // Blue Grey
-      Color(0xFFD32F2F), // Dark Red
-    ];
-    return colors[hash % colors.length];
+    switch (event.type) {
+      case 'birthday':
+        return const Color(0xFFE91E63); // pink
+      case 'exam':
+        return const Color(0xFF2563EB); // blue
+      case 'homework':
+        return const Color(0xFF8B5CF6); // violet
+      case 'event':
+        return const Color(0xFFFFA000); // amber
+      case 'normal':
+      default:
+        return const Color(0xFF10B981); // green
+    }
   }
 
   Widget _eventTypeIcon(String type) {
@@ -987,225 +1014,219 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             padding: const EdgeInsets.all(8.0),
             child: GlassCard(
               borderRadius: BorderRadius.circular(24),
-              padding: EdgeInsets.zero, // ListView handles padding inside
-              child: NotificationListener<ScrollNotification>(
-                  onNotification: (notification) {
-                    if (notification is ScrollUpdateNotification) {
-                      final offset = notification.metrics.pixels;
-                      final index = (offset / itemExtent).round();
-                      final newDate = _dateFromIndex(index);
-                      if (!isSameDay(_selectedDate, newDate)) {
-                        setState(() {
-                          _selectedDate = newDate;
-                        });
-                      }
-                    }
-                    return false;
-                  },
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    scrollDirection: Axis.horizontal,
-                    itemExtent: itemExtent,
-                    addAutomaticKeepAlives: false,
-                    addRepaintBoundaries: false,
-                    itemBuilder: (context, index) {
-                      final date = _dateFromIndex(index);
-                      final key = dateFormat.format(date);
-                      final isToday = key == todayKey;
-                      final events = _eventsForDate(date);
-
-                      // Only fetch Nepali date info if the toggle is enabled
-                      String nepaliMonth = '';
-                      String nepaliDay = '';
-                      if (_showNepaliDates) {
-                        final nepaliInfo = _getNepaliDateInfo(date);
-                        nepaliMonth = nepaliInfo['month'] ?? '';
-                        nepaliDay = nepaliInfo['day'] ?? '';
-                      }
-
-                      // Calculate diffText
-                      final dateOnly = DateTime(date.year, date.month, date.day);
-                      final dayDiff = dateOnly.difference(today).inDays;
-                      String diffText;
-                      if (dayDiff == 0) {
-                        diffText = "Today";
-                      } else if (dayDiff == -1) {
-                        diffText = "Yesterday";
-                      } else if (dayDiff == 1) {
-                        diffText = "Tomorrow";
-                      } else if (dayDiff < 0) {
-                        diffText = "${-dayDiff} days ago";
-                      } else {
-                        diffText = "in $dayDiff days";
-                      }
-
-                      return DragTarget<Map<String, dynamic>>(
-                        onWillAccept: (data) {
-                          return data != null && (data['canMove'] == true);
-                        },
-                        onAccept: (data) async {
-                          final event = data['event'] as Event;
-                          final sourceDate = data['sourceDate'] as DateTime;
-                          if (!isSameDay(sourceDate, date)) {
-                            await _moveEvent(event, date);
+              padding: EdgeInsets.zero,
+              child: _viewMode == ScheduleView.timeline
+                  ? NotificationListener<ScrollNotification>(
+                      onNotification: (notification) {
+                        if (notification is ScrollUpdateNotification) {
+                          final offset = notification.metrics.pixels;
+                          final index = (offset / itemExtent).round();
+                          final newDate = _dateFromIndex(index);
+                          if (!isSameDay(_selectedDate, newDate)) {
+                            setState(() {
+                              _selectedDate = newDate;
+                            });
                           }
-                        },
-                        builder: (context, candidateData, rejectedData) {
-                          final isHighlighted = candidateData.isNotEmpty;
+                        }
+                        return false;
+                      },
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        scrollDirection: Axis.horizontal,
+                        itemExtent: itemExtent,
+                        addAutomaticKeepAlives: false,
+                        addRepaintBoundaries: false,
+                        itemBuilder: (context, index) {
+                          final date = _dateFromIndex(index);
+                          final key = dateFormat.format(date);
+                          final isToday = key == todayKey;
+                          final events = _eventsForDate(date);
+                          String nepaliMonth = '';
+                          String nepaliDay = '';
+                          if (_showNepaliDates) {
+                            final nepaliInfo = _getNepaliDateInfo(date);
+                            nepaliMonth = nepaliInfo['month'] ?? '';
+                            nepaliDay = nepaliInfo['day'] ?? '';
+                          }
+                          final dateOnly = DateTime(date.year, date.month, date.day);
+                          final dayDiff = dateOnly.difference(today).inDays;
+                          String diffText;
+                          if (dayDiff == 0) {
+                            diffText = "Today";
+                          } else if (dayDiff == -1) {
+                            diffText = "Yesterday";
+                          } else if (dayDiff == 1) {
+                            diffText = "Tomorrow";
+                          } else if (dayDiff < 0) {
+                            diffText = "${-dayDiff} days ago";
+                          } else {
+                            diffText = "in $dayDiff days";
+                          }
 
-                          return Container(
-                            margin: const EdgeInsets.symmetric(vertical: 8),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                right: BorderSide(color: dividerColor, width: 1),
-                              ),
-                              color: isHighlighted
-                                  ? AppColors.govGreen.withOpacity(isDark ? 0.18 : 0.12)
-                                  : (isToday ? cs.primary.withOpacity(isDark ? 0.12 : 0.06) : null),
-                            ),
-                            child: Column(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.only(top: 12, bottom: 2),
-                                  color: headerSurface, // Dark/glass header surface
-                                  width: double.infinity,
-                                  child: Column(
-                                    children: [
-                                      // Month
-                                      Text(
-                                        monthFormat.format(date),
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: isToday ? AppColors.govGreen : secondaryText,
-                                          fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                                        ),
-                                      ),
-                                      // Date
-                                      Text(
-                                        numFormat.format(date),
-                                        style: TextStyle(
-                                          fontSize: 32,
-                                          color: isToday ? AppColors.govGreen : (isDark ? AppColors.slate50 : AppColors.slate800),
-                                          fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                                        ),
-                                      ),
-                                      // Day
-                                      Text(
-                                        dayFormat.format(date),
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: isToday ? AppColors.govGreen : secondaryText,
-                                          fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        diffText,
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color: secondaryText,
-                                        ),
-                                      ),
-                                    ],
+                          return DragTarget<Map<String, dynamic>>(
+                            onWillAccept: (data) {
+                              return data != null && (data['canMove'] == true);
+                            },
+                            onAccept: (data) async {
+                              final event = data['event'] as Event;
+                              final sourceDate = data['sourceDate'] as DateTime;
+                              if (!isSameDay(sourceDate, date)) {
+                                await _moveEvent(event, date);
+                              }
+                            },
+                            builder: (context, candidateData, rejectedData) {
+                              final isHighlighted = candidateData.isNotEmpty;
+
+                              return Container(
+                                margin: const EdgeInsets.symmetric(vertical: 8),
+                                decoration: BoxDecoration(
+                                  border: Border(
+                                    right: BorderSide(color: dividerColor, width: 1),
                                   ),
+                                  color: isHighlighted
+                                      ? AppColors.govGreen.withOpacity(isDark ? 0.18 : 0.12)
+                                      : (isToday ? cs.primary.withOpacity(isDark ? 0.12 : 0.06) : null),
                                 ),
-                                const SizedBox(height: 6),
-                                Expanded(
-                                  child: Container(
-                                    color: bodySurface, // Dark/glass body surface
-                                    child: events.isEmpty
-                                        ? const SizedBox.expand()
-                                        : ListView.builder(
-                                            itemCount: events.length,
-                                            padding: EdgeInsets.zero,
-                                            itemBuilder: (context, i) {
-                                              final e = events[i];
-                                              return _buildEventContainer(e, date);
-                                            },
-                                          ),
-                                  ),
-                                ),
-                                // Adjusting height to end above buttons
-                                SizedBox(height: _showNepaliDates ? 0 : 85), 
-                                if (_showNepaliDates)
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(18),
-                                    child: BackdropFilter(
-                                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                                      child: Container(
-                                        margin: const EdgeInsets.only(bottom: 85, top: 4),
-                                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                                        decoration: BoxDecoration(
-                                          color: (isDark ? AppColors.slate800 : Colors.white).withOpacity(isDark ? 0.55 : 0.6),
-                                          borderRadius: BorderRadius.circular(18),
-                                          border: Border.all(
-                                            color: isToday
-                                                ? AppColors.govGreen.withOpacity(0.9)
-                                                : (isDark ? AppColors.slate700 : AppColors.slate200).withOpacity(0.7),
-                                            width: 1.5,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(isDark ? 0.25 : 0.08),
-                                              blurRadius: 10,
-                                              offset: const Offset(0, 3),
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.only(top: 12, bottom: 2),
+                                      color: headerSurface,
+                                      width: double.infinity,
+                                      child: Column(
+                                        children: [
+                                          Text(
+                                            monthFormat.format(date),
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: isToday ? AppColors.govGreen : secondaryText,
+                                              fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
                                             ),
-                                          ],
-                                        ),
-                                        child: _isLoadingNepaliDates && nepaliMonth.isEmpty
-                                            ? const SizedBox(
-                                                height: 45,
-                                                width: 45,
-                                                child: Center(
-                                                  child: SizedBox(
-                                                    height: 20,
-                                                    width: 20,
-                                                    child: CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color: Colors.teal,
-                                                    ),
-                                                  ),
-                                                ),
-                                              )
-                                            : Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Text(
-                                                    nepaliMonth,
-                                                    style: TextStyle(
-                                                      fontSize: 10,
-                                                      color: isToday
-                                                          ? AppColors.govGreen
-                                                          : (isDark ? AppColors.slate300 : Colors.grey.shade700),
-                                                      fontWeight: FontWeight.w600,
-                                                      letterSpacing: 0.5,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 2),
-                                                  Text(
-                                                    nepaliDay,
-                                                    style: TextStyle(
-                                                      fontSize: 25,
-                                                      color: isToday
-                                                          ? (isDark ? AppColors.slate50 : AppColors.slate900)
-                                                          : (isDark ? AppColors.slate50 : Colors.grey.shade900),
-                                                      fontWeight: FontWeight.bold,
-                                                      letterSpacing: 1,
-                                                    ),
-                                                  ),
-                                                ],
+                                          ),
+                                          Text(
+                                            numFormat.format(date),
+                                            style: TextStyle(
+                                              fontSize: 32,
+                                              color: isToday ? AppColors.govGreen : (isDark ? AppColors.slate50 : AppColors.slate800),
+                                              fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                                            ),
+                                          ),
+                                          Text(
+                                            dayFormat.format(date),
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              color: isToday ? AppColors.govGreen : secondaryText,
+                                              fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            diffText,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: secondaryText,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Expanded(
+                                      child: Container(
+                                        color: bodySurface,
+                                        child: events.isEmpty
+                                            ? const SizedBox.expand()
+                                            : ListView.builder(
+                                                itemCount: events.length,
+                                                padding: EdgeInsets.zero,
+                                                itemBuilder: (context, i) {
+                                                  final e = events[i];
+                                                  return _buildEventContainer(e, date);
+                                                },
                                               ),
                                       ),
                                     ),
-                                  ),
-                              ],
-                            ),
+                                    SizedBox(height: _showNepaliDates ? 0 : 85),
+                                    if (_showNepaliDates)
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(18),
+                                        child: BackdropFilter(
+                                          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                                          child: Container(
+                                            margin: const EdgeInsets.only(bottom: 85, top: 4),
+                                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                                            decoration: BoxDecoration(
+                                              color: (isDark ? AppColors.slate800 : Colors.white).withOpacity(isDark ? 0.55 : 0.6),
+                                              borderRadius: BorderRadius.circular(18),
+                                              border: Border.all(
+                                                color: isToday
+                                                    ? AppColors.govGreen.withOpacity(0.9)
+                                                    : (isDark ? AppColors.slate700 : AppColors.slate200).withOpacity(0.7),
+                                                width: 1.5,
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black.withOpacity(isDark ? 0.25 : 0.08),
+                                                  blurRadius: 10,
+                                                  offset: const Offset(0, 3),
+                                                ),
+                                              ],
+                                            ),
+                                            child: _isLoadingNepaliDates && nepaliMonth.isEmpty
+                                                ? const SizedBox(
+                                                    height: 45,
+                                                    width: 45,
+                                                    child: Center(
+                                                      child: SizedBox(
+                                                        height: 20,
+                                                        width: 20,
+                                                        child: CircularProgressIndicator(
+                                                          strokeWidth: 2,
+                                                          color: Colors.teal,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  )
+                                                : Column(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Text(
+                                                        nepaliMonth,
+                                                        style: TextStyle(
+                                                          fontSize: 10,
+                                                          color: isToday
+                                                              ? AppColors.govGreen
+                                                              : (isDark ? AppColors.slate300 : Colors.grey.shade700),
+                                                          fontWeight: FontWeight.w600,
+                                                          letterSpacing: 0.5,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 2),
+                                                      Text(
+                                                        nepaliDay,
+                                                        style: TextStyle(
+                                                          fontSize: 25,
+                                                          color: isToday
+                                                              ? (isDark ? AppColors.slate50 : AppColors.slate900)
+                                                              : (isDark ? AppColors.slate50 : Colors.grey.shade900),
+                                                          fontWeight: FontWeight.bold,
+                                                          letterSpacing: 1,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              );
+                            },
                           );
                         },
-                      );
-                    }
-                  ),
-                ),
+                      ),
+                    )
+                  : (_viewMode == ScheduleView.week ? _buildWeekView(cs, isDark, today, todayKey) : _buildMonthView(cs, isDark, today, todayKey)),
             ),
           ),
           if (_isDragging)
@@ -1271,6 +1292,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    _buildViewSwitcher(isDark),
+                    const SizedBox(width: 6),
                     IconButton(
                       tooltip: "Previous event",
                       onPressed: () => _jumpToEvent(-1),
@@ -1358,5 +1381,260 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     _nepaliMonthCache.clear();
     _nepaliDayCache.clear();
     super.dispose();
+  }
+
+  Widget _buildEventsListForSelected(ColorScheme cs) {
+    final events = _eventsForDate(_selectedDate);
+    if (events.isEmpty) {
+      return Center(
+        child: Text(
+          "No events",
+          style: TextStyle(color: cs.onSurface.withOpacity(0.6)),
+        ),
+      );
+    }
+    return ListView.separated(
+      itemCount: events.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (context, i) {
+        final e = events[i];
+        return _buildEventContainer(e, _selectedDate);
+      },
+    );
+  }
+
+  Widget _buildWeekView(ColorScheme cs, bool isDark, DateTime today, String todayKey) {
+    final startOfWeek = _selectedDate.subtract(Duration(days: _selectedDate.weekday - 1));
+    final days = List.generate(7, (i) => startOfWeek.add(Duration(days: i)));
+    return Column(
+      children: [
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              "Week of ${DateFormat('MMM d, yyyy').format(startOfWeek)}",
+              style: TextStyle(
+                color: isDark ? AppColors.slate200 : AppColors.slate800,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 120,
+          child: GridView.count(
+            crossAxisCount: 7,
+            shrinkWrap: true,
+            childAspectRatio: 0.75,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            children: days.map((date) {
+              final key = dateFormat.format(date);
+              final isToday = key == todayKey;
+              final events = _eventsForDate(date);
+              return GestureDetector(
+                onTap: () => setState(() => _selectedDate = date),
+                child: Container(
+                  margin: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isToday ? cs.primary.withOpacity(0.12) : cs.surface.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isToday ? AppColors.govGreen : cs.outline.withOpacity(0.4),
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(DateFormat('E').format(date), style: TextStyle(color: cs.onSurface.withOpacity(0.7))),
+                      const SizedBox(height: 4),
+                      Text(
+                        DateFormat('d').format(date),
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: cs.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      if (events.isNotEmpty)
+                        Wrap(
+                          spacing: 4,
+                          runSpacing: 4,
+                          children: events.take(3).map((e) {
+                            return Container(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: _eventColor(e),
+                                shape: BoxShape.circle,
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const Divider(height: 1),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: _buildEventsListForSelected(cs),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMonthView(ColorScheme cs, bool isDark, DateTime today, String todayKey) {
+    final firstOfMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
+    final daysInMonth = DateUtils.getDaysInMonth(_selectedDate.year, _selectedDate.month);
+    final startWeekday = firstOfMonth.weekday; // 1=Mon
+    final totalCells = startWeekday - 1 + daysInMonth;
+    final rows = (totalCells / 7).ceil();
+    final cells = rows * 7;
+    final dates = List<DateTime?>.generate(cells, (i) {
+      final dayNum = i - (startWeekday - 2);
+      if (dayNum < 1 || dayNum > daysInMonth) return null;
+      return DateTime(_selectedDate.year, _selectedDate.month, dayNum);
+    });
+
+    return Column(
+      children: [
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                DateFormat('MMMM yyyy').format(_selectedDate),
+                style: TextStyle(
+                  color: isDark ? AppColors.slate200 : AppColors.slate800,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _selectedDate = DateTime(_selectedDate.year, _selectedDate.month - 1, _selectedDate.day);
+                      });
+                    },
+                    icon: const Icon(Icons.chevron_left),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _selectedDate = DateTime(_selectedDate.year, _selectedDate.month + 1, _selectedDate.day);
+                      });
+                    },
+                    icon: const Icon(Icons.chevron_right),
+                  ),
+                ],
+              )
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: const [
+              Text("Mon"), Text("Tue"), Text("Wed"), Text("Thu"), Text("Fri"), Text("Sat"), Text("Sun"),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: GridView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            itemCount: cells,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 7,
+              childAspectRatio: 0.9,
+            ),
+            itemBuilder: (context, i) {
+              final date = dates[i];
+              if (date == null) {
+                return const SizedBox.shrink();
+              }
+              final key = dateFormat.format(date);
+              final isToday = key == todayKey;
+              final events = _eventsForDate(date);
+              final isSelected = isSameDay(_selectedDate, date);
+              return GestureDetector(
+                onTap: () => setState(() => _selectedDate = date),
+                child: Container(
+                  margin: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? cs.primary.withOpacity(0.15)
+                        : cs.surface.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isToday ? AppColors.govGreen : cs.outline.withOpacity(0.4),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            DateFormat('d').format(date),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: cs.onSurface,
+                            ),
+                          ),
+                          if (isToday) ...[
+                            const SizedBox(width: 4),
+                            Icon(Icons.circle, size: 6, color: AppColors.govGreen),
+                          ]
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      if (events.isNotEmpty)
+                        Wrap(
+                          spacing: 4,
+                          runSpacing: 4,
+                          children: events.take(3).map((e) {
+                            return Container(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: _eventColor(e),
+                                shape: BoxShape.circle,
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const Divider(height: 1),
+        SizedBox(
+          height: 220,
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: _buildEventsListForSelected(cs),
+          ),
+        ),
+      ],
+    );
   }
 }
