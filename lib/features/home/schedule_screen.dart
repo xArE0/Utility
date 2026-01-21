@@ -449,29 +449,70 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       ),
                     ],
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        const Text("Repeat:"),
-                        const SizedBox(width: 8),
-                        DropdownButton<String>(
-                          value: repeat,
-                          borderRadius: BorderRadius.circular(12),
-                          items: const [
-                            DropdownMenuItem(value: "none", child: Text("None")),
-                            DropdownMenuItem(value: "daily", child: Text("Daily")),
-                            DropdownMenuItem(value: "weekly", child: Text("Weekly")),
-                            DropdownMenuItem(value: "monthly", child: Text("Monthly")),
-                            DropdownMenuItem(value: "yearly", child: Text("Yearly")),
-                            DropdownMenuItem(value: "custom", child: Text("Custom...")),
+                    Container(
+                      width: double.infinity,
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text("Repeat:"),
+                          const SizedBox(width: 8),
+                          DropdownButton<String>(
+                            value: repeat,
+                            borderRadius: BorderRadius.circular(12),
+                            items: const [
+                              DropdownMenuItem(value: "none", child: Text("None")),
+                              DropdownMenuItem(value: "daily", child: Text("Daily")),
+                              DropdownMenuItem(value: "weekly", child: Text("Weekly")),
+                              DropdownMenuItem(value: "monthly", child: Text("Monthly")),
+                              DropdownMenuItem(value: "yearly", child: Text("Yearly")),
+                              DropdownMenuItem(value: "custom", child: Text("Custom...")),
+                            ],
+                            onChanged: (v) => setDialogState(() => repeat = v!),
+                          ),
+                          if (repeat == "custom") ...[
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 50,
+                              child: TextFormField(
+                                initialValue: "$repeatInterval",
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  isDense: true,
+                                  filled: true,
+                                  fillColor: inputFill,
+                                  border: border,
+                                  enabledBorder: border,
+                                  focusedBorder: border.copyWith(
+                                    borderSide: BorderSide(color: cs.primary, width: 1.2),
+                                  ),
+                                ),
+                                onChanged: (v) {
+                                  final num = int.tryParse(v) ?? 1;
+                                  setDialogState(() => repeatInterval = num.clamp(1, 999));
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text("days"),
                           ],
-                          onChanged: (v) => setDialogState(() => repeat = v!),
-                        ),
-                        if (repeat == "custom") ...[
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Duration field for multi-day events
+                    Container(
+                      width: double.infinity,
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text("Duration:"),
                           const SizedBox(width: 8),
                           SizedBox(
-                            width: 50,
+                            width: 60,
                             child: TextFormField(
-                              initialValue: "$repeatInterval",
+                              initialValue: "$durationDays",
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
                                 isDense: true,
@@ -485,55 +526,24 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                               ),
                               onChanged: (v) {
                                 final num = int.tryParse(v) ?? 1;
-                                setDialogState(() => repeatInterval = num.clamp(1, 999));
+                                setDialogState(() => durationDays = num.clamp(1, 365));
                               },
                             ),
                           ),
-                          const SizedBox(width: 4),
-                          const Text("days"),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    // Duration field for multi-day events
-                    Row(
-                      children: [
-                        const Text("Duration:"),
-                        const SizedBox(width: 8),
-                        SizedBox(
-                          width: 60,
-                          child: TextFormField(
-                            initialValue: "$durationDays",
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              isDense: true,
-                              filled: true,
-                              fillColor: inputFill,
-                              border: border,
-                              enabledBorder: border,
-                              focusedBorder: border.copyWith(
-                                borderSide: BorderSide(color: cs.primary, width: 1.2),
-                              ),
-                            ),
-                            onChanged: (v) {
-                              final num = int.tryParse(v) ?? 1;
-                              setDialogState(() => durationDays = num.clamp(1, 365));
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          durationDays == 1 ? "day" : "days",
-                          style: TextStyle(color: theme.hintColor),
-                        ),
-                        if (durationDays > 1) ...[
                           const SizedBox(width: 8),
                           Text(
-                            "(ends ${DateFormat('MMM d').format(chosenDate.add(Duration(days: durationDays - 1)))})",
-                            style: TextStyle(fontSize: 12, color: cs.primary),
+                            durationDays == 1 ? "day" : "days",
+                            style: TextStyle(color: theme.hintColor),
                           ),
+                          if (durationDays > 1) ...[
+                            const SizedBox(width: 8),
+                            Text(
+                              "(ends ${DateFormat('MMM d').format(chosenDate.add(Duration(days: durationDays - 1)))})",
+                              style: TextStyle(fontSize: 12, color: cs.primary),
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ],
                 ),
@@ -1239,74 +1249,103 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           Positioned(
             left: 16,
             bottom: 24,
-            child: Row(
-              children: [
-                FloatingActionButton(
-                  heroTag: 'prev',
-                  mini: true,
-                  backgroundColor: AppColors.govBlue,
-                  onPressed: () => _jumpToEvent(-1),
-                  child: const Icon(Icons.chevron_left, color: Colors.white),
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: (isDark ? AppColors.slate800 : Colors.white).withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.18),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: (isDark ? AppColors.slate700 : AppColors.slate300).withOpacity(0.8),
+                    width: 1,
+                  ),
                 ),
-                const SizedBox(width: 8),
-                FloatingActionButton(
-                  heroTag: 'today',
-                  mini: true,
-                  backgroundColor: AppColors.govGreen,
-                  onPressed: () => _jumpToDate(DateTime.now()),
-                  child: const Icon(Icons.fiber_manual_record, color: Colors.white, size: 18),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      tooltip: "Previous event",
+                      onPressed: () => _jumpToEvent(-1),
+                      icon: const Icon(Icons.chevron_left),
+                    ),
+                    IconButton(
+                      tooltip: "Today",
+                      onPressed: () => _jumpToDate(DateTime.now()),
+                      icon: Icon(Icons.today, color: AppColors.govGreen),
+                    ),
+                    IconButton(
+                      tooltip: "Next event",
+                      onPressed: () => _jumpToEvent(1),
+                      icon: const Icon(Icons.chevron_right),
+                    ),
+                    const SizedBox(width: 6),
+                    IconButton(
+                      tooltip: "Toggle Nepali date",
+                      onPressed: () async {
+                        if (_isLoadingNepaliDates) return;
+                        final newValue = !_showNepaliDates;
+                        setState(() {
+                          _showNepaliDates = newValue;
+                        });
+                        if (newValue) {
+                          await _precomputeNepaliDates(_selectedDate);
+                        }
+                      },
+                      icon: _isLoadingNepaliDates
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Icon(
+                              _showNepaliDates ? Icons.visibility : Icons.visibility_off,
+                            ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                FloatingActionButton(
-                  heroTag: 'next',
-                  mini: true,
-                  backgroundColor: AppColors.govBlue,
-                  onPressed: () => _jumpToEvent(1),
-                  child: const Icon(Icons.chevron_right, color: Colors.white),
-                ),
-                const SizedBox(width: 8),
-                FloatingActionButton(
-                  heroTag: 'toggleNepali',
-                  mini: true,
-                  backgroundColor: _isLoadingNepaliDates 
-                      ? AppColors.govGold
-                      : (isDark ? AppColors.slate700 : Colors.grey.shade700),
-                  onPressed: () async {
-                    if (_isLoadingNepaliDates) return; // Prevent double-tap
-                    
-                    final newValue = !_showNepaliDates;
-                    setState(() {
-                      _showNepaliDates = newValue;
-                    });
-                    
-                    // Precompute Nepali dates in background when enabled
-                    if (newValue) {
-                      await _precomputeNepaliDates(_selectedDate);
-                    }
-                  },
-                  child: _isLoadingNepaliDates
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Icon(
-                          _showNepaliDates ? Icons.visibility : Icons.visibility_off,
-                          color: Colors.white,
-                        ),
-                ),
-              ],
+              ),
             ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddEventDialog,
-        backgroundColor: Colors.green.shade500,
-        child: const Icon(Icons.add, color: Colors.white),
+      floatingActionButton: ClipRRect(
+        borderRadius: BorderRadius.circular(40),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+          child: Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withOpacity(0.08),
+              border: Border.all(
+                color: AppColors.govGreen.withOpacity(0.6),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.35),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: IconButton(
+              onPressed: _showAddEventDialog,
+              icon: const Icon(Icons.add),
+              color: AppColors.govGreen,
+              iconSize: 30,
+            ),
+          ),
+        ),
       ),
     );
   }
