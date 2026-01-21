@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'datavault_db.dart';
+import '../../core/theme/app_colors.dart';
 
 class DataVaultPage extends StatefulWidget {
   const DataVaultPage({super.key});
@@ -142,12 +143,24 @@ class _DataVaultPageState extends State<DataVaultPage> {
   }
 
   Widget _buildVaultCard(Map<String, dynamic> item) {
+    final theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+    final cs = theme.colorScheme;
+    final Color surface = isDark ? AppColors.slate800.withOpacity(0.6) : Colors.white;
+    final Color border = isDark ? AppColors.slate700.withOpacity(0.8) : Colors.grey[300]!;
+    final Color primaryText = isDark ? AppColors.slate50 : AppColors.slate900;
+    final Color secondaryText = isDark ? AppColors.slate300 : Colors.grey[600]!;
+
     final id = item['id'] as int;
     final isVisible = visibleIds.contains(id);
 
     return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: isDark ? 0 : 4,
+      color: surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: border.withOpacity(isDark ? 0.6 : 1.0)),
+      ),
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -173,9 +186,10 @@ class _DataVaultPageState extends State<DataVaultPage> {
                       Expanded(
                         child: Text(
                           item['label'],
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            color: primaryText,
                           ),
                           // No maxLines, allow wrap
                         ),
@@ -183,13 +197,13 @@ class _DataVaultPageState extends State<DataVaultPage> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  const Divider(),
+                  Divider(color: border.withOpacity(0.7)),
                   const SizedBox(height: 8),
                   Text(
                     'Value:',
                     style: TextStyle(
                       fontSize: 12, 
-                      color: Colors.grey[600],
+                      color: secondaryText,
                       fontWeight: FontWeight.w500
                     ),
                   ),
@@ -201,6 +215,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
                       letterSpacing: 2.0, // Requested spacing
                       fontWeight: FontWeight.bold,
                       fontFamily: isVisible ? null : 'monospace',
+                      color: primaryText,
                     ),
                     // No maxLines, allow wrap
                   ),
@@ -213,9 +228,9 @@ class _DataVaultPageState extends State<DataVaultPage> {
             // Right Content: 2x2 Button Matrix
             Container(
               decoration: BoxDecoration(
-                 color: Colors.grey[100],
+                 color: isDark ? AppColors.slate900.withOpacity(0.55) : Colors.grey[100],
                  borderRadius: BorderRadius.circular(12),
-                 border: Border.all(color: Colors.grey[300]!)
+                 border: Border.all(color: border)
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -225,7 +240,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
                     children: [
                       _MatrixButton(
                         icon: isVisible ? Icons.visibility_off : Icons.visibility,
-                        color: Colors.indigo,
+                        color: cs.primary,
                         onPressed: () {
                            setState(() {
                             if (isVisible) {
@@ -236,24 +251,24 @@ class _DataVaultPageState extends State<DataVaultPage> {
                           });
                         },
                       ),
-                      Container(width: 1, height: 40, color: Colors.grey[300]),
+                      Container(width: 1, height: 40, color: border),
                       _MatrixButton(
                         icon: Icons.copy,
-                        color: Colors.blue,
+                        color: cs.primary,
                         onPressed: () => _copyToClipboard(item['value']),
                       ),
                     ],
                   ),
-                  Container(height: 1, width: 80, color: Colors.grey[300]),
+                  Container(height: 1, width: 80, color: border),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _MatrixButton(
                         icon: Icons.edit,
-                        color: Colors.orange,
+                        color: AppColors.govGold,
                         onPressed: () => _showItemDialog(item: item),
                       ),
-                      Container(width: 1, height: 40, color: Colors.grey[300]),
+                      Container(width: 1, height: 40, color: border),
                       _MatrixButton(
                         icon: Icons.delete,
                         color: Colors.red,
@@ -272,6 +287,15 @@ class _DataVaultPageState extends State<DataVaultPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+
+    final Color pageBg = isDark ? theme.scaffoldBackgroundColor : Colors.white;
+    final Color inputFill = isDark ? AppColors.slate900.withOpacity(0.55) : Colors.grey[100]!;
+    final Color border = isDark ? AppColors.slate700.withOpacity(0.8) : Colors.grey[300]!;
+    final Color primaryText = isDark ? AppColors.slate50 : AppColors.slate900;
+    final Color secondaryText = isDark ? AppColors.slate300 : Colors.grey[600]!;
+
     final filteredItems = items.where((item) {
       final label = item['label'].toString().toLowerCase();
       final category = item['category'].toString().toLowerCase();
@@ -280,10 +304,11 @@ class _DataVaultPageState extends State<DataVaultPage> {
     }).toList();
 
     return Scaffold(
+      backgroundColor: pageBg,
       appBar: AppBar(
         title: const Text('Data Vault'),
         centerTitle: true,
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: isDark ? Colors.transparent : theme.primaryColor,
         foregroundColor: Colors.white,
       ),
       body: Column(
@@ -295,16 +320,17 @@ class _DataVaultPageState extends State<DataVaultPage> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Search your vault...',
-                prefixIcon: const Icon(Icons.search),
+                hintStyle: TextStyle(color: secondaryText),
+                prefixIcon: Icon(Icons.search, color: secondaryText),
                 filled: true,
-                fillColor: Colors.grey[100],
+                fillColor: inputFill,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
                   borderSide: BorderSide.none,
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
+                  borderSide: BorderSide(color: border),
                 ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                 suffixIcon: searchQuery.isNotEmpty
@@ -319,6 +345,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
                     )
                   : null,
               ),
+              style: TextStyle(color: primaryText),
               onChanged: (val) {
                 setState(() {
                   searchQuery = val;
@@ -333,14 +360,14 @@ class _DataVaultPageState extends State<DataVaultPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.lock_open, size: 60, color: Colors.grey[400]),
+                        Icon(Icons.lock_open, size: 60, color: isDark ? AppColors.slate500 : Colors.grey[400]),
                         const SizedBox(height: 16),
                         Text(
                           items.isEmpty 
                             ? 'Your vault is empty.\nProtect your data now!' 
                             : 'No matches found.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                          style: TextStyle(color: secondaryText, fontSize: 16),
                         ),
                       ],
                     ),
@@ -364,7 +391,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
                                 Container(
                                   width: 4, height: 18, 
                                   decoration: BoxDecoration(
-                                    color: Theme.of(context).primaryColor,
+                                    color: theme.primaryColor,
                                     borderRadius: BorderRadius.circular(2)
                                   ),
                                 ),
@@ -374,7 +401,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
                                   style: TextStyle(
                                     fontSize: 16, 
                                     fontWeight: FontWeight.bold, 
-                                    color: Colors.grey[800],
+                                    color: primaryText,
                                     letterSpacing: 0.5
                                   ),
                                 ),

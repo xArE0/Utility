@@ -2,7 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:flutter/material.dart';
-import '../db_helper.dart';
+import 'db_helper.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -34,6 +34,23 @@ class NotificationService {
         initSettings,
         onDidReceiveNotificationResponse: _onNotificationTap,
       );
+      
+      // Create notification channel immediately to ensure it exists
+      final android = _notifications.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      if (android != null) {
+        await android.createNotificationChannel(
+          const AndroidNotificationChannel(
+            'event_reminders',
+            'Event Reminders',
+            description: 'Notifications for scheduled events',
+            importance: Importance.max,
+            playSound: true,
+            enableVibration: true,
+          ),
+        );
+        debugPrint('Notification channel created');
+      }
       
       _initialized = true;
       debugPrint('NotificationService initialized successfully');
@@ -70,7 +87,10 @@ class NotificationService {
 
       // Parse the reminder time (format: "HH:mm AM/PM" or "HH:mm")
       final timeParts = _parseTimeString(event.remindTime!);
-      if (timeParts == null) return;
+      if (timeParts == null) {
+        debugPrint('Failed to parse time: ${event.remindTime}');
+        return;
+      }
 
       final scheduledDateTime = DateTime(
         reminderDate.year,
@@ -82,7 +102,7 @@ class NotificationService {
 
       // Don't schedule if the time has already passed
       if (scheduledDateTime.isBefore(DateTime.now())) {
-        debugPrint('Skipping past notification for event ${event.id}');
+        debugPrint('Skipping past notification for event ${event.id} at $scheduledDateTime');
         return;
       }
 
@@ -105,34 +125,42 @@ class NotificationService {
         'event_reminders',
         'Event Reminders',
         channelDescription: 'Notifications for scheduled events',
-        importance: Importance.max, // Changed to Max for "pop in" effect
-        priority: Priority.max,     // Changed to Max for "pop in" effect
+        importance: Importance.max,
+        priority: Priority.max,
         icon: '@mipmap/ic_launcher',
         styleInformation: bigTextStyleInformation,
-        fullScreenIntent: true, // Attempt to be more intrusive/visible
-        category: AndroidNotificationCategory.event,
+        fullScreenIntent: true,
+        category: AndroidNotificationCategory.reminder,
         ticker: title,
         visibility: NotificationVisibility.public,
+        playSound: true,
+        enableVibration: true,
       );
 
       final details = NotificationDetails(android: androidDetails);
-
+      
+      // Use inexactAllowWhileIdle for more reliable delivery
+      // Exact alarms are heavily restricted on Android 12+ and often fail
+      // Inexact alarms may be delayed by up to ~10 minutes but still deliver same day
       await _notifications.zonedSchedule(
         event.id ?? event.hashCode,
         title,
         body,
         tzScheduledDate,
         details,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         payload: event.id?.toString(),
-        matchDateTimeComponents: DateTimeComponents.dateAndTime, // Optional: verify if needed
       );
 
-      debugPrint('Scheduled notification for event ${event.id} at $scheduledDateTime');
-    } catch (e) {
+      debugPrint('✓ Scheduled notification for event ${event.id}:');
+      debugPrint('  Title: $title');
+      debugPrint('  Time: $scheduledDateTime');
+      debugPrint('  TZ Time: $tzScheduledDate');
+    } catch (e, stackTrace) {
       debugPrint('Error scheduling notification: $e');
+      debugPrint('Stack trace: $stackTrace');
     }
   }
 
@@ -209,5 +237,43 @@ class NotificationService {
     } catch (e) {
       debugPrint('Error rescheduling notifications: $e');
     }
+  }
+
+  /// Show a test notification immediately (for debugging)
+  Future<void> showTestNotification() async {
+    try {
+      final androidDetails = AndroidNotificationDetails(
+        'event_reminders',
+        'Event Reminders',
+        channelDescription: 'Notifications for scheduled events',
+        importance: Importance.max,
+        priority: Priority.max,
+        icon: '@mipmap/ic_launcher',
+        playSound: true,
+        enableVibration: true,
+      );
+
+      final details = NotificationDetails(android: androidDetails);
+
+      await _notifications.show(
+        999,
+        '🔔 Test Notification',
+        'If you see this, notifications are working!',
+        details,
+      );
+      debugPrint('Test notification shown');
+    } catch (e) {
+      debugPrint('Error showing test notification: $e');
+    }
+  }
+
+  /// Get pending notifications count for debugging
+  Future<int> getPendingNotificationsCount() async {
+    final pending = await _notifications.pendingNotificationRequests();
+    debugPrint('Pending notifications: ${pending.length}');
+    for (final notification in pending) {
+      debugPrint('  - ID: ${notification.id}, Title: ${notification.title}');
+    }
+    return pending.length;
   }
 }

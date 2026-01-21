@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:utility/screens/Export%20&%20Import/ExportImports.dart';
-import '../screens/home/home_screen.dart';
-import '../screens/expense/expense.dart';
-import '../screens/autoclicker/autoclicker_screen.dart';
-import '../screens/Data Vault/DataVault.dart';
-import '../screens/PotTracker/potTracker.dart';
+import 'package:utility/features/export_import/export_imports.dart';
+import '../features/home/home_screen.dart';
+import '../features/expenses/expense.dart';
+import '../features/autoclicker/autoclicker_screen.dart';
+import '../features/data_vault/data_vault.dart';
+import '../features/pot_tracker/pot_tracker.dart';
 
 class AppRoutes {
   static const home = '/';

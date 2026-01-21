@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
-import '../../db_helper.dart';
+import '../../services/db_helper.dart';
 import 'package:nepali_utils/nepali_utils.dart';
 import 'dart:ui';
 import '../../services/notification_service.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/glass_card.dart';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -23,7 +25,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   static final DateFormat numFormat = DateFormat('d');
   static final DateFormat monthFormat = DateFormat('MMM');
 
-  final double itemExtent = 120.0;
+  final double itemExtent = 125.0;
 
   List<Event> _allEvents = [];
   List<Event> _allBirthdays = [];
@@ -615,20 +617,34 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   Widget _buildEventContainer(Event event, DateTime currentDate) {
+    final theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+    final base = _eventColor(event);
+    // Blend to avoid neon blocks on dark/glass surfaces.
+    final Color bg = isDark
+        ? Color.alphaBlend(Colors.black.withOpacity(0.35), base).withOpacity(0.92)
+        : base.withOpacity(0.92);
+    final Color fg = bg.computeLuminance() > 0.55 ? Colors.black : Colors.white;
+    final Color subtleFg = fg.withOpacity(0.88);
+
     final container = Container(
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: _eventColor(event),
+        color: bg,
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: (isDark ? Colors.white : Colors.black).withOpacity(0.08),
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             event.task,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: fg,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -647,12 +663,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               padding: const EdgeInsets.only(top: 2),
               child: Row(
                 children: [
-                  const Icon(Icons.alarm, color: Colors.white, size: 14),
+                  Icon(Icons.alarm, color: subtleFg, size: 14),
                   const SizedBox(width: 2),
                   Flexible(
                     child: Text(
                       "${event.remindDaysBefore ?? 0}d, ${event.remindTime ?? ''}",
-                      style: const TextStyle(color: Colors.white, fontSize: 11),
+                      style: TextStyle(color: subtleFg, fontSize: 11),
                       softWrap: true,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -665,13 +681,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               padding: const EdgeInsets.only(top: 2),
               child: Row(
                 children: [
-                  const Icon(Icons.repeat, color: Colors.white, size: 14),
+                  Icon(Icons.repeat, color: subtleFg, size: 14),
                   const SizedBox(width: 2),
                   Text(
                     event.repeat == "custom"
                         ? "Every ${event.repeatInterval ?? 1} days"
                         : (event.repeat![0].toUpperCase() + event.repeat!.substring(1)),
-                    style: const TextStyle(color: Colors.white, fontSize: 11),
+                    style: TextStyle(color: subtleFg, fontSize: 11),
                   ),
                 ],
               ),
@@ -686,11 +702,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     padding: const EdgeInsets.only(top: 2),
                     child: Row(
                       children: [
-                        const Icon(Icons.date_range, color: Colors.white, size: 14),
+                        Icon(Icons.date_range, color: subtleFg, size: 14),
                         const SizedBox(width: 2),
                         Text(
                           "Day $dayNum of ${event.durationDays}",
-                          style: const TextStyle(color: Colors.white, fontSize: 11),
+                          style: TextStyle(color: subtleFg, fontSize: 11),
                         ),
                       ],
                     ),
@@ -711,7 +727,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         child: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: _eventColor(event).withOpacity(0.8),
+            color: bg.withOpacity(0.95),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
@@ -720,8 +736,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             children: [
               Text(
                 event.task,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: fg,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),
@@ -734,12 +750,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   padding: const EdgeInsets.only(top: 2),
                   child: Row(
                     children: [
-                      const Icon(Icons.alarm, color: Colors.white, size: 12),
+                      Icon(Icons.alarm, color: subtleFg, size: 12),
                       const SizedBox(width: 2),
                       Flexible(
                         child: Text(
                           "${event.remindDaysBefore ?? 0}d, ${event.remindTime ?? ''}",
-                          style: const TextStyle(color: Colors.white, fontSize: 10),
+                          style: TextStyle(color: subtleFg, fontSize: 10),
                           overflow: TextOverflow.ellipsis,
                           softWrap: true,
                           maxLines: 1,
@@ -753,13 +769,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   padding: const EdgeInsets.only(top: 2),
                   child: Row(
                     children: [
-                      const Icon(Icons.repeat, color: Colors.white, size: 12),
+                      Icon(Icons.repeat, color: subtleFg, size: 12),
                       const SizedBox(width: 2),
                       Text(
                         event.repeat == "custom"
                             ? "Every ${event.repeatInterval ?? 1} days"
                             : (event.repeat![0].toUpperCase() + event.repeat!.substring(1)),
-                        style: const TextStyle(color: Colors.white, fontSize: 10),
+                        style: TextStyle(color: subtleFg, fontSize: 10),
                       ),
                     ],
                   ),
@@ -774,7 +790,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: _eventColor(event).withOpacity(0.3),
+        color: bg.withOpacity(0.35),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -782,8 +798,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         children: [
           Text(
             event.task,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: fg,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -802,12 +818,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               padding: const EdgeInsets.only(top: 2),
               child: Row(
                 children: [
-                  const Icon(Icons.alarm, color: Colors.white, size: 14),
+                  Icon(Icons.alarm, color: subtleFg, size: 14),
                   const SizedBox(width: 2),
                   Flexible(
                     child: Text(
                       "${event.remindDaysBefore ?? 0}d, ${event.remindTime ?? ''}",
-                      style: const TextStyle(color: Colors.white, fontSize: 11),
+                      style: TextStyle(color: subtleFg, fontSize: 11),
                       softWrap: true,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -820,13 +836,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               padding: const EdgeInsets.only(top: 2),
               child: Row(
                 children: [
-                  const Icon(Icons.repeat, color: Colors.white, size: 14),
+                  Icon(Icons.repeat, color: subtleFg, size: 14),
                   const SizedBox(width: 2),
                   Text(
                     event.repeat == "custom"
                         ? "Every ${event.repeatInterval ?? 1} days"
                         : (event.repeat![0].toUpperCase() + event.repeat!.substring(1)),
-                    style: const TextStyle(color: Colors.white, fontSize: 11),
+                    style: TextStyle(color: subtleFg, fontSize: 11),
                   ),
                 ],
               ),
@@ -877,227 +893,246 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final todayKey = dateFormat.format(today);
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final bool isDark = theme.brightness == Brightness.dark;
+
+    // Page-specific surfaces for a nicer dark look.
+    final Color headerSurface = (isDark ? AppColors.slate900 : Colors.white).withOpacity(0.55);
+    final Color bodySurface = (isDark ? AppColors.slate900 : Colors.white).withOpacity(0.35);
+    final Color dividerColor = (isDark ? AppColors.slate800 : AppColors.slate200).withOpacity(0.8);
+    final Color secondaryText = isDark ? AppColors.slate400 : AppColors.slate600;
 
     // Clear old cache periodically
     _clearOldCache();
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: Colors.transparent,
       body: Stack(
         children: [
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
+            child: GlassCard(
+              borderRadius: BorderRadius.circular(24),
+              padding: EdgeInsets.zero, // ListView handles padding inside
               child: NotificationListener<ScrollNotification>(
-                onNotification: (notification) {
-                  if (notification is ScrollUpdateNotification) {
-                    final offset = notification.metrics.pixels;
-                    final index = (offset / itemExtent).round();
-                    final newDate = _dateFromIndex(index);
-                    if (!isSameDay(_selectedDate, newDate)) {
-                      setState(() {
-                        _selectedDate = newDate;
-                      });
+                  onNotification: (notification) {
+                    if (notification is ScrollUpdateNotification) {
+                      final offset = notification.metrics.pixels;
+                      final index = (offset / itemExtent).round();
+                      final newDate = _dateFromIndex(index);
+                      if (!isSameDay(_selectedDate, newDate)) {
+                        setState(() {
+                          _selectedDate = newDate;
+                        });
+                      }
                     }
-                  }
-                  return false;
-                },
-                child: ListView.builder(
-                  controller: _scrollController,
-                  scrollDirection: Axis.horizontal,
-                  itemExtent: itemExtent,
-                  addAutomaticKeepAlives: false,
-                  addRepaintBoundaries: false,
-                  itemBuilder: (context, index) {
-                    final date = _dateFromIndex(index);
-                    final key = dateFormat.format(date);
-                    final isToday = key == todayKey;
-                    final dateOnly = DateTime(date.year, date.month, date.day);
-                    final dayDiff = dateOnly.difference(today).inDays;
+                    return false;
+                  },
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    scrollDirection: Axis.horizontal,
+                    itemExtent: itemExtent,
+                    addAutomaticKeepAlives: false,
+                    addRepaintBoundaries: false,
+                    itemBuilder: (context, index) {
+                      final date = _dateFromIndex(index);
+                      final key = dateFormat.format(date);
+                      final isToday = key == todayKey;
+                      final events = _eventsForDate(date);
 
-                    String diffText;
-                    if (dayDiff == 0) {
-                      diffText = "Today";
-                    } else if (dayDiff == -1) {
-                      diffText = "Yesterday";
-                    } else if (dayDiff == 1) {
-                      diffText = "Tomorrow";
-                    } else if (dayDiff < 0) {
-                      diffText = "${-dayDiff} days ago";
-                    } else {
-                      diffText = "in $dayDiff days";
-                    }
+                      // Only fetch Nepali date info if the toggle is enabled
+                      String nepaliMonth = '';
+                      String nepaliDay = '';
+                      if (_showNepaliDates) {
+                        final nepaliInfo = _getNepaliDateInfo(date);
+                        nepaliMonth = nepaliInfo['month'] ?? '';
+                        nepaliDay = nepaliInfo['day'] ?? '';
+                      }
 
-                    final events = _eventsForDate(date);
+                      // Calculate diffText
+                      final dateOnly = DateTime(date.year, date.month, date.day);
+                      final dayDiff = dateOnly.difference(today).inDays;
+                      String diffText;
+                      if (dayDiff == 0) {
+                        diffText = "Today";
+                      } else if (dayDiff == -1) {
+                        diffText = "Yesterday";
+                      } else if (dayDiff == 1) {
+                        diffText = "Tomorrow";
+                      } else if (dayDiff < 0) {
+                        diffText = "${-dayDiff} days ago";
+                      } else {
+                        diffText = "in $dayDiff days";
+                      }
 
-                    // Only fetch Nepali date info if the toggle is enabled
-                    String nepaliMonth = '';
-                    String nepaliDay = '';
-                    if (_showNepaliDates) {
-                      final nepaliInfo = _getNepaliDateInfo(date);
-                      nepaliMonth = nepaliInfo['month'] ?? '';
-                      nepaliDay = nepaliInfo['day'] ?? '';
-                    }
+                      return DragTarget<Map<String, dynamic>>(
+                        onWillAccept: (data) {
+                          return data != null && (data['canMove'] == true);
+                        },
+                        onAccept: (data) async {
+                          final event = data['event'] as Event;
+                          final sourceDate = data['sourceDate'] as DateTime;
+                          if (!isSameDay(sourceDate, date)) {
+                            await _moveEvent(event, date);
+                          }
+                        },
+                        builder: (context, candidateData, rejectedData) {
+                          final isHighlighted = candidateData.isNotEmpty;
 
-                    return DragTarget<Map<String, dynamic>>(
-                      onWillAccept: (data) {
-                        return data != null && (data['canMove'] == true);
-                      },
-                      onAccept: (data) async {
-                        final event = data['event'] as Event;
-                        final sourceDate = data['sourceDate'] as DateTime;
-                        if (!isSameDay(sourceDate, date)) {
-                          await _moveEvent(event, date);
-                        }
-                      },
-                      builder: (context, candidateData, rejectedData) {
-                        final isHighlighted = candidateData.isNotEmpty;
-
-                        return Container(
-                          margin: const EdgeInsets.symmetric(vertical: 8),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              right: BorderSide(color: Colors.grey.shade300, width: 1),
+                          return Container(
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                right: BorderSide(color: dividerColor, width: 1),
+                              ),
+                              color: isHighlighted
+                                  ? AppColors.govGreen.withOpacity(isDark ? 0.18 : 0.12)
+                                  : (isToday ? cs.primary.withOpacity(isDark ? 0.12 : 0.06) : null),
                             ),
-                            color: isHighlighted
-                                ? Colors.green.shade100
-                                : (isToday ? Colors.blue.shade50 : null),
-                          ),
-                          child: Column(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(top: 12, bottom: 2),
-                                child: Column(
-                                  children: [
-                                    // Month
-                                    Text(
-                                      monthFormat.format(date),
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: isToday ? Colors.teal.shade700 : Colors.grey.shade600,
-                                        fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                                      ),
-                                    ),
-                                    // Date
-                                    Text(
-                                      numFormat.format(date),
-                                      style: TextStyle(
-                                        fontSize: 32,
-                                        color: isToday ? Colors.teal.shade700 : Colors.grey.shade800,
-                                        fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                                      ),
-                                    ),
-                                    // Day
-                                    Text(
-                                      dayFormat.format(date),
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: isToday ? Colors.teal.shade700 : Colors.grey.shade600,
-                                        fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      diffText,
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Expanded(
-                                child: events.isEmpty
-                                    ? const SizedBox.shrink()
-                                    : ListView.builder(
-                                        itemCount: events.length,
-                                        padding: EdgeInsets.zero,
-                                        itemBuilder: (context, i) {
-                                          final e = events[i];
-                                          return _buildEventContainer(e, date);
-                                        },
-                                      ),
-                              ),
-                              if (_showNepaliDates)
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(18),
-                                  child: BackdropFilter(
-                                    filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                                    child: Container(
-                                      margin: const EdgeInsets.only(bottom: 75, top: 4),
-                                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.55),
-                                        borderRadius: BorderRadius.circular(18),
-                                        border: Border.all(
-                                          color: isToday ? Colors.teal.shade400 : Colors.white.withOpacity(0.7),
-                                          width: 1.5,
+                            child: Column(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.only(top: 12, bottom: 2),
+                                  color: headerSurface, // Dark/glass header surface
+                                  width: double.infinity,
+                                  child: Column(
+                                    children: [
+                                      // Month
+                                      Text(
+                                        monthFormat.format(date),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: isToday ? AppColors.govGreen : secondaryText,
+                                          fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
                                         ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(0.08),
-                                            blurRadius: 10,
-                                            offset: const Offset(0, 3),
-                                          ),
-                                        ],
                                       ),
-                                      child: _isLoadingNepaliDates && nepaliMonth.isEmpty
-                                          ? const SizedBox(
-                                              height: 45,
-                                              width: 45,
-                                              child: Center(
-                                                child: SizedBox(
-                                                  height: 20,
-                                                  width: 20,
-                                                  child: CircularProgressIndicator(
-                                                    strokeWidth: 2,
-                                                    color: Colors.teal,
-                                                  ),
-                                                ),
-                                              ),
-                                            )
-                                          : Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Text(
-                                                  nepaliMonth,
-                                                  style: TextStyle(
-                                                    fontSize: 10,
-                                                    color: isToday ? Colors.teal.shade700 : Colors.grey.shade700,
-                                                    fontWeight: FontWeight.w600,
-                                                    letterSpacing: 0.5,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 2),
-                                                Text(
-                                                  nepaliDay,
-                                                  style: TextStyle(
-                                                    fontSize: 25,
-                                                    color: isToday ? Colors.teal.shade900 : Colors.grey.shade900,
-                                                    fontWeight: FontWeight.bold,
-                                                    letterSpacing: 1,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                    ),
+                                      // Date
+                                      Text(
+                                        numFormat.format(date),
+                                        style: TextStyle(
+                                          fontSize: 32,
+                                          color: isToday ? AppColors.govGreen : (isDark ? AppColors.slate50 : AppColors.slate800),
+                                          fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                                        ),
+                                      ),
+                                      // Day
+                                      Text(
+                                        dayFormat.format(date),
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: isToday ? AppColors.govGreen : secondaryText,
+                                          fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        diffText,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: secondaryText,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                            ],
-                          ),
-                        );
-                      },
-                    );
-                  }
+                                const SizedBox(height: 6),
+                                Expanded(
+                                  child: Container(
+                                    color: bodySurface, // Dark/glass body surface
+                                    child: events.isEmpty
+                                        ? const SizedBox.expand()
+                                        : ListView.builder(
+                                            itemCount: events.length,
+                                            padding: EdgeInsets.zero,
+                                            itemBuilder: (context, i) {
+                                              final e = events[i];
+                                              return _buildEventContainer(e, date);
+                                            },
+                                          ),
+                                  ),
+                                ),
+                                // Adjusting height to end above buttons
+                                SizedBox(height: _showNepaliDates ? 0 : 85), 
+                                if (_showNepaliDates)
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(18),
+                                    child: BackdropFilter(
+                                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                                      child: Container(
+                                        margin: const EdgeInsets.only(bottom: 85, top: 4),
+                                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                                        decoration: BoxDecoration(
+                                          color: (isDark ? AppColors.slate800 : Colors.white).withOpacity(isDark ? 0.55 : 0.6),
+                                          borderRadius: BorderRadius.circular(18),
+                                          border: Border.all(
+                                            color: isToday
+                                                ? AppColors.govGreen.withOpacity(0.9)
+                                                : (isDark ? AppColors.slate700 : AppColors.slate200).withOpacity(0.7),
+                                            width: 1.5,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(isDark ? 0.25 : 0.08),
+                                              blurRadius: 10,
+                                              offset: const Offset(0, 3),
+                                            ),
+                                          ],
+                                        ),
+                                        child: _isLoadingNepaliDates && nepaliMonth.isEmpty
+                                            ? const SizedBox(
+                                                height: 45,
+                                                width: 45,
+                                                child: Center(
+                                                  child: SizedBox(
+                                                    height: 20,
+                                                    width: 20,
+                                                    child: CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: Colors.teal,
+                                                    ),
+                                                  ),
+                                                ),
+                                              )
+                                            : Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text(
+                                                    nepaliMonth,
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                      color: isToday
+                                                          ? AppColors.govGreen
+                                                          : (isDark ? AppColors.slate300 : Colors.grey.shade700),
+                                                      fontWeight: FontWeight.w600,
+                                                      letterSpacing: 0.5,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    nepaliDay,
+                                                    style: TextStyle(
+                                                      fontSize: 25,
+                                                      color: isToday
+                                                          ? (isDark ? AppColors.slate50 : AppColors.slate900)
+                                                          : (isDark ? AppColors.slate50 : Colors.grey.shade900),
+                                                      fontWeight: FontWeight.bold,
+                                                      letterSpacing: 1,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    }
+                  ),
                 ),
-              ),
             ),
           ),
           if (_isDragging)
@@ -1123,7 +1158,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       borderRadius: BorderRadius.circular(50),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
+                          color: Colors.black.withValues(alpha: 0.2),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -1146,7 +1181,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 FloatingActionButton(
                   heroTag: 'prev',
                   mini: true,
-                  backgroundColor: Colors.blue,
+                  backgroundColor: AppColors.govBlue,
                   onPressed: () => _jumpToEvent(-1),
                   child: const Icon(Icons.chevron_left, color: Colors.white),
                 ),
@@ -1154,7 +1189,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 FloatingActionButton(
                   heroTag: 'today',
                   mini: true,
-                  backgroundColor: Colors.green,
+                  backgroundColor: AppColors.govGreen,
                   onPressed: () => _jumpToDate(DateTime.now()),
                   child: const Icon(Icons.fiber_manual_record, color: Colors.white, size: 18),
                 ),
@@ -1162,7 +1197,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 FloatingActionButton(
                   heroTag: 'next',
                   mini: true,
-                  backgroundColor: Colors.blue,
+                  backgroundColor: AppColors.govBlue,
                   onPressed: () => _jumpToEvent(1),
                   child: const Icon(Icons.chevron_right, color: Colors.white),
                 ),
@@ -1171,8 +1206,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   heroTag: 'toggleNepali',
                   mini: true,
                   backgroundColor: _isLoadingNepaliDates 
-                      ? Colors.orange.shade700 
-                      : Colors.grey.shade700,
+                      ? AppColors.govGold
+                      : (isDark ? AppColors.slate700 : Colors.grey.shade700),
                   onPressed: () async {
                     if (_isLoadingNepaliDates) return; // Prevent double-tap
                     

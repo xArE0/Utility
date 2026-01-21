@@ -1,0 +1,194 @@
+﻿Analyzing Utility...                                            
+
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\theme\app_colors.dart:49:22 - deprecated_member_use
+   info - 'background' is deprecated and shouldn't be used. Use surface instead. This feature was deprecated after v3.18.0-0.1.pre - lib\core\theme\app_theme.dart:22:9 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\theme\app_theme.dart:55:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\theme\app_theme.dart:60:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\widgets\animated_background.dart:31:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\widgets\animated_background.dart:34:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\widgets\animated_background.dart:64:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\widgets\animated_background.dart:67:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\widgets\animated_background.dart:92:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\widgets\animated_background.dart:95:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\widgets\custom_button.dart:132:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\widgets\custom_button.dart:148:38 - deprecated_member_use
+warning - Unused import: '../theme/app_colors.dart' - lib\core\widgets\glass_card.dart:3:8 - unused_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\widgets\glass_card.dart:39:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\widgets\glass_card.dart:58:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\widgets\glass_card.dart:64:38 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\widgets\glass_card.dart:65:38 - deprecated_member_use
+   info - The file name 'DataVault.dart' isn't a lower_case_with_underscores identifier - lib\features\data_vault\DataVault.dart:1:1 - file_names
+   info - Don't use 'BuildContext's across async gaps - lib\features\data_vault\DataVault.dart:60:29 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\features\data_vault\DataVault.dart:133:31 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\data_vault\DataVault.dart:167:65 - deprecated_member_use
+   info - The file name 'Expense.dart' isn't a lower_case_with_underscores identifier - lib\features\expenses\Expense.dart:1:1 - file_names
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\expenses\Expense.dart:431:58 - deprecated_member_use
+   info - Unnecessary instance of 'Container' - lib\features\expenses\Expense.dart:443:15 - avoid_unnecessary_containers
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\expenses\Expense.dart:486:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\expenses\Expense.dart:487:49 - deprecated_member_use
+  error - Expected to find ')' - lib\features\expenses\Expense.dart:736:6 - expected_token
+   info - The file name 'ExportImports.dart' isn't a lower_case_with_underscores identifier - lib\features\export_import\ExportImports.dart:1:1 - file_names
+   info - Don't use 'BuildContext's across async gaps - lib\features\export_import\ExportImports.dart:25:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\features\export_import\ExportImports.dart:37:28 - use_build_context_synchronously
+  error - Undefined name 'ImageFilter' - lib\features\home\home_screen.dart:25:23 - undefined_identifier
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\home_screen.dart:27:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\home_screen.dart:45:37 - deprecated_member_use
+  error - Undefined name 'ImageFilter' - lib\features\home\home_screen.dart:49:19 - undefined_identifier
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\home_screen.dart:141:37 - deprecated_member_use
+   info - The private field _showNepaliDates could be 'final' - lib\features\home\schedule_screen.dart:21:8 - prefer_final_fields
+warning - The value of the field '_birthdayMonthDays' isn't used - lib\features\home\schedule_screen.dart:35:15 - unused_field
+   info - The private field _examMonthDays could be 'final' - lib\features\home\schedule_screen.dart:36:15 - prefer_final_fields
+warning - The value of the field '_examMonthDays' isn't used - lib\features\home\schedule_screen.dart:36:15 - unused_field
+warning - The value of the field '_isDragging' isn't used - lib\features\home\schedule_screen.dart:41:8 - unused_field
+warning - The declaration '_precomputeNepaliDates' isn't referenced - lib\features\home\schedule_screen.dart:131:16 - unused_element
+warning - The declaration '_jumpToEvent' isn't referenced - lib\features\home\schedule_screen.dart:278:8 - unused_element
+warning - The declaration '_jumpToDate' isn't referenced - lib\features\home\schedule_screen.dart:292:8 - unused_element
+warning - The declaration '_showAddEventDialog' isn't referenced - lib\features\home\schedule_screen.dart:302:8 - unused_element
+   info - Don't use 'BuildContext's across async gaps - lib\features\home\schedule_screen.dart:497:48 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\features\home\schedule_screen.dart:525:35 - use_build_context_synchronously
+warning - The declaration '_deleteEvent' isn't referenced - lib\features\home\schedule_screen.dart:548:16 - unused_element
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\schedule_screen.dart:717:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\schedule_screen.dart:780:35 - deprecated_member_use
+   info - 'onWillAccept' is deprecated and shouldn't be used. Use onWillAcceptWithDetails instead. This callback is similar to onWillAcceptWithDetails but does not provide drag details. This feature was deprecated after v3.14.0-0.2.pre - lib\features\home\schedule_screen.dart:946:23 - deprecated_member_use
+   info - 'onAccept' is deprecated and shouldn't be used. Use onAcceptWithDetails instead. This callback is similar to onAcceptWithDetails but does not provide drag details. This feature was deprecated after v3.14.0-0.2.pre - lib\features\home\schedule_screen.dart:949:23 - deprecated_member_use
+  error - Undefined name 'color' - lib\features\home\schedule_screen.dart:976:39 - undefined_identifier
+  error - Expected to find ')' - lib\features\home\schedule_screen.dart:976:44 - expected_token
+  error - Expected to find ']' - lib\features\home\schedule_screen.dart:976:44 - expected_token
+  error - Expected to find ';' - lib\features\home\schedule_screen.dart:1008:31 - expected_token
+warning - Dead code - lib\features\home\schedule_screen.dart:1008:32 - dead_code
+  error - Expected an identifier - lib\features\home\schedule_screen.dart:1008:32 - missing_identifier
+  error - Unexpected text ';' - lib\features\home\schedule_screen.dart:1008:32 - unexpected_token
+  error - Expected to find ';' - lib\features\home\schedule_screen.dart:1009:55 - expected_token
+  error - Expected an identifier - lib\features\home\schedule_screen.dart:1009:56 - missing_identifier
+  error - Unexpected text ';' - lib\features\home\schedule_screen.dart:1009:56 - unexpected_token
+  error - Expected to find ';' - lib\features\home\schedule_screen.dart:1021:31 - expected_token
+  error - Expected an identifier - lib\features\home\schedule_screen.dart:1021:32 - missing_identifier
+  error - Unexpected text ';' - lib\features\home\schedule_screen.dart:1021:32 - unexpected_token
+   info - Statements in an if should be enclosed in a block - lib\features\home\schedule_screen.dart:1023:33 - curly_braces_in_flow_control_structures
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\schedule_screen.dart:1031:61 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\schedule_screen.dart:1034:96 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\schedule_screen.dart:1039:65 - deprecated_member_use
+  error - Expected to find ';' - lib\features\home\schedule_screen.dart:1086:33 - expected_token
+  error - Expected an identifier - lib\features\home\schedule_screen.dart:1086:34 - missing_identifier
+  error - Expected to find ';' - lib\features\home\schedule_screen.dart:1086:34 - expected_token
+  error - Unexpected text ';' - lib\features\home\schedule_screen.dart:1086:34 - unexpected_token
+  error - Expected to find ')' - lib\features\home\schedule_screen.dart:1087:29 - expected_token
+  error - Expected to find '}' - lib\features\home\schedule_screen.dart:1087:29 - expected_token
+  error - Expected to find ';' - lib\features\home\schedule_screen.dart:1088:27 - expected_token
+warning - Dead code - lib\features\home\schedule_screen.dart:1088:28 - dead_code
+  error - Expected an identifier - lib\features\home\schedule_screen.dart:1088:28 - missing_identifier
+  error - Expected to find ';' - lib\features\home\schedule_screen.dart:1088:28 - expected_token
+  error - Unexpected text ';' - lib\features\home\schedule_screen.dart:1088:28 - unexpected_token
+  error - Expected an identifier - lib\features\home\schedule_screen.dart:1089:25 - missing_identifier
+  error - Unexpected text ';' - lib\features\home\schedule_screen.dart:1089:25 - unexpected_token
+   info - Unnecessary empty statement - lib\features\home\schedule_screen.dart:1089:26 - empty_statements
+  error - Expected a class member - lib\features\home\schedule_screen.dart:1090:24 - expected_class_member
+  error - Expected a class member - lib\features\home\schedule_screen.dart:1091:21 - expected_class_member
+  error - Expected a class member - lib\features\home\schedule_screen.dart:1091:22 - expected_class_member
+  error - Expected a method, getter, setter or operator declaration - lib\features\home\schedule_screen.dart:1093:17 - expected_executable
+  error - Expected a method, getter, setter or operator declaration - lib\features\home\schedule_screen.dart:1093:18 - expected_executable
+  error - Expected a method, getter, setter or operator declaration - lib\features\home\schedule_screen.dart:1094:15 - expected_executable
+  error - Expected a method, getter, setter or operator declaration - lib\features\home\schedule_screen.dart:1094:16 - expected_executable
+  error - Expected a method, getter, setter or operator declaration - lib\features\home\schedule_screen.dart:1095:13 - expected_executable
+  error - Expected a method, getter, setter or operator declaration - lib\features\home\schedule_screen.dart:1095:14 - expected_executable
+  error - Expected a method, getter, setter or operator declaration - lib\features\home\schedule_screen.dart:1096:11 - expected_executable
+  error - Expected a method, getter, setter or operator declaration - lib\features\home\schedule_screen.dart:1096:12 - expected_executable
+  error - 'if' can't be used as an identifier because it's a keyword - lib\features\home\schedule_screen.dart:1097:11 - expected_identifier_but_got_keyword
+   info - The local variable '_isDragging' starts with an underscore - lib\features\home\schedule_screen.dart:1097:15 - no_leading_underscores_for_local_identifiers
+   info - The variable name 'Positioned' isn't a lowerCamelCase identifier - lib\features\home\schedule_screen.dart:1098:13 - non_constant_identifier_names
+  error - A function body must be provided - lib\features\home\schedule_screen.dart:1098:13 - missing_function_body
+  error - Named parameters must be enclosed in curly braces ('{' and '}') - lib\features\home\schedule_screen.dart:1099:19 - named_parameter_outside_group
+  error - Using a colon as the separator before a default value is no longer supported - lib\features\home\schedule_screen.dart:1099:19 - obsolete_colon_for_default_value
+  error - Named parameters must be enclosed in curly braces ('{' and '}') - lib\features\home\schedule_screen.dart:1100:21 - named_parameter_outside_group
+  error - Using a colon as the separator before a default value is no longer supported - lib\features\home\schedule_screen.dart:1100:21 - obsolete_colon_for_default_value
+  error - Named parameters must be enclosed in curly braces ('{' and '}') - lib\features\home\schedule_screen.dart:1101:20 - named_parameter_outside_group
+  error - Using a colon as the separator before a default value is no longer supported - lib\features\home\schedule_screen.dart:1101:20 - obsolete_colon_for_default_value
+  error - The default value of an optional parameter must be constant - lib\features\home\schedule_screen.dart:1101:22 - non_constant_default_value
+   info - 'onWillAccept' is deprecated and shouldn't be used. Use onWillAcceptWithDetails instead. This callback is similar to onWillAcceptWithDetails but does not provide drag details. This feature was deprecated after v3.14.0-0.2.pre - lib\features\home\schedule_screen.dart:1102:17 - deprecated_member_use
+   info - 'onAccept' is deprecated and shouldn't be used. Use onAcceptWithDetails instead. This callback is similar to onAcceptWithDetails but does not provide drag details. This feature was deprecated after v3.14.0-0.2.pre - lib\features\home\schedule_screen.dart:1105:17 - deprecated_member_use
+  error - The function '_deleteEvent' isn't defined - lib\features\home\schedule_screen.dart:1107:25 - undefined_function
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\schedule_screen.dart:1120:47 - deprecated_member_use
+  error - A function body must be provided - lib\features\home\schedule_screen.dart:1134:14 - missing_function_body
+  error - Expected a method, getter, setter or operator declaration - lib\features\home\schedule_screen.dart:1134:14 - expected_executable
+   info - The variable name 'Positioned' isn't a lowerCamelCase identifier - lib\features\home\schedule_screen.dart:1135:11 - non_constant_identifier_names
+  error - The name 'Positioned' is already defined - lib\features\home\schedule_screen.dart:1135:11 - duplicate_definition
+  error - Named parameters must be enclosed in curly braces ('{' and '}') - lib\features\home\schedule_screen.dart:1136:17 - named_parameter_outside_group
+  error - Using a colon as the separator before a default value is no longer supported - lib\features\home\schedule_screen.dart:1136:17 - obsolete_colon_for_default_value
+  error - Named parameters must be enclosed in curly braces ('{' and '}') - lib\features\home\schedule_screen.dart:1137:19 - named_parameter_outside_group
+  error - Using a colon as the separator before a default value is no longer supported - lib\features\home\schedule_screen.dart:1137:19 - obsolete_colon_for_default_value
+  error - Named parameters must be enclosed in curly braces ('{' and '}') - lib\features\home\schedule_screen.dart:1138:18 - named_parameter_outside_group
+  error - Using a colon as the separator before a default value is no longer supported - lib\features\home\schedule_screen.dart:1138:18 - obsolete_colon_for_default_value
+  error - The default value of an optional parameter must be constant - lib\features\home\schedule_screen.dart:1138:20 - non_constant_default_value
+  error - The named parameter 'heroTag' isn't defined - lib\features\home\schedule_screen.dart:1141:19 - undefined_named_parameter
+  error - The named parameter 'mini' isn't defined - lib\features\home\schedule_screen.dart:1142:19 - undefined_named_parameter
+  error - The function '_jumpToEvent' isn't defined - lib\features\home\schedule_screen.dart:1144:36 - undefined_function
+  error - The named parameter 'heroTag' isn't defined - lib\features\home\schedule_screen.dart:1149:19 - undefined_named_parameter
+  error - The named parameter 'mini' isn't defined - lib\features\home\schedule_screen.dart:1150:19 - undefined_named_parameter
+  error - The function '_jumpToDate' isn't defined - lib\features\home\schedule_screen.dart:1152:36 - undefined_function
+  error - The named parameter 'heroTag' isn't defined - lib\features\home\schedule_screen.dart:1157:19 - undefined_named_parameter
+  error - The named parameter 'mini' isn't defined - lib\features\home\schedule_screen.dart:1158:19 - undefined_named_parameter
+  error - The function '_jumpToEvent' isn't defined - lib\features\home\schedule_screen.dart:1160:36 - undefined_function
+  error - The named parameter 'heroTag' isn't defined - lib\features\home\schedule_screen.dart:1165:19 - undefined_named_parameter
+  error - The named parameter 'mini' isn't defined - lib\features\home\schedule_screen.dart:1166:19 - undefined_named_parameter
+  error - Undefined name '_isLoadingNepaliDates' - lib\features\home\schedule_screen.dart:1167:36 - undefined_identifier
+  error - Undefined name '_isLoadingNepaliDates' - lib\features\home\schedule_screen.dart:1171:25 - undefined_identifier
+  error - Undefined name '_showNepaliDates' - lib\features\home\schedule_screen.dart:1173:39 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\features\home\schedule_screen.dart:1174:21 - undefined_function
+  error - Undefined name '_showNepaliDates' - lib\features\home\schedule_screen.dart:1175:23 - undefined_identifier
+  error - The function '_precomputeNepaliDates' isn't defined - lib\features\home\schedule_screen.dart:1180:29 - undefined_function
+  error - Undefined name '_selectedDate' - lib\features\home\schedule_screen.dart:1180:52 - undefined_identifier
+  error - Undefined name '_isLoadingNepaliDates' - lib\features\home\schedule_screen.dart:1183:26 - undefined_identifier
+  error - Undefined name '_showNepaliDates' - lib\features\home\schedule_screen.dart:1193:27 - undefined_identifier
+  error - A function body must be provided - lib\features\home\schedule_screen.dart:1199:12 - missing_function_body
+  error - Expected a method, getter, setter or operator declaration - lib\features\home\schedule_screen.dart:1199:12 - expected_executable
+  error - Expected a method, getter, setter or operator declaration - lib\features\home\schedule_screen.dart:1200:9 - expected_executable
+  error - Expected a method, getter, setter or operator declaration - lib\features\home\schedule_screen.dart:1200:10 - expected_executable
+  error - Expected a method, getter, setter or operator declaration - lib\features\home\schedule_screen.dart:1201:7 - expected_executable
+  error - Expected a method, getter, setter or operator declaration - lib\features\home\schedule_screen.dart:1201:8 - expected_executable
+   info - An uninitialized variable should have an explicit type annotation - lib\features\home\schedule_screen.dart:1202:7 - prefer_typing_uninitialized_variables
+  error - Expected to find ';' - lib\features\home\schedule_screen.dart:1202:7 - expected_token
+  error - Variables must be declared using the keywords 'const', 'final', 'var' or a type name - lib\features\home\schedule_screen.dart:1202:7 - missing_const_final_var_or_type
+  error - Expected a method, getter, setter or operator declaration - lib\features\home\schedule_screen.dart:1202:27 - expected_executable
+   info - The variable name 'FloatingActionButton' isn't a lowerCamelCase identifier - lib\features\home\schedule_screen.dart:1202:29 - non_constant_identifier_names
+  error - Named parameters must be enclosed in curly braces ('{' and '}') - lib\features\home\schedule_screen.dart:1203:18 - named_parameter_outside_group
+  error - Using a colon as the separator before a default value is no longer supported - lib\features\home\schedule_screen.dart:1203:18 - obsolete_colon_for_default_value
+  error - Undefined name '_showAddEventDialog' - lib\features\home\schedule_screen.dart:1203:20 - undefined_identifier
+  error - Named parameters must be enclosed in curly braces ('{' and '}') - lib\features\home\schedule_screen.dart:1204:24 - named_parameter_outside_group
+  error - Using a colon as the separator before a default value is no longer supported - lib\features\home\schedule_screen.dart:1204:24 - obsolete_colon_for_default_value
+  error - The property 'shade500' can't be accessed on the type 'MaterialColor' in a constant expression - lib\features\home\schedule_screen.dart:1204:26 - const_eval_property_access
+  error - Named parameters must be enclosed in curly braces ('{' and '}') - lib\features\home\schedule_screen.dart:1205:14 - named_parameter_outside_group
+  error - Using a colon as the separator before a default value is no longer supported - lib\features\home\schedule_screen.dart:1205:14 - obsolete_colon_for_default_value
+  error - A function body must be provided - lib\features\home\schedule_screen.dart:1206:8 - missing_function_body
+  error - Expected a method, getter, setter or operator declaration - lib\features\home\schedule_screen.dart:1206:8 - expected_executable
+  error - Expected a method, getter, setter or operator declaration - lib\features\home\schedule_screen.dart:1207:5 - expected_executable
+  error - Unexpected text ';' - lib\features\home\schedule_screen.dart:1207:6 - unexpected_token
+  error - Expected a method, getter, setter or operator declaration - lib\features\home\schedule_screen.dart:1208:3 - expected_executable
+  error - Undefined name '_scrollController' - lib\features\home\schedule_screen.dart:1212:5 - undefined_identifier
+  error - Undefined name '_nepaliDateCache' - lib\features\home\schedule_screen.dart:1214:5 - undefined_identifier
+  error - Undefined name '_nepaliMonthCache' - lib\features\home\schedule_screen.dart:1215:5 - undefined_identifier
+  error - Undefined name '_nepaliDayCache' - lib\features\home\schedule_screen.dart:1216:5 - undefined_identifier
+  error - Invalid context for 'super' invocation - lib\features\home\schedule_screen.dart:1217:5 - super_in_invalid_context
+  error - Expected a method, getter, setter or operator declaration - lib\features\home\schedule_screen.dart:1219:1 - expected_executable
+   info - The file name 'potTracker.dart' isn't a lower_case_with_underscores identifier - lib\features\pot_tracker\potTracker.dart:1:1 - file_names
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\pot_tracker\potTracker.dart:330:64 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\pot_tracker\potTracker.dart:385:64 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\pot_tracker\potTracker.dart:451:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\pot_tracker\potTracker.dart:506:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\pot_tracker\potTracker.dart:551:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\pot_tracker\potTracker.dart:562:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\pot_tracker\potTracker.dart:564:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\pot_tracker\potTracker.dart:640:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\pot_tracker\potTracker.dart:651:48 - deprecated_member_use
+   info - 'WillPopScope' is deprecated and shouldn't be used. Use PopScope instead. The Android predictive back feature will not work with WillPopScope. This feature was deprecated after v3.12.0-1.0.pre - lib\features\pot_tracker\potTracker.dart:753:12 - deprecated_member_use
+   info - 'WillPopScope.new' is deprecated and shouldn't be used. Use PopScope instead. The Android predictive back feature will not work with WillPopScope. This feature was deprecated after v3.12.0-1.0.pre - lib\features\pot_tracker\potTracker.dart:753:12 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\pot_tracker\potTracker.dart:797:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\pot_tracker\potTracker.dart:798:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\pot_tracker\potTracker.dart:818:62 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\pot_tracker\potTracker.dart:893:47 - deprecated_member_use
+  error - Target of URI doesn't exist: '../db_helper.dart' - lib\services\notification_service.dart:5:8 - uri_does_not_exist
+  error - Undefined class 'Event' - lib\services\notification_service.dart:79:42 - undefined_class
+  error - Undefined class 'Event' - lib\services\notification_service.dart:167:32 - undefined_class
+  error - Undefined name 'DBHelper' - lib\services\notification_service.dart:224:24 - undefined_identifier
+  error - Undefined name 'Event' - lib\services\notification_service.dart:226:38 - undefined_identifier
+warning - Unused import: 'package:utility/main.dart' - test\widget_test.dart:12:8 - unused_import
+

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'routes/app_routes.dart';
+import 'core/theme/app_theme.dart';
 
 class UtilityApp extends StatelessWidget {
   const UtilityApp({super.key});
@@ -11,9 +12,8 @@ class UtilityApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       initialRoute: AppRoutes.home,
       routes: AppRoutes.all,
-      theme: ThemeData(
-        primarySwatch: Colors.teal,
-      ),
+      theme: AppTheme.darkTheme,
+      // themeMode: ThemeMode.dark, // Enforce dark theme for now
     );
   }
 }

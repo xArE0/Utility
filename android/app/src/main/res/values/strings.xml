@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_service_description">Utility Autoclicker allows you to set up automatic taps at a specified interval. When enabled, a floating dot will appear that you can position and tap to start/stop auto-clicking.</string>
+</resources>

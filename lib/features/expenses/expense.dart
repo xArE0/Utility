@@ -4,8 +4,13 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'dart:math' as math;
 import 'package:share_plus/share_plus.dart';
+import 'dart:ui'; // For ImageFilter
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_typography.dart';
+import '../../core/widgets/glass_card.dart';
+import '../../core/widgets/animated_background.dart';
 
 class ExpenseTrackerApp extends StatelessWidget {
   const ExpenseTrackerApp({super.key});
@@ -414,155 +419,127 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Expense Tracker'),
-        actions: [
-          if (_selectedPerson != null)
-            IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => setState(() => _selectedPerson = null),
+    return AnimatedBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text('Expense Tracker', style: AppTypography.titleLarge),
+          backgroundColor: Colors.transparent,
+          flexibleSpace: ClipRRect(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(color: AppColors.slate900.withOpacity(0.5)),
             ),
-        ],
-      ),
-      body: _selectedPerson == null
-          ? Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/bkgrnd.jpg'),
-            fit: BoxFit.cover,
           ),
+          actions: [
+            if (_selectedPerson != null)
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => setState(() => _selectedPerson = null),
+              ),
+          ],
         ),
-        child: GridView.builder(
-          padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 1,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-          ),
-          itemCount: _people.length + 1,
-          itemBuilder: (context, index) {
-            if (index == _people.length) {
-              return Card(
-                color: Colors.white.withOpacity(0.7),
-                elevation: 4,
-                child: InkWell(
-                  onTap: () => _showAddPersonDialog(context),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.add_circle_outline,
-                            size: 40,
-                            color: Colors.black87),
-                        SizedBox(height: 8),
-                        Text(
-                          "Add Person",
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.black87,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
+        body: _selectedPerson == null
+            ? Container(
+                // Removed background image
+                child: GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 1,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
                   ),
-                ),
-              );
-            }
-
-            final person = _people[index];
-            return Card(
-              elevation: 4,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: _getRandomPastelColor(),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: InkWell(
-                  onTap: () => setState(() => _selectedPerson = person),
-                  onLongPress: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        backgroundColor: Colors.white.withOpacity(0.9),
-                        title: Text('Delete ${person.name}?'),
-                        content: const Text('Deal Khatam??'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Nope'),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              _deletePerson(person);
-                            },
-                            child: const Text('Khatam',
-                                style: TextStyle(color: Colors.red)),
-                          ),
-                        ],
+                  itemCount: _people.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == _people.length) {
+                      return GlassCard(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: () => _showAddPersonDialog(context),
+                        child: const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_circle_outline,
+                                size: 40,
+                                color: AppColors.slate200),
+                            SizedBox(height: 8),
+                            Text(
+                              "Add Person",
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: AppColors.slate200,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+  
+                    final person = _people[index];
+                    return GlassCard(
+                      borderRadius: BorderRadius.circular(16),
+                      // Removed onTap from GlassCard to avoid conflict with InkWell
+                      gradientColors: [
+                        _getRandomPastelColor().withOpacity(0.3),
+                        _getRandomPastelColor().withOpacity(0.1),
+                      ],
+                      child: InkWell( 
+                        onTap: () => setState(() => _selectedPerson = person),
+                        onLongPress: () {
+                           // ... deletion dialog logic ...
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                backgroundColor: AppColors.slate800,
+                                title: Text('Delete ${person.name}?', style: AppTypography.titleLarge),
+                                content: Text('Deal Khatam??', style: AppTypography.bodyMedium),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('Nope'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      _deletePerson(person);
+                                    },
+                                    child: const Text('Khatam',
+                                        style: TextStyle(color: Colors.red)),
+                                  ),
+                                ],
+                              ),
+                            );
+                        },
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              person.name,
+                              style: AppTypography.titleLarge.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Rs. ${person.balance.toStringAsFixed(2)}',
+                              style: AppTypography.titleMedium.copyWith(
+                                color: person.balance >= 0
+                                    ? AppColors.govGreen
+                                    : AppColors.error,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   },
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.7),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            person.name,
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: Colors.black87,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.7),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            'Rs. ${person.balance.toStringAsFixed(2)}',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: person.balance >= 0
-                                  ? Colors.green.shade800
-                                  : Colors.red.shade800,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
-              ),
-            );
-          },
-        ),
-      )
+              )
           : Column(
         children: [
           Card(
@@ -731,7 +708,7 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
                                 ),
                               ),
                             ],
-                          )
+                          ),
                         ],
                       ),
                     ),
@@ -741,7 +718,7 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
                         title: Text(tx.note),
                         subtitle: Text(DateFormat('hh:mm a').format(tx.dateTime)),
                         trailing: Text(
-                          'रू ${tx.amount.toStringAsFixed(2)}',
+                          'Rs ${tx.amount.toStringAsFixed(2)}',
                           style: TextStyle(
                             color: tx.amount >= 0 ? Colors.green : Colors.red,
                             fontWeight: FontWeight.bold,
@@ -753,11 +730,12 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
                 );
               },
             ),
-          )
+          ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Future<void> _showAddPersonDialog(BuildContext context) async {
     final nameController = TextEditingController();

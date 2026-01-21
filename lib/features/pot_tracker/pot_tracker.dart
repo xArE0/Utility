@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as p;
+import '../../core/theme/app_colors.dart';
 
 class Player {
   String name;
@@ -256,15 +257,18 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: isDark ? AppColors.slate900 : const Color(0xFFF5F7FA),
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             expandedHeight: 120,
             floating: false,
             pinned: true,
-            backgroundColor: const Color(0xFF2C3E50),
+            backgroundColor: isDark ? AppColors.slate900 : const Color(0xFF2C3E50),
             flexibleSpace: FlexibleSpaceBar(
               titlePadding: const EdgeInsets.only(left: 20, bottom: 16, right: 100),
               title: const Text('Pot Tracker', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
@@ -347,12 +351,13 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
                                   labelText: 'Per-player ante',
                                   prefixText: 'Rs. ',
                                   filled: true,
-                                  fillColor: Colors.grey.shade50,
+                                  fillColor: isDark ? AppColors.slate900.withOpacity(0.55) : Colors.grey.shade50,
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
                                     borderSide: BorderSide.none,
                                   ),
                                 ),
+                                style: TextStyle(color: isDark ? AppColors.slate50 : AppColors.slate900),
                                 onSubmitted: (_) => setAnteFromInput(),
                               ),
                             ),
@@ -400,12 +405,13 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
                                 decoration: InputDecoration(
                                   hintText: 'Player name (optional)',
                                   filled: true,
-                                  fillColor: Colors.grey.shade50,
+                                  fillColor: isDark ? AppColors.slate900.withOpacity(0.55) : Colors.grey.shade50,
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
                                     borderSide: BorderSide.none,
                                   ),
                                 ),
+                                style: TextStyle(color: isDark ? AppColors.slate50 : AppColors.slate900),
                                 onSubmitted: addPlayer,
                               ),
                             ),
@@ -497,13 +503,18 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
   }
 
   Widget _buildCard({required Widget child, Color? color}) {
+    final theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: color ?? Colors.white,
+        color: color ?? (isDark ? AppColors.slate800.withOpacity(0.6) : Colors.white),
         borderRadius: BorderRadius.circular(16),
+        border: isDark
+            ? Border.all(color: AppColors.slate700.withOpacity(0.6))
+            : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.25 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -515,6 +526,8 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
   }
 
   Widget _buildPlayersList() {
+    final theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     if (players.isEmpty) {
       return _buildCard(
         child: Center(
@@ -522,11 +535,11 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                Icon(Icons.people_outline, size: 48, color: Colors.grey.shade400),
+                Icon(Icons.people_outline, size: 48, color: isDark ? AppColors.slate500 : Colors.grey.shade400),
                 const SizedBox(height: 12),
-                Text('No players yet', style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
+                Text('No players yet', style: TextStyle(color: isDark ? AppColors.slate300 : Colors.grey.shade600, fontSize: 16)),
                 const SizedBox(height: 4),
-                Text('Add players to get started', style: TextStyle(color: Colors.grey.shade500, fontSize: 14)),
+                Text('Add players to get started', style: TextStyle(color: isDark ? AppColors.slate400 : Colors.grey.shade500, fontSize: 14)),
               ],
             ),
           ),
@@ -544,11 +557,12 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? AppColors.slate800.withOpacity(0.6) : Colors.white,
             borderRadius: BorderRadius.circular(16),
+            border: isDark ? Border.all(color: AppColors.slate700.withOpacity(0.6)) : null,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withOpacity(isDark ? 0.25 : 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -593,12 +607,12 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
                 IconButton(
                   icon: const Icon(Icons.edit_outlined),
                   onPressed: () => renamePlayer(i),
-                  color: Colors.grey.shade600,
+                  color: isDark ? AppColors.slate300 : Colors.grey.shade600,
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
                   onPressed: () => removePlayer(i),
-                  color: Colors.grey.shade600,
+                  color: isDark ? AppColors.slate300 : Colors.grey.shade600,
                 ),
               ],
             ),
@@ -610,6 +624,8 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
   }
 
   Widget _buildHistory() {
+    final theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     if (history.isEmpty) {
       return _buildCard(
         child: Center(
@@ -617,9 +633,9 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                Icon(Icons.history, size: 48, color: Colors.grey.shade400),
+                Icon(Icons.history, size: 48, color: isDark ? AppColors.slate500 : Colors.grey.shade400),
                 const SizedBox(height: 12),
-                Text('No rounds yet', style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
+                Text('No rounds yet', style: TextStyle(color: isDark ? AppColors.slate300 : Colors.grey.shade600, fontSize: 16)),
               ],
             ),
           ),
@@ -633,11 +649,12 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? AppColors.slate800.withOpacity(0.6) : Colors.white,
             borderRadius: BorderRadius.circular(16),
+            border: isDark ? Border.all(color: AppColors.slate700.withOpacity(0.6)) : null,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withOpacity(isDark ? 0.25 : 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -665,7 +682,7 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
                 const SizedBox(height: 2),
                 Text(
                   DateFormat('MMM dd, yyyy • hh:mm a').format(r.time),
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  style: TextStyle(fontSize: 12, color: isDark ? AppColors.slate400 : Colors.grey.shade500),
                 ),
               ],
             ),

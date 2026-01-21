@@ -58,6 +58,7 @@ class Event {
   
   /// Check if this event spans the given date
   bool spansDate(DateTime targetDate) {
+    final dateOnly = DateTime(targetDate.year, targetDate.month, targetDate.day);
     final startDate = DateTime.parse(date);
     final duration = durationDays ?? 1;
     if (duration <= 1) {
@@ -65,7 +66,7 @@ class Event {
       return false;
     }
     final endDate = startDate.add(Duration(days: duration - 1));
-    return !targetDate.isBefore(startDate) && !targetDate.isAfter(endDate);
+    return !dateOnly.isBefore(startDate) && !dateOnly.isAfter(endDate);
   }
   
   /// Get day number (1-indexed) for a given date within this event span
@@ -74,7 +75,9 @@ class Event {
     final duration = durationDays ?? 1;
     if (duration <= 1) return null;
     
-    final daysDiff = targetDate.difference(startDate).inDays;
+    final dateOnly = DateTime(targetDate.year, targetDate.month, targetDate.day);
+    
+    final daysDiff = dateOnly.difference(startDate).inDays;
     if (daysDiff >= 0 && daysDiff < duration) {
       return daysDiff + 1; // 1-indexed
     }
