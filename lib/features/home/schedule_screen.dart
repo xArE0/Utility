@@ -9,7 +9,14 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/glass_card.dart';
 
 class ScheduleScreen extends StatefulWidget {
-  const ScheduleScreen({super.key});
+  final bool showNepaliDates;
+  final Function(bool)? onToggleNepali;
+
+  const ScheduleScreen({
+    super.key,
+    this.showNepaliDates = false,
+    this.onToggleNepali,
+  });
 
   @override
   State<ScheduleScreen> createState() => _ScheduleScreenState();
@@ -18,8 +25,7 @@ class ScheduleScreen extends StatefulWidget {
 enum ScheduleView { timeline, week, month }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
-
-  bool _showNepaliDates = false;
+  late bool _showNepaliDates;
   ScheduleView _viewMode = ScheduleView.timeline;
 
   static const int initialIndex = 10000;
@@ -54,23 +60,35 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     Color active = AppColors.govGreen;
     Color inactive = isDark ? AppColors.slate400 : AppColors.slate600;
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
           tooltip: "Timeline view",
-          onPressed: () => setState(() => _viewMode = ScheduleView.timeline),
+          onPressed: () {
+            setState(() => _viewMode = ScheduleView.timeline);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (_scrollController.hasClients) {
+                final idx = _indexFromDate(_selectedDate);
+                _scrollController.jumpTo(idx * itemExtent);
+              }
+            });
+          },
           icon: Icon(Icons.view_agenda,
+              size: 20,
               color: _viewMode == ScheduleView.timeline ? active : inactive),
         ),
         IconButton(
           tooltip: "Week view",
           onPressed: () => setState(() => _viewMode = ScheduleView.week),
           icon: Icon(Icons.calendar_view_week,
+              size: 20,
               color: _viewMode == ScheduleView.week ? active : inactive),
         ),
         IconButton(
           tooltip: "Month view",
           onPressed: () => setState(() => _viewMode = ScheduleView.month),
           icon: Icon(Icons.calendar_month,
+              size: 20,
               color: _viewMode == ScheduleView.month ? active : inactive),
         ),
       ],
@@ -80,6 +98,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   @override
   void initState() {
     super.initState();
+    _showNepaliDates = widget.showNepaliDates;
     _preloadEvents().then((_) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final idx = _indexFromDate(_selectedDate);
@@ -669,7 +688,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         return const Color(0xFFFFA000); // amber
       case 'normal':
       default:
-        return const Color(0xFF10B981); // green
+        return const Color(0xFF10B981); // teal/green
     }
   }
 
@@ -1232,7 +1251,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           if (_isDragging)
             Positioned(
               left: 16,
-              bottom: 100,
+              bottom: 110, // Back down slightly since the row is more compact
               child: DragTarget<Map<String, dynamic>>(
                 onWillAccept: (data) {
                   return data != null;
@@ -1252,7 +1271,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       borderRadius: BorderRadius.circular(50),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
+                          color: Colors.black.withOpacity(0.2),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -1270,71 +1289,40 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           Positioned(
             left: 16,
             bottom: 24,
-            child: Material(
-              color: Colors.transparent,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: (isDark ? AppColors.slate800 : Colors.white).withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.18),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                  border: Border.all(
-                    color: (isDark ? AppColors.slate700 : AppColors.slate300).withOpacity(0.8),
-                    width: 1,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Navigation Island (First)
+                _buildIsland(
+                  isDark: isDark,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        tooltip: "Previous event",
+                        onPressed: () => _jumpToEvent(-1),
+                        icon: const Icon(Icons.chevron_left, size: 20),
+                      ),
+                      IconButton(
+                        tooltip: "Today",
+                        onPressed: () => _jumpToDate(DateTime.now()),
+                        icon: Icon(Icons.today, color: AppColors.govGreen, size: 20),
+                      ),
+                      IconButton(
+                        tooltip: "Next event",
+                        onPressed: () => _jumpToEvent(1),
+                        icon: const Icon(Icons.chevron_right, size: 20),
+                      ),
+                    ],
                   ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildViewSwitcher(isDark),
-                    const SizedBox(width: 6),
-                    IconButton(
-                      tooltip: "Previous event",
-                      onPressed: () => _jumpToEvent(-1),
-                      icon: const Icon(Icons.chevron_left),
-                    ),
-                    IconButton(
-                      tooltip: "Today",
-                      onPressed: () => _jumpToDate(DateTime.now()),
-                      icon: Icon(Icons.today, color: AppColors.govGreen),
-                    ),
-                    IconButton(
-                      tooltip: "Next event",
-                      onPressed: () => _jumpToEvent(1),
-                      icon: const Icon(Icons.chevron_right),
-                    ),
-                    const SizedBox(width: 6),
-                    IconButton(
-                      tooltip: "Toggle Nepali date",
-                      onPressed: () async {
-                        if (_isLoadingNepaliDates) return;
-                        final newValue = !_showNepaliDates;
-                        setState(() {
-                          _showNepaliDates = newValue;
-                        });
-                        if (newValue) {
-                          await _precomputeNepaliDates(_selectedDate);
-                        }
-                      },
-                      icon: _isLoadingNepaliDates
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Icon(
-                              _showNepaliDates ? Icons.visibility : Icons.visibility_off,
-                            ),
-                    ),
-                  ],
+                const SizedBox(width: 8),
+                // View Switcher Island (Second)
+                _buildIsland(
+                  isDark: isDark,
+                  child: _buildViewSwitcher(isDark),
                 ),
-              ),
+              ],
             ),
           ),
         ],
@@ -1374,13 +1362,48 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   @override
+  void didUpdateWidget(ScheduleScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.showNepaliDates != oldWidget.showNepaliDates) {
+      _showNepaliDates = widget.showNepaliDates;
+      if (_showNepaliDates) {
+        _precomputeNepaliDates(_selectedDate);
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _scrollController.dispose();
-    // Clear caches on dispose to free memory
     _nepaliDateCache.clear();
     _nepaliMonthCache.clear();
     _nepaliDayCache.clear();
     super.dispose();
+  }
+
+  Widget _buildIsland({required bool isDark, required Widget child}) {
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: (isDark ? AppColors.slate800 : Colors.white).withOpacity(0.9),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(
+            color: (isDark ? AppColors.slate700 : AppColors.slate300).withOpacity(0.8),
+            width: 1,
+          ),
+        ),
+        child: child,
+      ),
+    );
   }
 
   Widget _buildEventsListForSelected(ColorScheme cs) {
@@ -1393,89 +1416,158 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         ),
       );
     }
-    return ListView.separated(
-      itemCount: events.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemBuilder: (context, i) {
-        final e = events[i];
-        return _buildEventContainer(e, _selectedDate);
-      },
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: List.generate(
+          events.length,
+          (i) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _buildEventContainer(events[i], _selectedDate),
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildWeekView(ColorScheme cs, bool isDark, DateTime today, String todayKey) {
-    final startOfWeek = _selectedDate.subtract(Duration(days: _selectedDate.weekday - 1));
+    // startOfWeek should be Sunday
+    final startOfWeek = _selectedDate.subtract(Duration(days: _selectedDate.weekday % 7));
     final days = List.generate(7, (i) => startOfWeek.add(Duration(days: i)));
+
     return Column(
       children: [
         const SizedBox(height: 12),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              "Week of ${DateFormat('MMM d, yyyy').format(startOfWeek)}",
-              style: TextStyle(
-                color: isDark ? AppColors.slate200 : AppColors.slate800,
-                fontWeight: FontWeight.w700,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Week of ${DateFormat('MMM d, yyyy').format(startOfWeek)}",
+                style: TextStyle(
+                  color: isDark ? AppColors.slate200 : AppColors.slate800,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
+              Row(
+                children: [
+                  IconButton(
+                    tooltip: "Previous week",
+                    onPressed: () {
+                      setState(() {
+                        _selectedDate = _selectedDate.subtract(const Duration(days: 7));
+                      });
+                    },
+                    icon: const Icon(Icons.chevron_left, size: 20),
+                  ),
+                  IconButton(
+                    tooltip: "Next week",
+                    onPressed: () {
+                      setState(() {
+                        _selectedDate = _selectedDate.add(const Duration(days: 7));
+                      });
+                    },
+                    icon: const Icon(Icons.chevron_right, size: 20),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 8),
         SizedBox(
-          height: 120,
-          child: GridView.count(
-            crossAxisCount: 7,
-            shrinkWrap: true,
-            childAspectRatio: 0.75,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+          height: 140,
+          child: Row(
             children: days.map((date) {
               final key = dateFormat.format(date);
               final isToday = key == todayKey;
               final events = _eventsForDate(date);
-              return GestureDetector(
-                onTap: () => setState(() => _selectedDate = date),
-                child: Container(
-                  margin: const EdgeInsets.all(4),
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: isToday ? cs.primary.withOpacity(0.12) : cs.surface.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isToday ? AppColors.govGreen : cs.outline.withOpacity(0.4),
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(DateFormat('E').format(date), style: TextStyle(color: cs.onSurface.withOpacity(0.7))),
-                      const SizedBox(height: 4),
-                      Text(
-                        DateFormat('d').format(date),
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: cs.onSurface,
-                        ),
+              final isSelected = isSameDay(_selectedDate, date);
+
+              String nepaliMonth = '';
+              String nepaliDay = '';
+              if (_showNepaliDates) {
+                final nepaliInfo = _getNepaliDateInfo(date);
+                nepaliMonth = nepaliInfo['month'] ?? '';
+                nepaliDay = nepaliInfo['day'] ?? '';
+              }
+
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _selectedDate = date),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? cs.primary.withOpacity(0.15)
+                          : (isToday ? cs.primary.withOpacity(0.08) : cs.surface.withOpacity(0.5)),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isToday ? AppColors.govGreen : cs.outline.withOpacity(0.4),
+                        width: isSelected ? 1.5 : 1,
                       ),
-                      const SizedBox(height: 6),
-                      if (events.isNotEmpty)
-                        Wrap(
-                          spacing: 4,
-                          runSpacing: 4,
-                          children: events.take(3).map((e) {
-                            return Container(
-                              width: 12,
-                              height: 12,
-                              decoration: BoxDecoration(
-                                color: _eventColor(e),
-                                shape: BoxShape.circle,
-                              ),
-                            );
-                          }).toList(),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          DateFormat('E').format(date),
+                          style: TextStyle(
+                            color: cs.onSurface.withOpacity(0.7),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                    ],
+                        const SizedBox(height: 3),
+                        Text(
+                          DateFormat('d').format(date),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: isToday ? AppColors.govGreen : cs.onSurface,
+                          ),
+                        ),
+                        if (_showNepaliDates && nepaliDay.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            nepaliDay,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: cs.onSurface.withOpacity(0.6),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 4),
+                        SizedBox(
+                          height: 20,
+                          child: events.isNotEmpty
+                              ? Wrap(
+                                  spacing: 2,
+                                  runSpacing: 2,
+                                  alignment: WrapAlignment.center,
+                                  children: events.take(2).map((e) {
+                                    return Container(
+                                      width: 6,
+                                      height: 6,
+                                      decoration: BoxDecoration(
+                                        color: _eventColor(e),
+                                        shape: BoxShape.circle,
+                                      ),
+                                    );
+                                  }).toList(),
+                                )
+                              : Center(
+                                  child: Opacity(
+                                    opacity: 0.3,
+                                    child: Icon(Icons.event_note, size: 14, color: cs.onSurface),
+                                  ),
+                                ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -1485,7 +1577,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         const Divider(height: 1),
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 0),
             child: _buildEventsListForSelected(cs),
           ),
         ),
@@ -1496,12 +1588,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Widget _buildMonthView(ColorScheme cs, bool isDark, DateTime today, String todayKey) {
     final firstOfMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
     final daysInMonth = DateUtils.getDaysInMonth(_selectedDate.year, _selectedDate.month);
-    final startWeekday = firstOfMonth.weekday; // 1=Mon
-    final totalCells = startWeekday - 1 + daysInMonth;
+    // Adjust start day to Sunday (0 in our grid logic if Sunday is first)
+    // firstOfMonth.weekday: 1 (Mon) -> 7 (Sun)
+    // We want Mon=1, Tue=2, ..., Sat=6, Sun=0 for 0-indexed Sunday start
+    final startWeekday = firstOfMonth.weekday % 7; 
+    final totalCells = startWeekday + daysInMonth;
     final rows = (totalCells / 7).ceil();
     final cells = rows * 7;
     final dates = List<DateTime?>.generate(cells, (i) {
-      final dayNum = i - (startWeekday - 2);
+      final dayNum = i - startWeekday + 1;
       if (dayNum < 1 || dayNum > daysInMonth) return null;
       return DateTime(_selectedDate.year, _selectedDate.month, dayNum);
     });
@@ -1514,30 +1609,40 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                DateFormat('MMMM yyyy').format(_selectedDate),
-                style: TextStyle(
-                  color: isDark ? AppColors.slate200 : AppColors.slate800,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              Builder(builder: (context) {
+                String englishMonth = DateFormat('MMMM yyyy').format(_selectedDate);
+                String nepaliMonth = '';
+                if (_showNepaliDates) {
+                  final info = _getNepaliDateInfo(firstOfMonth);
+                  nepaliMonth = info['month'] ?? '';
+                }
+                return Text(
+                  nepaliMonth.isEmpty ? englishMonth : "$englishMonth ($nepaliMonth)",
+                  style: TextStyle(
+                    color: isDark ? AppColors.slate200 : AppColors.slate800,
+                    fontWeight: FontWeight.w700,
+                  ),
+                );
+              }),
               Row(
                 children: [
                   IconButton(
+                    tooltip: "Previous month",
                     onPressed: () {
                       setState(() {
                         _selectedDate = DateTime(_selectedDate.year, _selectedDate.month - 1, _selectedDate.day);
                       });
                     },
-                    icon: const Icon(Icons.chevron_left),
+                    icon: const Icon(Icons.chevron_left, size: 20),
                   ),
                   IconButton(
+                    tooltip: "Next month",
                     onPressed: () {
                       setState(() {
                         _selectedDate = DateTime(_selectedDate.year, _selectedDate.month + 1, _selectedDate.day);
                       });
                     },
-                    icon: const Icon(Icons.chevron_right),
+                    icon: const Icon(Icons.chevron_right, size: 20),
                   ),
                 ],
               )
@@ -1549,88 +1654,118 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: const [
-              Text("Mon"), Text("Tue"), Text("Wed"), Text("Thu"), Text("Fri"), Text("Sat"), Text("Sun"),
+              Text("Sun", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.redAccent)),
+              Text("Mon", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+              Text("Tue", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+              Text("Wed", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+              Text("Thu", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+              Text("Fri", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+              Text("Sat", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
             ],
           ),
         ),
         const SizedBox(height: 8),
         Expanded(
+          flex: 3, // Constrain grid to avoid bottom overflow
           child: GridView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             itemCount: cells,
+            physics: const BouncingScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 7,
-              childAspectRatio: 0.9,
+              childAspectRatio: 0.75, // Decreased to provide more height for Nepali dates
             ),
-            itemBuilder: (context, i) {
-              final date = dates[i];
-              if (date == null) {
-                return const SizedBox.shrink();
-              }
-              final key = dateFormat.format(date);
-              final isToday = key == todayKey;
-              final events = _eventsForDate(date);
-              final isSelected = isSameDay(_selectedDate, date);
-              return GestureDetector(
-                onTap: () => setState(() => _selectedDate = date),
-                child: Container(
-                  margin: const EdgeInsets.all(4),
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? cs.primary.withOpacity(0.15)
-                        : cs.surface.withOpacity(0.4),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: isToday ? AppColors.govGreen : cs.outline.withOpacity(0.4),
+              itemBuilder: (context, i) {
+                final date = dates[i];
+                if (date == null) {
+                  return const SizedBox.shrink();
+                }
+                final key = dateFormat.format(date);
+                final isToday = key == todayKey;
+                final events = _eventsForDate(date);
+                final isSelected = isSameDay(_selectedDate, date);
+
+                String nepaliDay = '';
+                if (_showNepaliDates) {
+                  final nepaliInfo = _getNepaliDateInfo(date);
+                  nepaliDay = nepaliInfo['day'] ?? '';
+                }
+
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedDate = date),
+                  child: Container(
+                    margin: const EdgeInsets.all(3),
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? cs.primary.withOpacity(0.15)
+                          : (isToday ? cs.primary.withOpacity(0.08) : cs.surface.withOpacity(0.4)),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isToday ? AppColors.govGreen : cs.outline.withOpacity(0.4),
+                        width: isSelected ? 1.2 : 0.8,
+                      ),
                     ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              DateFormat('d').format(date),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: isToday ? AppColors.govGreen : cs.onSurface,
+                                fontSize: 12,
+                              ),
+                            ),
+                            if (isToday) ...[
+                              const SizedBox(width: 2),
+                              Icon(Icons.circle, size: 4, color: AppColors.govGreen),
+                            ]
+                          ],
+                        ),
+                        if (_showNepaliDates && nepaliDay.isNotEmpty) ...[
+                          const SizedBox(height: 1),
                           Text(
-                            DateFormat('d').format(date),
+                            nepaliDay,
                             style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: cs.onSurface,
+                              fontSize: 9,
+                              color: cs.onSurface.withOpacity(0.5),
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                          if (isToday) ...[
-                            const SizedBox(width: 4),
-                            Icon(Icons.circle, size: 6, color: AppColors.govGreen),
-                          ]
                         ],
-                      ),
-                      const SizedBox(height: 6),
-                      if (events.isNotEmpty)
-                        Wrap(
-                          spacing: 4,
-                          runSpacing: 4,
-                          children: events.take(3).map((e) {
-                            return Container(
-                              width: 12,
-                              height: 12,
-                              decoration: BoxDecoration(
-                                color: _eventColor(e),
-                                shape: BoxShape.circle,
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                    ],
+                        const SizedBox(height: 3),
+                        if (events.isNotEmpty)
+                          Wrap(
+                            spacing: 2,
+                            runSpacing: 1,
+                            children: events.take(3).map((e) {
+                              return Container(
+                                width: 5,
+                                height: 5,
+                                decoration: BoxDecoration(
+                                  color: _eventColor(e),
+                                  shape: BoxShape.circle,
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
-        ),
-        const Divider(height: 1),
-        SizedBox(
-          height: 220,
+          const Divider(height: 1),
+        Expanded(
+          flex: 2, // Give more room to the list to avoid overcrowding
           child: Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 0),
             child: _buildEventsListForSelected(cs),
           ),
         ),
@@ -1638,3 +1773,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 }
+
+
+
+
+
+
+

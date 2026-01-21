@@ -8,8 +8,15 @@ import '../../core/theme/app_typography.dart';
 import '../../core/widgets/animated_background.dart';
 import '../../core/widgets/glass_card.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  bool _showNepaliDates = false;
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +28,19 @@ class HomeScreen extends StatelessWidget {
             "Welcome, xArE0!",
             style: AppTypography.titleLarge,
           ),
+          actions: [
+            IconButton(
+              tooltip: "Toggle Nepali Date",
+              onPressed: () {
+                setState(() => _showNepaliDates = !_showNepaliDates);
+              },
+              icon: Icon(
+                _showNepaliDates ? Icons.calendar_today : Icons.calendar_month,
+                color: _showNepaliDates ? AppColors.govGreen : null,
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
           flexibleSpace: ClipRRect(
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -32,7 +52,10 @@ class HomeScreen extends StatelessWidget {
           backgroundColor: Colors.transparent,
         ),
         drawer: _buildGlassDrawer(context),
-        body: const ScheduleScreen(),
+        body: ScheduleScreen(
+          showNepaliDates: _showNepaliDates,
+          onToggleNepali: (val) => setState(() => _showNepaliDates = val),
+        ),
       ),
     );
   }
