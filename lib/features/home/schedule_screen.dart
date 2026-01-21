@@ -63,6 +63,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
+          constraints: const BoxConstraints(maxWidth: 40, maxHeight: 40),
+          padding: EdgeInsets.zero,
           tooltip: "Timeline view",
           onPressed: () {
             setState(() => _viewMode = ScheduleView.timeline);
@@ -74,21 +76,27 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             });
           },
           icon: Icon(Icons.view_agenda,
-              size: 20,
+              size: 22,
               color: _viewMode == ScheduleView.timeline ? active : inactive),
         ),
+        const SizedBox(width: 0),
         IconButton(
+          constraints: const BoxConstraints(maxWidth: 40, maxHeight: 40),
+          padding: EdgeInsets.zero,
           tooltip: "Week view",
           onPressed: () => setState(() => _viewMode = ScheduleView.week),
           icon: Icon(Icons.calendar_view_week,
-              size: 20,
+              size: 22,
               color: _viewMode == ScheduleView.week ? active : inactive),
         ),
+        const SizedBox(width: 0),
         IconButton(
+          constraints: const BoxConstraints(maxWidth: 40, maxHeight: 40),
+          padding: EdgeInsets.zero,
           tooltip: "Month view",
           onPressed: () => setState(() => _viewMode = ScheduleView.month),
           icon: Icon(Icons.calendar_month,
-              size: 20,
+              size: 22,
               color: _viewMode == ScheduleView.month ? active : inactive),
         ),
       ],
@@ -1030,7 +1038,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       body: Stack(
         children: [
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 10), // Added tiny buffer to prevent 1.1px overflow
             child: GlassCard(
               borderRadius: BorderRadius.circular(24),
               padding: EdgeInsets.zero,
@@ -1287,42 +1295,50 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               ),
             ),
           Positioned(
-            left: 16,
+            left: 14,
             bottom: 24,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Navigation Island (First)
-                _buildIsland(
-                  isDark: isDark,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        tooltip: "Previous event",
-                        onPressed: () => _jumpToEvent(-1),
-                        icon: const Icon(Icons.chevron_left, size: 20),
-                      ),
-                      IconButton(
-                        tooltip: "Today",
-                        onPressed: () => _jumpToDate(DateTime.now()),
-                        icon: Icon(Icons.today, color: AppColors.govGreen, size: 20),
-                      ),
-                      IconButton(
-                        tooltip: "Next event",
-                        onPressed: () => _jumpToEvent(1),
-                        icon: const Icon(Icons.chevron_right, size: 20),
-                      ),
-                    ],
+            child: _buildIsland(
+              isDark: isDark,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Navigation Controls
+                  IconButton(
+                    constraints: const BoxConstraints(maxWidth: 36, maxHeight: 36),
+                    padding: EdgeInsets.zero,
+                    tooltip: "Previous event",
+                    onPressed: () => _jumpToEvent(-1),
+                    icon: const Icon(Icons.chevron_left, size: 22),
                   ),
-                ),
-                const SizedBox(width: 8),
-                // View Switcher Island (Second)
-                _buildIsland(
-                  isDark: isDark,
-                  child: _buildViewSwitcher(isDark),
-                ),
-              ],
+                  const SizedBox(width: 0),
+                  IconButton(
+                    constraints: const BoxConstraints(maxWidth: 36, maxHeight: 36),
+                    padding: EdgeInsets.zero,
+                    tooltip: "Today",
+                    onPressed: () => _jumpToDate(DateTime.now()),
+                    icon: Icon(Icons.today, color: AppColors.govGreen, size: 22),
+                  ),
+                  const SizedBox(width: 0),
+                  IconButton(
+                    constraints: const BoxConstraints(maxWidth: 36, maxHeight: 36),
+                    padding: EdgeInsets.zero,
+                    tooltip: "Next event",
+                    onPressed: () => _jumpToEvent(1),
+                    icon: const Icon(Icons.chevron_right, size: 22),
+                  ),
+                  // Thin Divider
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 0),
+                    child: Container(
+                      height: 20,
+                      width: 1,
+                      color: (isDark ? AppColors.slate700 : AppColors.slate300).withOpacity(0.3),
+                    ),
+                  ),
+                  // View Switcher
+                  _buildViewSwitcher(isDark),
+                ],
+              ),
             ),
           ),
         ],
@@ -1385,10 +1401,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     return Material(
       color: Colors.transparent,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
         decoration: BoxDecoration(
           color: (isDark ? AppColors.slate800 : Colors.white).withOpacity(0.9),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.15),
@@ -1666,7 +1682,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         ),
         const SizedBox(height: 8),
         Expanded(
-          flex: 3, // Constrain grid to avoid bottom overflow
+          flex: 3, // Increased back to 3 to give the grid enough room
           child: GridView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             itemCount: cells,
@@ -1763,7 +1779,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           ),
           const Divider(height: 1),
         Expanded(
-          flex: 2, // Give more room to the list to avoid overcrowding
+          flex: 2, // Reduced back to 2 to avoid blocking the calendar
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 0),
             child: _buildEventsListForSelected(cs),
