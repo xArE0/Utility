@@ -22,12 +22,34 @@ class MainActivity : FlutterActivity() {
                         // Check if accessibility service is enabled first
                         if (isAccessibilityServiceEnabled()) {
                             // Send broadcast to show the dot
-                            val intent = Intent("com.example.utility.SHOW_DOT")
+                            val intent = Intent(ClickAccessibilityService.ACTION_SHOW_DOT)
                             sendBroadcast(intent)
                             result.success("Dot show command sent")
                         } else {
                             result.error("NOT_ENABLED", "Accessibility service is not enabled. Please enable it in settings first.", null)
                         }
+                    }
+                    "startAutoclick" -> {
+                        if (!isAccessibilityServiceEnabled()) {
+                            result.error("NOT_ENABLED", "Accessibility service is not enabled. Please enable it in settings first.", null)
+                            return@setMethodCallHandler
+                        }
+                        val args = call.arguments as Map<*, *>
+                        val x = (args["x"] as Number).toInt()
+                        val y = (args["y"] as Number).toInt()
+                        val delay = (args["delay"] as Number).toLong()
+                        val intent = Intent(ClickAccessibilityService.ACTION_START_AUTOCLICK).apply {
+                            putExtra("x", x)
+                            putExtra("y", y)
+                            putExtra("delay", delay)
+                        }
+                        sendBroadcast(intent)
+                        result.success(true)
+                    }
+                    "stopAutoclick" -> {
+                        val intent = Intent(ClickAccessibilityService.ACTION_STOP_AUTOCLICK)
+                        sendBroadcast(intent)
+                        result.success(true)
                     }
                     "openAccessibilitySettings" -> {
                         val intent = Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)

@@ -318,17 +318,30 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
+          final theme = Theme.of(context);
+          final cs = theme.colorScheme;
+          final inputFill = cs.surface.withOpacity(0.08);
+          final border = OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide(color: cs.primary.withOpacity(0.4), width: 1),
+          );
+
           return AlertDialog(
-            contentPadding: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            backgroundColor: cs.surface.withOpacity(0.95),
+            title: const Text("Add Schedule"),
+            contentPadding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             content: SizedBox(
-              width: 350,
+              width: 380,
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     ListTile(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      tileColor: inputFill,
                       title: Text("Date: ${DateFormat('EEE, MMM d, yyyy').format(chosenDate)}"),
-                      trailing: const Icon(Icons.calendar_today),
+                      trailing: Icon(Icons.calendar_today, color: cs.primary),
                       onTap: () async {
                         final picked = await showDatePicker(
                           context: context,
@@ -339,9 +352,19 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         if (picked != null) setDialogState(() => chosenDate = picked);
                       },
                     ),
+                    const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       value: selectedType,
-                      decoration: const InputDecoration(labelText: 'Event Type'),
+                      decoration: InputDecoration(
+                        labelText: 'Event Type',
+                        filled: true,
+                        fillColor: inputFill,
+                        border: border,
+                        enabledBorder: border,
+                        focusedBorder: border.copyWith(
+                          borderSide: BorderSide(color: cs.primary, width: 1.2),
+                        ),
+                      ),
                       items: const [
                         DropdownMenuItem(value: 'normal', child: Text('Normal')),
                         DropdownMenuItem(value: 'birthday', child: Text('Birthday')),
@@ -351,26 +374,49 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       ],
                       onChanged: (value) => setDialogState(() => selectedType = value!),
                     ),
+                    const SizedBox(height: 12),
                     TextField(
                       controller: taskController,
-                      decoration: const InputDecoration(labelText: "Description"),
+                      decoration: InputDecoration(
+                        labelText: "Description",
+                        filled: true,
+                        fillColor: inputFill,
+                        border: border,
+                        enabledBorder: border,
+                        focusedBorder: border.copyWith(
+                          borderSide: BorderSide(color: cs.primary, width: 1.2),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 16),
                     SwitchListTile(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      tileColor: inputFill,
                       title: const Text("Remind Me"),
                       value: remindMe,
                       onChanged: (val) => setDialogState(() => remindMe = val),
                     ),
                     if (remindMe) ...[
+                      const SizedBox(height: 10),
                       Row(
                         children: [
                           const Text("Days before:"),
                           const SizedBox(width: 8),
                           SizedBox(
-                            width: 50,
+                            width: 60,
                             child: TextFormField(
                               initialValue: "$remindDaysBefore",
                               keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                isDense: true,
+                                filled: true,
+                                fillColor: inputFill,
+                                border: border,
+                                enabledBorder: border,
+                                focusedBorder: border.copyWith(
+                                  borderSide: BorderSide(color: cs.primary, width: 1.2),
+                                ),
+                              ),
                               onChanged: (v) {
                                 final num = int.tryParse(v) ?? 0;
                                 setDialogState(() => remindDaysBefore = num.clamp(0, 365));
@@ -378,18 +424,19 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Text("(today included)"),
+                          Text("(today included)", style: TextStyle(color: theme.hintColor)),
                         ],
                       ),
                       const SizedBox(height: 8),
                       Row(
                         children: [
                           const Text("At: "),
-                          Text(remindTime == null
-                              ? "Select Time"
-                              : remindTime!.format(context)),
+                          Text(
+                            remindTime == null ? "Select Time" : remindTime!.format(context),
+                            style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600),
+                          ),
                           IconButton(
-                            icon: const Icon(Icons.access_time),
+                            icon: Icon(Icons.access_time, color: cs.primary),
                             onPressed: () async {
                               final t = await showTimePicker(
                                 context: context,
@@ -401,13 +448,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         ],
                       ),
                     ],
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
                         const Text("Repeat:"),
                         const SizedBox(width: 8),
                         DropdownButton<String>(
                           value: repeat,
+                          borderRadius: BorderRadius.circular(12),
                           items: const [
                             DropdownMenuItem(value: "none", child: Text("None")),
                             DropdownMenuItem(value: "daily", child: Text("Daily")),
@@ -421,10 +469,20 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         if (repeat == "custom") ...[
                           const SizedBox(width: 8),
                           SizedBox(
-                            width: 40,
+                            width: 50,
                             child: TextFormField(
                               initialValue: "$repeatInterval",
                               keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                isDense: true,
+                                filled: true,
+                                fillColor: inputFill,
+                                border: border,
+                                enabledBorder: border,
+                                focusedBorder: border.copyWith(
+                                  borderSide: BorderSide(color: cs.primary, width: 1.2),
+                                ),
+                              ),
                               onChanged: (v) {
                                 final num = int.tryParse(v) ?? 1;
                                 setDialogState(() => repeatInterval = num.clamp(1, 999));
@@ -436,20 +494,26 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         ],
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     // Duration field for multi-day events
                     Row(
                       children: [
                         const Text("Duration:"),
                         const SizedBox(width: 8),
                         SizedBox(
-                          width: 50,
+                          width: 60,
                           child: TextFormField(
                             initialValue: "$durationDays",
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               isDense: true,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                              filled: true,
+                              fillColor: inputFill,
+                              border: border,
+                              enabledBorder: border,
+                              focusedBorder: border.copyWith(
+                                borderSide: BorderSide(color: cs.primary, width: 1.2),
+                              ),
                             ),
                             onChanged: (v) {
                               final num = int.tryParse(v) ?? 1;
@@ -460,13 +524,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         const SizedBox(width: 8),
                         Text(
                           durationDays == 1 ? "day" : "days",
-                          style: TextStyle(color: Colors.grey.shade600),
+                          style: TextStyle(color: theme.hintColor),
                         ),
                         if (durationDays > 1) ...[
                           const SizedBox(width: 8),
                           Text(
                             "(ends ${DateFormat('MMM d').format(chosenDate.add(Duration(days: durationDays - 1)))})",
-                            style: TextStyle(fontSize: 12, color: Colors.teal.shade600),
+                            style: TextStyle(fontSize: 12, color: cs.primary),
                           ),
                         ],
                       ],
@@ -475,13 +539,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 ),
               ),
             ),
+            actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             actions: [
               TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
               ElevatedButton(
                 onPressed: () async {
                   final task = taskController.text.trim();
                   if (task.isNotEmpty) {
-                    // Request notification permission if remindMe is enabled
                     if (remindMe) {
                       await NotificationService().requestPermission();
                     }
@@ -502,7 +566,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     
                     final eventId = await DBHelper.insertEvent(newEvent);
                     
-                    // Schedule notification if remindMe is enabled
                     if (remindMe && remindTime != null) {
                       final eventWithId = Event(
                         id: eventId,
@@ -521,7 +584,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     
                     await _preloadEvents();
                     setState(() => _selectedDate = chosenDate);
-                    Navigator.pop(context);
+                    if (mounted) Navigator.pop(context);
                   }
                 },
                 child: const Text("Add"),

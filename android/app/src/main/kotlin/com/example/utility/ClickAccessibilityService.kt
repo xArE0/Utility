@@ -18,6 +18,12 @@ import android.widget.ImageView
 
 class ClickAccessibilityService : AccessibilityService() {
 
+    companion object {
+        const val ACTION_SHOW_DOT = "com.example.utility.SHOW_DOT"
+        const val ACTION_START_AUTOCLICK = "com.example.utility.START_AUTOCLICK"
+        const val ACTION_STOP_AUTOCLICK = "com.example.utility.STOP_AUTOCLICK"
+    }
+
     private lateinit var windowManager: WindowManager
     private var floatingView: View? = null
     private var handler: Handler? = null
@@ -26,18 +32,29 @@ class ClickAccessibilityService : AccessibilityService() {
     
     private val showDotReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == "com.example.utility.SHOW_DOT") {
-                showFloatingDotSafe()
+            when (intent?.action) {
+                ACTION_SHOW_DOT -> showFloatingDotSafe()
+                ACTION_START_AUTOCLICK -> {
+                    val x = intent.getIntExtra("x", -1)
+                    val y = intent.getIntExtra("y", -1)
+                    val delay = intent.getLongExtra("delay", 1000L)
+                    if (x >= 0 && y >= 0) startClicking(x, y, delay)
+                }
+                ACTION_STOP_AUTOCLICK -> stopClicking()
             }
         }
     }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        handler = Handler(Looper.getMainLooper())
+        if (handler == null) handler = Handler(Looper.getMainLooper())
         
         // Register broadcast receiver
-        val filter = IntentFilter("com.example.utility.SHOW_DOT")
+        val filter = IntentFilter().apply {
+            addAction(ACTION_SHOW_DOT)
+            addAction(ACTION_START_AUTOCLICK)
+            addAction(ACTION_STOP_AUTOCLICK)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(showDotReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
         } else {
@@ -124,11 +141,18 @@ class ClickAccessibilityService : AccessibilityService() {
     }
 
     fun startClicking(x: Int, y: Int) {
+        startClicking(x, y, null)
+    }
+
+    private fun startClicking(x: Int, y: Int, explicitDelay: Long?) {
+        if (handler == null) handler = Handler(Looper.getMainLooper())
+        // stop any existing loop
+        stopClicking()
+
         val prefs = applicationContext.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-        // Flutter stores integers with a "flutter." prefix sometimes, or just raw depending on plugin version.
-        // Usually "flutter." prefix. Let's try to find key "autoclick_delay".
-        // Default 1000ms if not found.
-        val delay = prefs.getLong("flutter.autoclick_delay", 1000L)
+        val delayFromPrefs = prefs.getInt("autoclick_delay", 1000).toLong()
+        val delay = explicitDelay ?: delayFromPrefs
+        isClicking = true
 
         runnable = object : Runnable {
             override fun run() {
@@ -140,7 +164,9 @@ class ClickAccessibilityService : AccessibilityService() {
     }
 
     fun stopClicking() {
-        handler?.removeCallbacks(runnable!!)
+        runnable?.let { handler?.removeCallbacks(it) }
+        runnable = null
+        isClicking = false
     }
 
     private fun performClick(x: Int, y: Int) {

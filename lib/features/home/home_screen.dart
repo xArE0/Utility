@@ -100,9 +100,8 @@ class HomeScreen extends StatelessWidget {
                 context,
                 icon: Icons.touch_app,
                 title: "AutoClicker",
-                // route: AppRoutes.autoclicker,
+                route: AppRoutes.autoclicker,
                 color: AppColors.slate500,
-                enabled: false,
               ),
               _buildDrawerItem(
                 context,
