@@ -27,6 +27,7 @@ enum ScheduleView { timeline, week, month }
 class _ScheduleScreenState extends State<ScheduleScreen> {
   late bool _showNepaliDates;
   ScheduleView _viewMode = ScheduleView.timeline;
+  late final DateTime _baseDate;
 
   static const int initialIndex = 10000;
   static final DateFormat dateFormat = DateFormat('yyyy-MM-dd');
@@ -45,7 +46,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   final ScrollController _scrollController = ScrollController();
 
-  DateTime _selectedDate = DateTime.now();
+  late DateTime _selectedDate;
   bool _isDragging = false;
 
   // Cache for Nepali dates to avoid repeated conversions
@@ -106,11 +107,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   @override
   void initState() {
     super.initState();
+    final now = DateTime.now();
+    _baseDate = DateTime(now.year, now.month, now.day).subtract(const Duration(days: initialIndex));
+    _selectedDate = DateTime(now.year, now.month, now.day);
     _showNepaliDates = widget.showNepaliDates;
     _preloadEvents().then((_) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final idx = _indexFromDate(_selectedDate);
-        _scrollController.jumpTo(idx * itemExtent);
+        if (_scrollController.hasClients) {
+          final idx = _indexFromDate(_selectedDate);
+          _scrollController.jumpTo(idx * itemExtent);
+        }
         setState(() {});
       });
     });
@@ -137,13 +143,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   DateTime _dateFromIndex(int index) {
-    final base = DateTime.now().subtract(Duration(days: initialIndex));
-    return base.add(Duration(days: index));
+    return _baseDate.add(Duration(days: index));
   }
 
   int _indexFromDate(DateTime date) {
-    final base = DateTime.now().subtract(Duration(days: initialIndex));
-    return date.difference(base).inDays;
+    // Normalize to midnight for consistent indexing
+    final d = DateTime(date.year, date.month, date.day);
+    return d.difference(_baseDate).inDays;
   }
 
   Map<String, String> _getNepaliDateInfo(DateTime date) {
@@ -346,8 +352,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   void _jumpToDate(DateTime date) {
-    final idx = _indexFromDate(date);
-    setState(() => _selectedDate = date);
+    final normalizedDate = DateTime(date.year, date.month, date.day);
+    final idx = _indexFromDate(normalizedDate);
+    setState(() => _selectedDate = normalizedDate);
     _scrollController.animateTo(
       idx * itemExtent,
       duration: const Duration(milliseconds: 400),
