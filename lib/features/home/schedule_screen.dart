@@ -41,6 +41,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   List<Event> _allBirthdays = [];
   List<Event> _allExams = [];
   Set<String> _eventDates = {};
+  Map<String, List<Event>> _eventsByDate = {}; // Optimized lookup map
   Set<String> _birthdayMonthDays = {};
   Set<String> _examMonthDays = {};
 
@@ -133,12 +134,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         .where((e) => e.type != 'birthday')
         .map((e) => e.date)
         .toSet();
-    _birthdayMonthDays = _allBirthdays
-        .map((e) {
-      final d = DateTime.parse(e.date);
-      return '${d.month}-${d.day}';
-    })
-        .toSet();
+    // Pre-group events by date for O(1) lookups during builds
+    _eventsByDate = {};
+    for (var event in _allEvents) {
+      final dateStr = event.date;
+      if (!_eventsByDate.containsKey(dateStr)) {
+        _eventsByDate[dateStr] = [];
+      }
+      _eventsByDate[dateStr]!.add(event);
+    }
+
     setState(() {});
   }
 
@@ -245,26 +250,33 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   List<Event> _eventsForDate(DateTime date) {
+    if (_eventsByDate.isEmpty) return [];
+
     final key = dateFormat.format(date);
+    
+    // Use the optimized lookup map for non-repeating events on this specific day
+    // Filtering for repeating events and birthdays still happens, but on a smaller scope
+    
     List<Event> events = [];
 
-    // Non-repeating events (single day)
-    events.addAll(_allEvents.where((e) =>
-    e.date == key &&
+    // 1. Exact date matches (from map)
+    if (_eventsByDate.containsKey(key)) {
+      events.addAll(_eventsByDate[key]!.where((e) =>
         e.type != 'birthday' &&
         e.type != 'exam' &&
         (e.repeat == null || e.repeat == "none") &&
         (e.durationDays == null || e.durationDays! <= 1)
-    ));
+      ));
+    }
     
-    // Multi-day events that span this date
+    // 2. Multi-day events that span this date
     events.addAll(_allEvents.where((e) {
-      if (e.type == 'birthday' || e.type == 'exam') return false;
+      if (e.type == 'birthday' || e.type == 'exam' || e.repeat != "none") return false;
       if (e.durationDays == null || e.durationDays! <= 1) return false;
       return e.spansDate(date);
     }));
 
-    // Repeating events (except for birthdays/exams)
+    // 3. Repeating events (except for birthdays/exams)
     events.addAll(_allEvents.where((e) {
       if (e.repeat == null || e.repeat == "none") return false;
       if (e.type == 'birthday' || e.type == 'exam') return false;
@@ -287,13 +299,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       }
     }));
 
-    // Birthdays (always repeating yearly)
+    // 4. Birthdays (always repeating yearly)
     final bdays = _allBirthdays.where((e) {
       final d = DateTime.parse(e.date);
       return d.month == date.month && d.day == date.day;
     }).toList();
 
-    // Exams only show on their exact date
+    // 5. Exams only show on their exact date (from map if possible)
     final exams = _allExams.where((e) => e.date == key).toList();
 
     return [...events, ...bdays, ...exams];
@@ -1069,7 +1081,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         scrollDirection: Axis.horizontal,
                         itemExtent: itemExtent,
                         addAutomaticKeepAlives: false,
-                        addRepaintBoundaries: false,
+                        addRepaintBoundaries: true,
                         itemBuilder: (context, index) {
                           final date = _dateFromIndex(index);
                           final key = dateFormat.format(date);

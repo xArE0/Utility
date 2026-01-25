@@ -23,19 +23,21 @@ class AnimatedBackground extends StatelessWidget {
         Positioned(
           top: -100,
           left: -100,
-          child: Container(
-            width: 400,
-            height: 400,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.govBlue.withOpacity(0.2),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.govBlue.withOpacity(0.2),
-                  blurRadius: 100,
-                  spreadRadius: 50,
-                ),
-              ],
+          child: RepaintBoundary(
+            child: Container(
+              width: 400,
+              height: 400,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.govBlue.withOpacity(0.2),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.govBlue.withOpacity(0.2),
+                    blurRadius: 100,
+                    spreadRadius: 50,
+                  ),
+                ],
+              ),
             ),
           )
           .animate(onPlay: (controller) => controller.repeat(reverse: true))
@@ -56,19 +58,21 @@ class AnimatedBackground extends StatelessWidget {
         Positioned(
           bottom: -100,
           right: -100,
-          child: Container(
-            width: 350,
-            height: 350,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.govGreen.withOpacity(0.15),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.govGreen.withOpacity(0.15),
-                  blurRadius: 120,
-                  spreadRadius: 60,
-                ),
-              ],
+          child: RepaintBoundary(
+            child: Container(
+              width: 350,
+              height: 350,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.govGreen.withOpacity(0.15),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.govGreen.withOpacity(0.15),
+                    blurRadius: 120,
+                    spreadRadius: 60,
+                  ),
+                ],
+              ),
             ),
           )
           .animate(onPlay: (controller) => controller.repeat(reverse: true))
@@ -84,19 +88,21 @@ class AnimatedBackground extends StatelessWidget {
          Positioned(
           top: 100,
           right: 50,
-          child: Container(
-            width: 200,
-            height: 200,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.govGold.withOpacity(0.05),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.govGold.withOpacity(0.05),
-                  blurRadius: 80,
-                  spreadRadius: 40,
-                ),
-              ],
+          child: RepaintBoundary(
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.govGold.withOpacity(0.05),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.govGold.withOpacity(0.05),
+                    blurRadius: 80,
+                    spreadRadius: 40,
+                  ),
+                ],
+              ),
             ),
           )
           .animate(onPlay: (controller) => controller.repeat(reverse: true))
