@@ -41,7 +41,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   List<Event> _allBirthdays = [];
   List<Event> _allExams = [];
   Set<String> _eventDates = {};
-  Map<String, List<Event>> _eventsByDate = {}; // Optimized lookup map
+  Map<String, List<Event>> _eventsByDate = {};
   Set<String> _birthdayMonthDays = {};
   Set<String> _examMonthDays = {};
 
@@ -50,12 +50,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   late DateTime _selectedDate;
   bool _isDragging = false;
 
-  // Cache for Nepali dates to avoid repeated conversions
+  // Cache for Nepali dates
   final Map<String, NepaliDateTime> _nepaliDateCache = {};
   final Map<String, String> _nepaliMonthCache = {};
   final Map<String, String> _nepaliDayCache = {};
   
-  // Loading state for Nepali date computation
+  // Memoization cache for _eventsForDate to prevent recalculation
+  final Map<String, List<Event>> _eventsForDateCache = {};
+  int _eventsCacheVersion = 0;
+
   bool _isLoadingNepaliDates = false;
 
   Widget _buildViewSwitcher(bool isDark) {
@@ -144,7 +147,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       _eventsByDate[dateStr]!.add(event);
     }
 
-    setState(() {});
+    // Invalidate the events cache when data changes
+    _eventsForDateCache.clear();
+    _eventsCacheVersion++;
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   DateTime _dateFromIndex(int index) {
@@ -250,18 +259,19 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   List<Event> _eventsForDate(DateTime date) {
+    // Check memoization cache first
+    final dateKey = dateFormat.format(date);
+    if (_eventsForDateCache.containsKey(dateKey)) {
+      return _eventsForDateCache[dateKey]!;
+    }
+
     if (_eventsByDate.isEmpty) return [];
 
-    final key = dateFormat.format(date);
-    
-    // Use the optimized lookup map for non-repeating events on this specific day
-    // Filtering for repeating events and birthdays still happens, but on a smaller scope
-    
     List<Event> events = [];
 
     // 1. Exact date matches (from map)
-    if (_eventsByDate.containsKey(key)) {
-      events.addAll(_eventsByDate[key]!.where((e) =>
+    if (_eventsByDate.containsKey(dateKey)) {
+      events.addAll(_eventsByDate[dateKey]!.where((e) =>
         e.type != 'birthday' &&
         e.type != 'exam' &&
         (e.repeat == null || e.repeat == "none") &&
@@ -305,10 +315,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       return d.month == date.month && d.day == date.day;
     }).toList();
 
-    // 5. Exams only show on their exact date (from map if possible)
-    final exams = _allExams.where((e) => e.date == key).toList();
+    // 5. Exams only show on their exact date
+    final exams = _allExams.where((e) => e.date == dateKey).toList();
 
-    return [...events, ...bdays, ...exams];
+    final result = [...events, ...bdays, ...exams];
+
+    // Cache the result
+    _eventsForDateCache[dateKey] = result;
+
+    return result;
   }
 
   int? _findNearestEventIndex(int from, int direction) {
@@ -695,12 +710,42 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   Future<void> _deleteEvent(Event event) async {
     final db = await DBHelper.database;
+
+    // Immediately remove from local state
+    _allEvents.removeWhere((e) => e.id == event.id);
+    _allBirthdays.removeWhere((e) => e.id == event.id);
+    _allExams.removeWhere((e) => e.id == event.id);
+
+    // Rebuild _eventsByDate map
+    _eventsByDate.clear();
+    for (var e in _allEvents) {
+      final dateStr = e.date;
+      if (!_eventsByDate.containsKey(dateStr)) {
+        _eventsByDate[dateStr] = [];
+      }
+      _eventsByDate[dateStr]!.add(e);
+    }
+
+    // Invalidate all caches
+    _eventsForDateCache.clear();
+    _eventsCacheVersion++;
+
+    // Update _eventDates set
+    _eventDates = _allEvents
+        .where((e) => e.type != 'birthday')
+        .map((e) => e.date)
+        .toSet();
+
+    // Trigger UI rebuild immediately
+    setState(() {});
+
+    // Then delete from database asynchronously
     await db.delete('events', where: 'id = ?', whereArgs: [event.id]);
+
     // Cancel any scheduled notification for this event
     if (event.id != null) {
       await NotificationService().cancelEventNotification(event.id!);
     }
-    await _preloadEvents();
   }
 
   Color _eventColor(Event event) {
@@ -1413,6 +1458,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     _nepaliDateCache.clear();
     _nepaliMonthCache.clear();
     _nepaliDayCache.clear();
+    _eventsForDateCache.clear();
     super.dispose();
   }
 
@@ -1808,6 +1854,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 }
+
+
+
+
 
 
 
