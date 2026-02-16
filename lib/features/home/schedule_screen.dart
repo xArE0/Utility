@@ -483,6 +483,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         DropdownMenuItem(value: 'birthday', child: Text('Birthday')),
                         DropdownMenuItem(value: 'exam', child: Text('Exam')),
                         DropdownMenuItem(value: 'homework', child: Text('Homework')),
+                        DropdownMenuItem(value: 'festival', child: Text('Festival')),
                         DropdownMenuItem(value: 'event', child: Text('Event')),
                       ],
                       onChanged: (value) => setDialogState(() => selectedType = value!),
@@ -787,6 +788,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         return const Color(0xFF2563EB); // blue
       case 'homework':
         return const Color(0xFF8B5CF6); // violet
+      case 'festival':
+        return Colors.deepOrange; // deep orange
       case 'event':
         return const Color(0xFFFFA000); // amber
       case 'normal':
@@ -827,6 +830,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             Icon(Icons.assignment, color: Colors.white, size: 16),
             SizedBox(width: 4),
             Text("Homework", style: TextStyle(color: Colors.white, fontSize: 12)),
+          ],
+        );
+      case 'festival':
+        return const Row(
+          children: [
+            Icon(Icons.celebration, color: Colors.white, size: 16),
+            SizedBox(width: 4),
+            Text("Festival", style: TextStyle(color: Colors.white, fontSize: 12)),
           ],
         );
       default:
@@ -870,7 +881,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          if (event.type == 'birthday' || event.type == 'exam' || event.type == 'homework')
+          if (event.type == 'birthday' || event.type == 'exam' || event.type == 'homework' || event.type == 'festival')
             Padding(
               padding: const EdgeInsets.only(top: 2),
               child: _eventTypeIcon(event.type),
@@ -1025,7 +1036,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          if (event.type == 'birthday' || event.type == 'exam' || event.type == 'homework')
+          if (event.type == 'birthday' || event.type == 'exam' || event.type == 'homework' || event.type == 'festival')
             Padding(
               padding: const EdgeInsets.only(top: 2),
               child: _eventTypeIcon(event.type),
