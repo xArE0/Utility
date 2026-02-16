@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import 'dart:ui'; // For ImageFilter
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/widgets/animated_background.dart';
+import '../../core/widgets/static_background.dart';
 import '../../core/widgets/glass_card.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -20,7 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBackground(
+    return StaticBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -61,7 +61,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildGlassDrawer(BuildContext context) {
-    return Drawer(
+    return RepaintBoundary(
+      child: Drawer(
       backgroundColor: Colors.transparent,
       elevation: 0,
       child: Container(
@@ -137,7 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildDrawerItem(

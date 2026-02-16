@@ -40,6 +40,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   List<Event> _allEvents = [];
   List<Event> _allBirthdays = [];
   List<Event> _allExams = [];
+  List<Event> _repeatingEvents = []; 
+  List<Event> _multiDayEvents = [];
   Set<String> _eventDates = {};
   Map<String, List<Event>> _eventsByDate = {};
   Set<String> _birthdayMonthDays = {};
@@ -132,14 +134,41 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     _allEvents = maps.map((e) => Event.fromMap(e)).toList();
     _allBirthdays = _allEvents.where((e) => e.type == 'birthday').toList();
     _allExams = _allEvents.where((e) => e.type == 'exam').toList();
+    
+    // Separate complex events for faster iteration
+    _repeatingEvents = _allEvents.where((e) => 
+      e.type != 'birthday' && 
+      e.type != 'exam' && 
+      e.repeat != null && 
+      e.repeat != "none"
+    ).toList();
+    
+    _multiDayEvents = _allEvents.where((e) => 
+      e.type != 'birthday' && 
+      e.type != 'exam' && 
+      (e.repeat == null || e.repeat == "none") &&
+      e.durationDays != null && 
+      e.durationDays! > 1
+    ).toList();
+
     // _eventDates includes all non-birthday events (normal and exam)
     _eventDates = _allEvents
         .where((e) => e.type != 'birthday')
         .map((e) => e.date)
         .toSet();
-    // Pre-group events by date for O(1) lookups during builds
+
+    // Pre-group single-day non-repeating events by date for O(1) lookups
     _eventsByDate = {};
     for (var event in _allEvents) {
+      // Only index simple events here. 
+      // Complex ones (repeating/multi-day) are checked dynamically.
+      if (event.type == 'birthday' || 
+          event.type == 'exam' || 
+          (event.repeat != null && event.repeat != "none") ||
+          (event.durationDays != null && event.durationDays! > 1)) {
+        continue;
+      }
+      
       final dateStr = event.date;
       if (!_eventsByDate.containsKey(dateStr)) {
         _eventsByDate[dateStr] = [];
@@ -269,27 +298,20 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
     List<Event> events = [];
 
-    // 1. Exact date matches (from map)
+    // 1. Exact date matches (from map) - these are now only the simple single-day events
     if (_eventsByDate.containsKey(dateKey)) {
-      events.addAll(_eventsByDate[dateKey]!.where((e) =>
-        e.type != 'birthday' &&
-        e.type != 'exam' &&
-        (e.repeat == null || e.repeat == "none") &&
-        (e.durationDays == null || e.durationDays! <= 1)
-      ));
+      events.addAll(_eventsByDate[dateKey]!);
     }
     
     // 2. Multi-day events that span this date
-    events.addAll(_allEvents.where((e) {
-      if (e.type == 'birthday' || e.type == 'exam' || e.repeat != "none") return false;
-      if (e.durationDays == null || e.durationDays! <= 1) return false;
+    // Iterate only over _multiDayEvents instead of _allEvents
+    events.addAll(_multiDayEvents.where((e) {
       return e.spansDate(date);
     }));
 
     // 3. Repeating events (except for birthdays/exams)
-    events.addAll(_allEvents.where((e) {
-      if (e.repeat == null || e.repeat == "none") return false;
-      if (e.type == 'birthday' || e.type == 'exam') return false;
+    // Iterate only over _repeatingEvents instead of _allEvents
+    events.addAll(_repeatingEvents.where((e) {
       final eventDate = DateTime.parse(e.date);
       if (date.isBefore(eventDate)) return false;
       switch (e.repeat) {
@@ -711,14 +733,23 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Future<void> _deleteEvent(Event event) async {
     final db = await DBHelper.database;
 
-    // Immediately remove from local state
+    // Immediately remove from ALL local state lists
     _allEvents.removeWhere((e) => e.id == event.id);
     _allBirthdays.removeWhere((e) => e.id == event.id);
     _allExams.removeWhere((e) => e.id == event.id);
+    _repeatingEvents.removeWhere((e) => e.id == event.id);
+    _multiDayEvents.removeWhere((e) => e.id == event.id);
 
-    // Rebuild _eventsByDate map
+    // Rebuild _eventsByDate map (only for simple single-day non-repeating events)
     _eventsByDate.clear();
     for (var e in _allEvents) {
+      // Skip complex events that are checked dynamically
+      if (e.type == 'birthday' || 
+          e.type == 'exam' || 
+          (e.repeat != null && e.repeat != "none") ||
+          (e.durationDays != null && e.durationDays! > 1)) {
+        continue;
+      }
       final dateStr = e.date;
       if (!_eventsByDate.containsKey(dateStr)) {
         _eventsByDate[dateStr] = [];
@@ -1239,75 +1270,69 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                     ),
                                     SizedBox(height: _showNepaliDates ? 0 : 85),
                                     if (_showNepaliDates)
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(18),
-                                        child: BackdropFilter(
-                                          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                                          child: Container(
-                                            margin: const EdgeInsets.only(bottom: 85, top: 4),
-                                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                                            decoration: BoxDecoration(
-                                              color: (isDark ? AppColors.slate800 : Colors.white).withOpacity(isDark ? 0.55 : 0.6),
-                                              borderRadius: BorderRadius.circular(18),
-                                              border: Border.all(
-                                                color: isToday
-                                                    ? AppColors.govGreen.withOpacity(0.9)
-                                                    : (isDark ? AppColors.slate700 : AppColors.slate200).withOpacity(0.7),
-                                                width: 1.5,
-                                              ),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.black.withOpacity(isDark ? 0.25 : 0.08),
-                                                  blurRadius: 10,
-                                                  offset: const Offset(0, 3),
-                                                ),
-                                              ],
-                                            ),
-                                            child: _isLoadingNepaliDates && nepaliMonth.isEmpty
-                                                ? const SizedBox(
-                                                    height: 45,
-                                                    width: 45,
-                                                    child: Center(
-                                                      child: SizedBox(
-                                                        height: 20,
-                                                        width: 20,
-                                                        child: CircularProgressIndicator(
-                                                          strokeWidth: 2,
-                                                          color: Colors.teal,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  )
-                                                : Column(
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    children: [
-                                                      Text(
-                                                        nepaliMonth,
-                                                        style: TextStyle(
-                                                          fontSize: 10,
-                                                          color: isToday
-                                                              ? AppColors.govGreen
-                                                              : (isDark ? AppColors.slate300 : Colors.grey.shade700),
-                                                          fontWeight: FontWeight.w600,
-                                                          letterSpacing: 0.5,
-                                                        ),
-                                                      ),
-                                                      const SizedBox(height: 2),
-                                                      Text(
-                                                        nepaliDay,
-                                                        style: TextStyle(
-                                                          fontSize: 25,
-                                                          color: isToday
-                                                              ? (isDark ? AppColors.slate50 : AppColors.slate900)
-                                                              : (isDark ? AppColors.slate50 : Colors.grey.shade900),
-                                                          fontWeight: FontWeight.bold,
-                                                          letterSpacing: 1,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
+                                      Container(
+                                        margin: const EdgeInsets.only(bottom: 85, top: 4),
+                                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                                        decoration: BoxDecoration(
+                                          color: (isDark ? AppColors.slate800 : Colors.white).withOpacity(isDark ? 0.85 : 0.9),
+                                          borderRadius: BorderRadius.circular(18),
+                                          border: Border.all(
+                                            color: isToday
+                                                ? AppColors.govGreen.withOpacity(0.9)
+                                                : (isDark ? AppColors.slate700 : AppColors.slate200).withOpacity(0.7),
+                                            width: 1.5,
                                           ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(isDark ? 0.25 : 0.08),
+                                              blurRadius: 10,
+                                              offset: const Offset(0, 3),
+                                            ),
+                                          ],
                                         ),
+                                        child: _isLoadingNepaliDates && nepaliMonth.isEmpty
+                                            ? const SizedBox(
+                                                height: 45,
+                                                width: 45,
+                                                child: Center(
+                                                  child: SizedBox(
+                                                    height: 20,
+                                                    width: 20,
+                                                    child: CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: Colors.teal,
+                                                    ),
+                                                  ),
+                                                ),
+                                              )
+                                            : Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text(
+                                                    nepaliMonth,
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                      color: isToday
+                                                          ? AppColors.govGreen
+                                                          : (isDark ? AppColors.slate300 : Colors.grey.shade700),
+                                                      fontWeight: FontWeight.w600,
+                                                      letterSpacing: 0.5,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    nepaliDay,
+                                                    style: TextStyle(
+                                                      fontSize: 25,
+                                                      color: isToday
+                                                          ? (isDark ? AppColors.slate50 : AppColors.slate900)
+                                                          : (isDark ? AppColors.slate50 : Colors.grey.shade900),
+                                                      fontWeight: FontWeight.bold,
+                                                      letterSpacing: 1,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                       ),
                                   ],
                                 ),
