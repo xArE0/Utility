@@ -4,7 +4,6 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'dart:math' as math;
 import 'package:share_plus/share_plus.dart';
-import 'dart:ui'; // For ImageFilter
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import '../../core/theme/app_colors.dart';
@@ -424,13 +423,7 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: Text('Expense Tracker', style: AppTypography.titleLarge),
-          backgroundColor: Colors.transparent,
-          flexibleSpace: ClipRRect(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(color: AppColors.slate900.withOpacity(0.5)),
-            ),
-          ),
+          backgroundColor: AppColors.slate900.withOpacity(0.85),
           actions: [
             if (_selectedPerson != null)
               IconButton(

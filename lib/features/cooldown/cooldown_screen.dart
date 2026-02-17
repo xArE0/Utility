@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
@@ -116,13 +115,7 @@ class _CooldownScreenState extends State<CooldownScreen>
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: Text("Cooldown", style: AppTypography.titleLarge),
-          flexibleSpace: ClipRRect(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(color: AppColors.slate900.withOpacity(0.5)),
-            ),
-          ),
-          backgroundColor: Colors.transparent,
+          backgroundColor: AppColors.slate900.withOpacity(0.85),
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () => _showAddSheet(context),
@@ -707,18 +700,15 @@ class _AddEditSheetState extends State<_AddEditSheet> {
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       padding: EdgeInsets.only(bottom: bottomInset),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-            decoration: BoxDecoration(
-              color: AppColors.slate900.withOpacity(0.92),
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                  color: Colors.white.withOpacity(0.08), width: 1),
-            ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.slate900.withOpacity(0.97),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(
+              color: Colors.white.withOpacity(0.08), width: 1),
+        ),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -831,7 +821,6 @@ class _AddEditSheetState extends State<_AddEditSheet> {
             ),
           ),
         ),
-      ),
     );
   }
 
@@ -872,18 +861,15 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       padding: EdgeInsets.only(bottom: bottomInset),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-            decoration: BoxDecoration(
-              color: AppColors.slate900.withOpacity(0.92),
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                  color: Colors.white.withOpacity(0.08), width: 1),
-            ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.slate900.withOpacity(0.97),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(
+              color: Colors.white.withOpacity(0.08), width: 1),
+        ),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -991,7 +977,6 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
             ),
           ),
         ),
-      ),
     );
   }
 

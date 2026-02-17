@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import '../../services/db_helper.dart';
 import 'package:nepali_utils/nepali_utils.dart';
-import 'dart:ui';
 import '../../services/notification_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/glass_card.dart';
@@ -1443,35 +1442,29 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           ),
         ],
       ),
-      floatingActionButton: ClipRRect(
-        borderRadius: BorderRadius.circular(40),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withOpacity(0.08),
-              border: Border.all(
-                color: AppColors.govGreen.withOpacity(0.6),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.35),
-                  blurRadius: 18,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: IconButton(
-              onPressed: _showAddEventDialog,
-              icon: const Icon(Icons.add),
-              color: AppColors.govGreen,
-              iconSize: 30,
-            ),
+      floatingActionButton: Container(
+        width: 64,
+        height: 64,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: AppColors.slate800.withOpacity(0.95),
+          border: Border.all(
+            color: AppColors.govGreen.withOpacity(0.6),
+            width: 1.5,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.35),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: IconButton(
+          onPressed: _showAddEventDialog,
+          icon: const Icon(Icons.add),
+          color: AppColors.govGreen,
+          iconSize: 30,
         ),
       ),
     );

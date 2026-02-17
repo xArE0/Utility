@@ -19,7 +19,7 @@ class StaticBackground extends StatelessWidget {
           ),
         ),
 
-        // 2. Static Orbs (no animation)
+        // 2. Static Orbs (simple colored circles, no heavy blur)
         // Orb 1: Top Left - Blue
         Positioned(
           top: -75,
@@ -29,14 +29,7 @@ class StaticBackground extends StatelessWidget {
             height: 400,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.govBlue.withOpacity(0.2),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.govBlue.withOpacity(0.2),
-                  blurRadius: 100,
-                  spreadRadius: 50,
-                ),
-              ],
+              color: AppColors.govBlue.withOpacity(0.12),
             ),
           ),
         ),
@@ -50,14 +43,7 @@ class StaticBackground extends StatelessWidget {
             height: 350,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.govGreen.withOpacity(0.15),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.govGreen.withOpacity(0.15),
-                  blurRadius: 120,
-                  spreadRadius: 60,
-                ),
-              ],
+              color: AppColors.govGreen.withOpacity(0.08),
             ),
           ),
         ),
@@ -71,19 +57,12 @@ class StaticBackground extends StatelessWidget {
             height: 200,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.govGold.withOpacity(0.05),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.govGold.withOpacity(0.05),
-                  blurRadius: 80,
-                  spreadRadius: 40,
-                ),
-              ],
+              color: AppColors.govGold.withOpacity(0.04),
             ),
           ),
         ),
 
-        // 3. Child Content (Glass layer on top)
+        // 3. Child Content
         child,
       ],
     );
