@@ -9,6 +9,7 @@ class ExportImportsPage extends StatelessWidget {
   final String expenseDbName = 'expense_tracker.db';
   final String dataVaultDbName = 'datavault.db';
   final String potTrackerDbName = 'pottracker_session.db';
+  final String cooldownDbName = 'cooldown.db';
 
   const ExportImportsPage({super.key});
 
@@ -105,6 +106,22 @@ class ExportImportsPage extends StatelessWidget {
             trailing: IconButton(
               icon: const Icon(Icons.file_download_outlined),
               onPressed: () => _importDb(context, potTrackerDbName),
+            ),
+          ),
+          const Divider(),
+          // Cooldown export/import entries
+          ListTile(
+            title: const Text('Export Cooldown Database'),
+            trailing: IconButton(
+              icon: const Icon(Icons.share),
+              onPressed: () => _exportDb(context, cooldownDbName),
+            ),
+          ),
+          ListTile(
+            title: const Text('Import Cooldown Database'),
+            trailing: IconButton(
+              icon: const Icon(Icons.file_download_outlined),
+              onPressed: () => _importDb(context, cooldownDbName),
             ),
           ),
           const Divider(),

@@ -5,6 +5,7 @@ import '../features/expenses/expense.dart';
 import '../features/autoclicker/autoclicker_screen.dart';
 import '../features/data_vault/data_vault.dart';
 import '../features/pot_tracker/pot_tracker.dart';
+import '../features/cooldown/cooldown_screen.dart';
 
 class AppRoutes {
   static const home = '/';
@@ -14,6 +15,7 @@ class AppRoutes {
   static const schedule = '/schedule';
   static const datavault = '/datavault';
   static const pottracker = '/pottracker';
+  static const cooldown = '/cooldown';
 
   static Map<String, WidgetBuilder> get all => {
     home: (_) => const HomeScreen(),
@@ -22,5 +24,6 @@ class AppRoutes {
     importexport: (_) => ExportImportsPage(),
     datavault: (_) => const DataVaultPage(),
     pottracker: (_) => const PotTrackerPage(),
+    cooldown: (_) => const CooldownScreen(),
   };
 }

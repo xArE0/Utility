@@ -134,6 +134,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 route: AppRoutes.importexport,
                 color: AppColors.info,
               ),
+              _buildDrawerItem(
+                context,
+                icon: Icons.timer,
+                title: "Cooldown",
+                route: AppRoutes.cooldown,
+                color: const Color(0xFF06B6D4),
+              ),
             ],
           ),
         ),
