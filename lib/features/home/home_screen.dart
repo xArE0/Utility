@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../routes/app_routes.dart';
 import 'schedule_screen.dart';
 import 'package:intl/intl.dart';
-import 'dart:ui'; // For ImageFilter
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/static_background.dart';
@@ -41,13 +40,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(width: 8),
           ],
-          flexibleSpace: ClipRRect(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(
-                color: AppColors.slate900.withOpacity(0.5),
-              ),
-            ),
+          flexibleSpace: Container(
+            color: AppColors.slate900.withOpacity(0.5),
           ),
           backgroundColor: Colors.transparent,
         ),
@@ -70,9 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
           color: AppColors.slate900.withOpacity(0.85),
           border: const Border(right: BorderSide(color: AppColors.slate700)),
         ),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: ListView(
+        child: ListView(
             padding: EdgeInsets.zero,
             children: [
               DrawerHeader(
@@ -115,6 +107,13 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               _buildDrawerItem(
                 context,
+                icon: Icons.timer,
+                title: "Cooldown",
+                route: AppRoutes.cooldown,
+                color: const Color(0xFF06B6D4),
+              ),
+              _buildDrawerItem(
+                context,
                 icon: Icons.account_balance_wallet,
                 title: "Pot Tracker",
                 route: AppRoutes.pottracker,
@@ -134,18 +133,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 route: AppRoutes.importexport,
                 color: AppColors.info,
               ),
-              _buildDrawerItem(
-                context,
-                icon: Icons.timer,
-                title: "Cooldown",
-                route: AppRoutes.cooldown,
-                color: const Color(0xFF06B6D4),
-              ),
             ],
           ),
         ),
       ),
-    ));
+    );
   }
 
   Widget _buildDrawerItem(
