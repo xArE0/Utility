@@ -2,7 +2,17 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'db_helper.dart';
+
+/// Top-level background handler — MUST be a top-level function (not a class
+/// method) so the Android OS can invoke it even when the app process is dead.
+@pragma('vm:entry-point')
+void onBackgroundNotificationResponse(NotificationResponse response) {
+  // This runs in its own isolate when the app is killed.
+  // Heavy work (navigation, etc.) should NOT go here.
+  debugPrint('Background notification tapped: ${response.payload}');
+}
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -23,7 +33,6 @@ class NotificationService {
         tz.setLocalLocation(tz.getLocation('Asia/Kathmandu'));
       } catch (e) {
         debugPrint('Error setting location: $e');
-        // Fallback to local or UTC if needed
         tz.setLocalLocation(tz.local);
       }
 
@@ -33,6 +42,10 @@ class NotificationService {
       await _notifications.initialize(
         initSettings,
         onDidReceiveNotificationResponse: _onNotificationTap,
+        // ✅ Register the top-level background handler so notifications work
+        //    even when the app is completely killed.
+        onDidReceiveBackgroundNotificationResponse:
+            onBackgroundNotificationResponse,
       );
       
       // Create notification channel immediately to ensure it exists
@@ -60,7 +73,6 @@ class NotificationService {
   }
 
   void _onNotificationTap(NotificationResponse response) {
-    // Handle notification tap - can navigate to specific event
     debugPrint('Notification tapped: ${response.payload}');
   }
 
@@ -73,6 +85,33 @@ class NotificationService {
       return granted ?? false;
     }
     return true;
+  }
+
+  /// Request exact alarm permission (Android 12+).
+  /// Returns true if already granted or successfully requested.
+  Future<bool> requestExactAlarmPermission() async {
+    final android = _notifications.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (android == null) return true;
+
+    final granted = await android.requestExactAlarmsPermission();
+    debugPrint('Exact alarm permission granted: $granted');
+    return granted ?? false;
+  }
+
+  /// Check and request battery optimization exemption so that
+  /// the OS doesn't kill the app and prevent alarms from firing.
+  /// This is especially important on OEM devices (Xiaomi, Samsung, etc.)
+  Future<bool> requestBatteryOptimizationExemption() async {
+    final status = await Permission.ignoreBatteryOptimizations.status;
+    if (status.isGranted) {
+      debugPrint('Battery optimization already exempted');
+      return true;
+    }
+
+    final result = await Permission.ignoreBatteryOptimizations.request();
+    debugPrint('Battery optimization exemption: $result');
+    return result.isGranted;
   }
 
   /// Schedule a notification for an event
@@ -139,16 +178,16 @@ class NotificationService {
 
       final details = NotificationDetails(android: androidDetails);
       
-      // Use inexactAllowWhileIdle for more reliable delivery
-      // Exact alarms are heavily restricted on Android 12+ and often fail
-      // Inexact alarms may be delayed by up to ~10 minutes but still deliver same day
+      // Use exactAllowWhileIdle for reliable on-time delivery.
+      // The app requests SCHEDULE_EXACT_ALARM permission at startup; if the
+      // user hasn't granted it the plugin falls back to inexact automatically.
       await _notifications.zonedSchedule(
         event.id ?? event.hashCode,
         title,
         body,
         tzScheduledDate,
         details,
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         payload: event.id?.toString(),
