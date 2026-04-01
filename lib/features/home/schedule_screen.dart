@@ -479,6 +479,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       ),
                       items: const [
                         DropdownMenuItem(value: 'normal', child: Text('Normal')),
+                        DropdownMenuItem(value: 'reminder', child: Text('Reminder')),
                         DropdownMenuItem(value: 'birthday', child: Text('Birthday')),
                         DropdownMenuItem(value: 'exam', child: Text('Exam')),
                         DropdownMenuItem(value: 'homework', child: Text('Homework')),
@@ -721,12 +722,36 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   Future<void> _moveEvent(Event event, DateTime newDate) async {
     final db = await DBHelper.database;
+    final newDateString = dateFormat.format(newDate);
+
+    // Prevent stale alarms when moving a reminder-enabled event.
+    if (event.id != null && event.remindMe) {
+      await NotificationService().cancelEventNotification(event.id!);
+    }
+
     await db.update(
       'events',
-      {'date': dateFormat.format(newDate)},
+      {'date': newDateString},
       where: 'id = ?',
       whereArgs: [event.id],
     );
+
+    if (event.id != null && event.remindMe && event.remindTime != null) {
+      final movedEvent = Event(
+        id: event.id,
+        date: newDateString,
+        task: event.task,
+        type: event.type,
+        remindMe: event.remindMe,
+        remindDaysBefore: event.remindDaysBefore,
+        remindTime: event.remindTime,
+        repeat: event.repeat,
+        repeatInterval: event.repeatInterval,
+        durationDays: event.durationDays,
+      );
+      await NotificationService().scheduleEventNotification(movedEvent);
+    }
+
     await _preloadEvents();
   }
 
@@ -783,6 +808,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     switch (event.type) {
       case 'birthday':
         return const Color(0xFFE91E63); // pink
+      case 'reminder':
+        return const Color(0xFF14B8A6); // teal
       case 'exam':
         return const Color(0xFF2563EB); // blue
       case 'homework':
@@ -805,6 +832,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             Icon(Icons.cake, color: Colors.white, size: 16),
             SizedBox(width: 4),
             Text("Birthday", style: TextStyle(color: Colors.white, fontSize: 12)),
+          ],
+        );
+      case 'reminder':
+        return const Row(
+          children: [
+            Icon(Icons.notifications_active, color: Colors.white, size: 16),
+            SizedBox(width: 4),
+            Text("Reminder", style: TextStyle(color: Colors.white, fontSize: 12)),
           ],
         );
       case 'exam':
@@ -880,7 +915,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          if (event.type == 'birthday' || event.type == 'exam' || event.type == 'homework' || event.type == 'festival')
+          if (event.type == 'birthday' || event.type == 'exam' || event.type == 'homework' || event.type == 'festival' || event.type == 'reminder')
             Padding(
               padding: const EdgeInsets.only(top: 2),
               child: _eventTypeIcon(event.type),
@@ -1035,7 +1070,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          if (event.type == 'birthday' || event.type == 'exam' || event.type == 'homework' || event.type == 'festival')
+          if (event.type == 'birthday' || event.type == 'exam' || event.type == 'homework' || event.type == 'festival' || event.type == 'reminder')
             Padding(
               padding: const EdgeInsets.only(top: 2),
               child: _eventTypeIcon(event.type),
@@ -1083,7 +1118,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       ),
     );
 
-    if (event.type == 'normal' || event.type == 'homework') {
+    if (event.type == 'normal' || event.type == 'homework' || event.type == 'reminder') {
       return Draggable<Map<String, dynamic>>(
         data: {
           'event': event,

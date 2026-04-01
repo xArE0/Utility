@@ -207,6 +207,8 @@ class NotificationService {
     switch (event.type) {
       case 'birthday':
         return '🎂 Birthday Reminder';
+      case 'reminder':
+        return '🔔 Reminder';
       case 'exam':
         return '📚 Exam Reminder';
       case 'homework':
