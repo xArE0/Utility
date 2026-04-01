@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="80dp"
-    android:layout_height="80dp"
-    android:background="@drawable/circle_bg" />
+    android:layout_width="88dp"
+    android:layout_height="88dp"
+    android:background="@drawable/circle_bg"
+    android:elevation="14dp"
+    android:padding="14dp">
+
+    <ImageView
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="center"
+        android:tint="#FFFFFFFF"
+        android:src="@android:drawable/ic_input_add"
+        android:contentDescription="Click Target" />
+</FrameLayout>

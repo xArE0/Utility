@@ -70,14 +70,10 @@ class _AutoClickerScreenState extends State<AutoClickerScreen> {
       return;
     }
     try {
-      await platform.invokeMethod("startAutoclick", {
-        "x": _x,
-        "y": _y,
-        "delay": _delay,
-      });
+      await platform.invokeMethod("startService");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Autoclicking started at ($_x, $_y) every ${_delay}ms.")),
+          const SnackBar(content: Text("Floating dot shown. Move it, then tap the dot to start/stop autoclicking.")),
         );
       }
     } on PlatformException catch (e) {
@@ -241,7 +237,7 @@ class _AutoClickerScreenState extends State<AutoClickerScreen> {
                       minimumSize: const Size.fromHeight(52),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
-                    child: Text(_checking ? "Checking..." : "Start"),
+                     child: Text(_checking ? "Checking..." : "Show dot"),
                   ),
                 ),
                 const SizedBox(width: 12),

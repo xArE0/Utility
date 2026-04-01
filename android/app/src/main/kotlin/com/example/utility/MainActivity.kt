@@ -3,6 +3,9 @@ package com.example.utility
 import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import androidx.core.content.edit
 import android.provider.Settings
 import android.text.TextUtils
 import io.flutter.embedding.android.FlutterActivity
@@ -11,6 +14,33 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "floating_dot"
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    private fun sendAutoClickBroadcast(intent: Intent) {
+        // Keep the broadcast inside this app so the AccessibilityService receiver gets it reliably.
+        intent.setPackage(packageName)
+        sendBroadcast(intent)
+    }
+
+    private fun markShowDotPending() {
+        getSharedPreferences("FlutterSharedPreferences", MODE_PRIVATE).edit {
+            putBoolean("flutter.autoclick_show_dot_pending", true)
+        }
+    }
+
+    private fun clearShowDotPending() {
+        getSharedPreferences("FlutterSharedPreferences", MODE_PRIVATE).edit {
+            putBoolean("flutter.autoclick_show_dot_pending", false)
+        }
+    }
+
+    private fun sendWithRetry(intent: Intent, retries: Int = 5, stepMs: Long = 250L) {
+        for (i in 0..retries) {
+            mainHandler.postDelayed({
+                sendAutoClickBroadcast(Intent(intent))
+            }, i * stepMs)
+        }
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -21,9 +51,10 @@ class MainActivity : FlutterActivity() {
                     "startService" -> {
                         // Check if accessibility service is enabled first
                         if (isAccessibilityServiceEnabled()) {
+                            markShowDotPending()
                             // Send broadcast to show the dot
                             val intent = Intent(ClickAccessibilityService.ACTION_SHOW_DOT)
-                            sendBroadcast(intent)
+                            sendWithRetry(intent)
                             result.success("Dot show command sent")
                         } else {
                             result.error("NOT_ENABLED", "Accessibility service is not enabled. Please enable it in settings first.", null)
@@ -38,17 +69,24 @@ class MainActivity : FlutterActivity() {
                         val x = (args["x"] as Number).toInt()
                         val y = (args["y"] as Number).toInt()
                         val delay = (args["delay"] as Number).toLong()
+                        markShowDotPending()
+                        // Ensure the dot is shown before starting click loop.
+                        sendWithRetry(Intent(ClickAccessibilityService.ACTION_SHOW_DOT), retries = 3, stepMs = 180L)
+
                         val intent = Intent(ClickAccessibilityService.ACTION_START_AUTOCLICK).apply {
                             putExtra("x", x)
                             putExtra("y", y)
                             putExtra("delay", delay)
                         }
-                        sendBroadcast(intent)
+                        mainHandler.postDelayed({
+                            sendWithRetry(intent, retries = 2, stepMs = 120L)
+                        }, 160)
                         result.success(true)
                     }
                     "stopAutoclick" -> {
+                        clearShowDotPending()
                         val intent = Intent(ClickAccessibilityService.ACTION_STOP_AUTOCLICK)
-                        sendBroadcast(intent)
+                        sendAutoClickBroadcast(intent)
                         result.success(true)
                     }
                     "openAccessibilitySettings" -> {

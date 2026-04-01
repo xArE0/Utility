@@ -3,6 +3,10 @@ package com.example.utility
 import com.example.utility.R
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -14,7 +18,9 @@ import android.os.Handler
 import android.os.Looper
 import android.view.*
 import android.view.accessibility.AccessibilityEvent
-import android.widget.ImageView
+import android.widget.Toast
+import androidx.core.app.NotificationCompat
+import androidx.core.content.edit
 
 class ClickAccessibilityService : AccessibilityService() {
 
@@ -22,6 +28,8 @@ class ClickAccessibilityService : AccessibilityService() {
         const val ACTION_SHOW_DOT = "com.example.utility.SHOW_DOT"
         const val ACTION_START_AUTOCLICK = "com.example.utility.START_AUTOCLICK"
         const val ACTION_STOP_AUTOCLICK = "com.example.utility.STOP_AUTOCLICK"
+        const val NOTIFICATION_ID = 1001
+        const val CHANNEL_ID = "autoclicker_channel"
     }
 
     private lateinit var windowManager: WindowManager
@@ -29,25 +37,33 @@ class ClickAccessibilityService : AccessibilityService() {
     private var handler: Handler? = null
     private var runnable: Runnable? = null
     private var isClicking = false
+    private var lastX = 200
+    private var lastY = 200
     
-    private val showDotReceiver = object : BroadcastReceiver() {
+    private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
-                ACTION_SHOW_DOT -> showFloatingDotSafe()
-                ACTION_START_AUTOCLICK -> {
-                    val x = intent.getIntExtra("x", -1)
-                    val y = intent.getIntExtra("y", -1)
-                    val delay = intent.getLongExtra("delay", 1000L)
-                    if (x >= 0 && y >= 0) startClicking(x, y, delay)
+                ACTION_SHOW_DOT -> {
+                    markDotPending(false)
+                    showFloatingDotSafe()
                 }
-                ACTION_STOP_AUTOCLICK -> stopClicking()
+                ACTION_START_AUTOCLICK -> {
+                    markDotPending(false)
+                    val x = intent.getIntExtra("x", lastX)
+                    val y = intent.getIntExtra("y", lastY)
+                    val delay = intent.getLongExtra("delay", 1000L)
+                    startClicking(x, y, delay)
+                }
+                ACTION_STOP_AUTOCLICK -> removeDotAndStop()
             }
         }
     }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        if (handler == null) handler = Handler(Looper.getMainLooper())
+        handler = Handler(Looper.getMainLooper())
+        
+        createNotificationChannel()
         
         // Register broadcast receiver
         val filter = IntentFilter().apply {
@@ -56,25 +72,68 @@ class ClickAccessibilityService : AccessibilityService() {
             addAction(ACTION_STOP_AUTOCLICK)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(showDotReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+            registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED)
         } else {
-            registerReceiver(showDotReceiver, filter)
+            registerReceiver(receiver, filter)
         }
-        
-        android.widget.Toast.makeText(this, "Accessibility Service Connected", android.widget.Toast.LENGTH_SHORT).show()
-        showFloatingDotSafe()
+
+        // Recover missed command if Flutter sent SHOW_DOT before receiver registration.
+        if (isDotPending()) {
+            markDotPending(false)
+            showFloatingDotSafe()
+        }
+
+        Toast.makeText(this, "Accessibility Service Connected", Toast.LENGTH_SHORT).show()
     }
     
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "AutoClicker Service",
+                NotificationManager.IMPORTANCE_LOW
+            )
+            val manager = getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(channel)
+        }
+    }
+
+    private fun showNotification(isClicking: Boolean) {
+        val stopIntent = Intent(this, NotificationActionReceiver::class.java).apply {
+            action = ACTION_STOP_AUTOCLICK
+        }
+        val stopPendingIntent = PendingIntent.getBroadcast(
+            this, 0, stopIntent,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT else PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("AutoClicker Active")
+            .setContentText(if (isClicking) "Clicking at ($lastX, $lastY)" else "Floating dot is active")
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", stopPendingIntent)
+            .setOngoing(true)
+            .build()
+
+        startForeground(NOTIFICATION_ID, notification)
+    }
+
     private fun showFloatingDotSafe() {
-        try {
-            if (floatingView == null) {
-                showFloatingDot()
-            } else {
-                android.widget.Toast.makeText(this, "Dot already visible", android.widget.Toast.LENGTH_SHORT).show()
-            }
-        } catch (e: Exception) {
-            android.widget.Toast.makeText(this, "Error showing dot: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
-            e.printStackTrace()
+        if (floatingView == null) {
+            showFloatingDot()
+            showNotification(false)
+        }
+    }
+
+    private fun isDotPending(): Boolean {
+        val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+        return prefs.getBoolean("flutter.autoclick_show_dot_pending", false)
+    }
+
+    private fun markDotPending(value: Boolean) {
+        val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+        prefs.edit {
+            putBoolean("flutter.autoclick_show_dot_pending", value)
         }
     }
 
@@ -87,21 +146,21 @@ class ClickAccessibilityService : AccessibilityService() {
         val layoutParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY, 
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY else WindowManager.LayoutParams.TYPE_PHONE,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         )
 
         layoutParams.gravity = Gravity.TOP or Gravity.START
-        layoutParams.x = 200
-        layoutParams.y = 200
+        layoutParams.x = lastX
+        layoutParams.y = lastY
 
         floatingView?.setOnTouchListener(object : View.OnTouchListener {
-            var initialX = 0
-            var initialY = 0
-            var initialTouchX = 0f
-            var initialTouchY = 0f
-            var clickStartTime = 0L
+            private var initialX = 0
+            private var initialY = 0
+            private var initialTouchX = 0f
+            private var initialTouchY = 0f
+            private var clickStartTime = 0L
 
             override fun onTouch(view: View?, event: MotionEvent): Boolean {
                 when (event.action) {
@@ -116,19 +175,14 @@ class ClickAccessibilityService : AccessibilityService() {
                     MotionEvent.ACTION_MOVE -> {
                         layoutParams.x = initialX + (event.rawX - initialTouchX).toInt()
                         layoutParams.y = initialY + (event.rawY - initialTouchY).toInt()
+                        lastX = layoutParams.x
+                        lastY = layoutParams.y
                         windowManager.updateViewLayout(floatingView, layoutParams)
                         return true
                     }
                     MotionEvent.ACTION_UP -> {
-                        // Only start clicking if it's a quick tap, not drag
                         if (System.currentTimeMillis() - clickStartTime < 200) {
-                            if (!isClicking) {
-                                startClicking(layoutParams.x + 40, layoutParams.y + 40)
-                                isClicking = true
-                            } else {
-                                stopClicking()
-                                isClicking = false
-                            }
+                            toggleClicking()
                         }
                         return true
                     }
@@ -140,33 +194,74 @@ class ClickAccessibilityService : AccessibilityService() {
         windowManager.addView(floatingView, layoutParams)
     }
 
-    fun startClicking(x: Int, y: Int) {
-        startClicking(x, y, null)
+    private fun toggleClicking() {
+        if (!isClicking) {
+            val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+            val delay = prefs.getLong("flutter.autoclick_delay", 1000L) // shared_preferences uses long for int if stored as such
+            // Or better, handle both
+            val d = try { prefs.getInt("flutter.autoclick_delay", 1000).toLong() } catch (e: Exception) { prefs.getLong("flutter.autoclick_delay", 1000L) }
+            
+            startClicking(lastX + 30, lastY + 30, d)
+        } else {
+            stopClicking()
+        }
     }
 
-    private fun startClicking(x: Int, y: Int, explicitDelay: Long?) {
-        if (handler == null) handler = Handler(Looper.getMainLooper())
-        // stop any existing loop
-        stopClicking()
+    private fun minimizeApp() {
+        val startMain = Intent(Intent.ACTION_MAIN)
+        startMain.addCategory(Intent.CATEGORY_HOME)
+        startMain.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        startActivity(startMain)
+    }
 
-        val prefs = applicationContext.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-        val delayFromPrefs = prefs.getInt("autoclick_delay", 1000).toLong()
-        val delay = explicitDelay ?: delayFromPrefs
+    private fun startClicking(x: Int, y: Int, delay: Long) {
+        showFloatingDotSafe()
+        stopClicking()
         isClicking = true
+        lastX = x - 30
+        lastY = y - 30
+        
+        // Update floating dot position to match x, y center
+        floatingView?.let {
+            val lp = it.layoutParams as WindowManager.LayoutParams
+            lp.x = lastX
+            lp.y = lastY
+            windowManager.updateViewLayout(it, lp)
+        }
+
+        showNotification(true)
 
         runnable = object : Runnable {
             override fun run() {
-                performClick(x, y)
-                handler?.postDelayed(this, delay)
+                if (isClicking) {
+                    performClick(x, y)
+                    handler?.postDelayed(this, delay)
+                }
             }
         }
         handler?.post(runnable!!)
+        Toast.makeText(this, "Started clicking", Toast.LENGTH_SHORT).show()
+        minimizeApp()
     }
 
-    fun stopClicking() {
+    private fun stopClicking() {
+        isClicking = false
         runnable?.let { handler?.removeCallbacks(it) }
         runnable = null
-        isClicking = false
+        showNotification(false)
+        Toast.makeText(this, "Stopped clicking", Toast.LENGTH_SHORT).show()
+    }
+    
+    fun removeDotAndStop() {
+        markDotPending(false)
+        stopClicking()
+        floatingView?.let {
+            if (::windowManager.isInitialized) {
+                windowManager.removeView(it)
+            }
+        }
+        floatingView = null
+        stopForeground(true)
     }
 
     private fun performClick(x: Int, y: Int) {
@@ -183,15 +278,15 @@ class ClickAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
         super.onDestroy()
         try {
-            unregisterReceiver(showDotReceiver)
-        } catch (e: Exception) {
-            // Receiver might not be registered
-        }
+            unregisterReceiver(receiver)
+        } catch (e: Exception) {}
+        
         floatingView?.let {
             if (::windowManager.isInitialized) {
                 windowManager.removeView(it)
             }
         }
         floatingView = null
+        stopForeground(true)
     }
 }
