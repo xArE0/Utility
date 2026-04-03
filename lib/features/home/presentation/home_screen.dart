@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/static_background.dart';
+import '../../../utils/api_services.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,6 +17,20 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool _showNepaliDates = false;
   final GlobalKey<ScheduleScreenState> _scheduleKey = GlobalKey<ScheduleScreenState>();
+  String? _dailyQuote;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDailyQuote();
+  }
+
+  Future<void> _fetchDailyQuote() async {
+    final quote = await ApiServices.fetchDailyQuote();
+    if (quote != null && mounted) {
+      setState(() => _dailyQuote = quote);
+    }
+  }
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -58,6 +73,26 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(width: 8),
           ],
+          bottom: _dailyQuote != null 
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(36.0),
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 22, right: 16, bottom: 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      _dailyQuote!,
+                      style: AppTypography.bodySmall.copyWith(
+                        fontStyle: FontStyle.italic,
+                        color: AppColors.slate400,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              )
+            : null,
           flexibleSpace: Container(
             color: AppColors.slate900.withOpacity(0.5),
           ),

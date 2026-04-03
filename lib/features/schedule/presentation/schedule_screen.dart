@@ -731,6 +731,8 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                           else if (dayDiff < 0) diffText = "${-dayDiff} days ago";
                           else diffText = "in $dayDiff days";
 
+                          final weatherEmoji = _controller.weatherMap[key];
+
                           return DragTarget<Map<String, dynamic>>(
                             onWillAccept: (data) => data != null && (data['canMove'] == true),
                             onAccept: (data) async {
@@ -765,12 +767,32 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                                                 color: isToday ? AppColors.govGreen : secondaryText,
                                                 fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
                                               )),
-                                          Text(ScheduleController.numFormat.format(date),
-                                              style: TextStyle(
-                                                fontSize: 32,
-                                                color: isToday ? AppColors.govGreen : (isDark ? AppColors.slate50 : AppColors.slate800),
-                                                fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                                              )),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                                            textBaseline: TextBaseline.alphabetic,
+                                            children: [
+                                              if (weatherEmoji != null && weatherEmoji.isNotEmpty)
+                                                Opacity(
+                                                  opacity: 0.0,
+                                                  child: Padding(
+                                                    padding: const EdgeInsets.only(right: 4.0),
+                                                    child: Text(weatherEmoji, style: const TextStyle(fontSize: 16)),
+                                                  ),
+                                                ),
+                                              Text(ScheduleController.numFormat.format(date),
+                                                  style: TextStyle(
+                                                    fontSize: 32,
+                                                    color: isToday ? AppColors.govGreen : (isDark ? AppColors.slate50 : AppColors.slate800),
+                                                    fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                                                  )),
+                                              if (weatherEmoji != null && weatherEmoji.isNotEmpty)
+                                                Padding(
+                                                  padding: const EdgeInsets.only(left: 4.0),
+                                                  child: Text(weatherEmoji, style: const TextStyle(fontSize: 16)),
+                                                ),
+                                            ],
+                                          ),
                                           Text(ScheduleController.dayFormat.format(date),
                                               style: TextStyle(
                                                 fontSize: 16,

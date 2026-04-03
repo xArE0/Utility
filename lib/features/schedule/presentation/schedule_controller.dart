@@ -7,6 +7,7 @@ import '../domain/schedule_entities.dart';
 import '../domain/schedule_repository.dart';
 import '../../../services/notification_service.dart';
 import '../../../utils/ics_parser.dart';
+import '../../../utils/api_services.dart';
 
 enum ScheduleView { timeline, week, month }
 
@@ -43,6 +44,8 @@ class ScheduleController extends ChangeNotifier {
   
   // Memoization cache for _eventsForDate to prevent recalculation
   final Map<String, List<Event>> _eventsForDateCache = {};
+  
+  Map<String, String> weatherMap = {};
 
   bool _isLoadingNepaliDates = false;
 
@@ -111,6 +114,15 @@ class ScheduleController extends ChangeNotifier {
   Future<void> init() async {
     await _repository.init();
     await preloadEvents();
+    
+    // Fetch weather asynchronously so it doesn't block UI
+    ApiServices.fetchKathmanduWeather().then((fetched) {
+      if (fetched.isNotEmpty) {
+        weatherMap = fetched;
+        notifyListeners();
+      }
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController != null && _scrollController!.hasClients) {
         final idx = indexFromDate(_selectedDate);
