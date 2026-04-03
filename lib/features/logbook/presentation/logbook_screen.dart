@@ -294,8 +294,28 @@ class _LogbookScreenState extends State<LogbookScreen> {
     final accent = _parseColor(entry.colorHex);
     final isExpanded = _expandedEntryId == entry.id;
     final elapsed = entry.elapsedDays;
-    final elapsedText = _controller.formatElapsed(elapsed);
     final hero = _controller.formatElapsedHero(elapsed);
+
+    final totalDays = entry.totalDays;
+    String totalIntervalText;
+    if (totalDays == 0) {
+      totalIntervalText = '0 days';
+    } else if (totalDays < 7) {
+      totalIntervalText = totalDays == 1 ? '1 day' : '$totalDays days';
+    } else if (totalDays < 30) {
+      final weeks = totalDays ~/ 7;
+      final days = totalDays % 7;
+      totalIntervalText = days == 0 ? '${weeks}w' : '${weeks}w ${days}d';
+    } else if (totalDays < 365) {
+      final months = totalDays ~/ 30;
+      final remDays = totalDays % 30;
+      totalIntervalText = remDays == 0 ? '${months}mo' : '${months}mo ${remDays}d';
+    } else {
+      final years = totalDays ~/ 365;
+      final remDays = totalDays % 365;
+      final months = remDays ~/ 30;
+      totalIntervalText = months == 0 ? '${years}y' : '${years}y ${months}mo';
+    }
 
     return GlassCard(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -347,15 +367,20 @@ class _LogbookScreenState extends State<LogbookScreen> {
                           hero['unit']!,
                           style: AppTypography.bodySmall.copyWith(
                             color: AppColors.slate400,
-                            fontSize: 10,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                         if (hero['sub']!.isNotEmpty)
-                          Text(
-                            hero['sub']!,
-                            style: AppTypography.bodySmall.copyWith(
-                              color: accent.withOpacity(0.6),
-                              fontSize: 9,
+                          Padding(
+                            padding: const EdgeInsets.only(top: 3),
+                            child: Text(
+                              hero['sub']!,
+                              style: AppTypography.bodySmall.copyWith(
+                                color: accent,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                       ],
@@ -372,12 +397,10 @@ class _LogbookScreenState extends State<LogbookScreen> {
                           style: AppTypography.titleMedium.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          elapsedText,
+                          'Running for $totalIntervalText',
                           style: AppTypography.bodySmall.copyWith(
                             color: AppColors.slate400,
                           ),
@@ -440,11 +463,11 @@ class _LogbookScreenState extends State<LogbookScreen> {
               ),
             ),
           ),
-          // Expanded checkpoint history
-          if (isExpanded && entry.checkpoints.isNotEmpty) ...[
+          // Expanded timeline detail
+          if (isExpanded) ...[
             Divider(color: AppColors.slate700.withOpacity(0.5), height: 1),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -452,84 +475,140 @@ class _LogbookScreenState extends State<LogbookScreen> {
                     children: [
                       Icon(Icons.history, color: AppColors.slate400, size: 14),
                       const SizedBox(width: 6),
-                      Text('Checkpoint History',
+                      Text('Timeline',
                           style: AppTypography.bodySmall.copyWith(
                             color: AppColors.slate400,
                             fontWeight: FontWeight.w600,
                           )),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  ...entry.checkpoints.map((cp) {
-                    final cpDate = DateTime.parse(cp.date);
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: accent,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            DateFormat('MMM dd, yyyy').format(cpDate),
-                            style: AppTypography.bodySmall.copyWith(color: AppColors.slate300),
-                          ),
-                          if (cp.note != null && cp.note!.isNotEmpty) ...[
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                '— ${cp.note}',
-                                style: AppTypography.bodySmall.copyWith(
-                                  color: AppColors.slate500,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                  const SizedBox(height: 12),
+                  // Render checkpoints if any
+                  if (entry.checkpoints.isNotEmpty)
+                    ...entry.checkpoints.asMap().entries.map((e) {
+                      final i = e.key;
+                      final cp = e.value;
+                      final cpDate = DateTime.parse(cp.date);
+                      final prevDateStr = i < entry.checkpoints.length - 1
+                          ? entry.checkpoints[i + 1].date
+                          : entry.startDate;
+                      final prevDate = DateTime.parse(prevDateStr);
+                      final diffDays = DateTime(cpDate.year, cpDate.month, cpDate.day)
+                          .difference(DateTime(prevDate.year, prevDate.month, prevDate.day))
+                          .inDays;
+                      
+                      String intervalText;
+                      if (diffDays == 0) {
+                        intervalText = '0 days';
+                      } else if (diffDays < 7) {
+                        intervalText = diffDays == 1 ? '1 day' : '$diffDays days';
+                      } else if (diffDays < 30) {
+                        final weeks = diffDays ~/ 7;
+                        final days = diffDays % 7;
+                        intervalText = days == 0 ? '${weeks}w' : '${weeks}w ${days}d';
+                      } else if (diffDays < 365) {
+                        final months = diffDays ~/ 30;
+                        final remDays = diffDays % 30;
+                        intervalText = remDays == 0 ? '${months}mo' : '${months}mo ${remDays}d';
+                      } else {
+                        final years = diffDays ~/ 365;
+                        final remDays = diffDays % 365;
+                        final months = remDays ~/ 30;
+                        intervalText = months == 0 ? '${years}y' : '${years}y ${months}mo';
+                      }
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              margin: const EdgeInsets.only(top: 5),
+                              decoration: BoxDecoration(
+                                color: accent,
+                                shape: BoxShape.circle,
                               ),
                             ),
+                            const SizedBox(width: 10),
+                            Text(
+                              DateFormat('MMM dd, yyyy').format(cpDate),
+                              style: AppTypography.bodySmall.copyWith(color: AppColors.slate300),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              margin: const EdgeInsets.only(top: 1),
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: accent.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                '+$intervalText',
+                                style: TextStyle(
+                                  color: accent,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            if (cp.note != null && cp.note!.isNotEmpty) ...[
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '— ${cp.note}',
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: AppColors.slate500,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
-                        ],
-                      ),
-                    );
-                  }),
+                        ),
+                      );
+                    }),
+
+                  // Always show the start date at the bottom to close the timeline
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          margin: const EdgeInsets.only(top: 5),
+                          decoration: BoxDecoration(
+                            color: AppColors.slate500,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          DateFormat('MMM dd, yyyy').format(DateTime.parse(entry.startDate)),
+                          style: AppTypography.bodySmall.copyWith(color: AppColors.slate500),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            entry.note != null && entry.note!.isNotEmpty
+                                ? '— Started: ${entry.note}'
+                                : '— Started log',
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.slate600,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
           ],
-          // Show "started on" if expanded and no checkpoints
-          if (isExpanded && entry.checkpoints.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, color: AppColors.slate500, size: 14),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Started on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(entry.startDate))}',
-                    style: AppTypography.bodySmall.copyWith(color: AppColors.slate500),
-                  ),
-                  if (entry.note != null && entry.note!.isNotEmpty) ...[
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '— ${entry.note}',
-                        style: AppTypography.bodySmall.copyWith(
-                          color: AppColors.slate500,
-                          fontStyle: FontStyle.italic,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
         ],
       ),
     );

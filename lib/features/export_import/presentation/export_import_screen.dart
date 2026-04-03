@@ -16,6 +16,7 @@ class _ExportImportsPageState extends State<ExportImportsPage> {
   final String expenseDbName = 'expense_tracker.db';
   final String dataVaultDbName = 'datavault.db';
   final String cooldownDbName = 'cooldown.db';
+  final String logbookDbName = 'logbook.db';
 
   @override
   void initState() {
@@ -97,6 +98,23 @@ class _ExportImportsPageState extends State<ExportImportsPage> {
             trailing: IconButton(
               icon: const Icon(Icons.file_download_outlined),
               onPressed: () => _controller.importDatabase(context, cooldownDbName),
+            ),
+          ),
+          const Divider(),
+
+          // Logbook export/import entries
+          ListTile(
+            title: const Text('Export Logbook Database'),
+            trailing: IconButton(
+              icon: const Icon(Icons.share),
+              onPressed: () => _controller.exportDatabase(context, logbookDbName),
+            ),
+          ),
+          ListTile(
+            title: const Text('Import Logbook Database'),
+            trailing: IconButton(
+              icon: const Icon(Icons.file_download_outlined),
+              onPressed: () => _controller.importDatabase(context, logbookDbName),
             ),
           ),
           const Divider(),

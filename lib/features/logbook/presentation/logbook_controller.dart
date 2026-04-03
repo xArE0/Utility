@@ -61,51 +61,42 @@ class LogbookController extends ChangeNotifier {
   String formatElapsed(int days) {
     if (days == 0) return 'Today';
     if (days == 1) return '1 day ago';
-    if (days < 30) return '$days days ago';
-    if (days < 365) {
-      final months = days ~/ 30;
-      final remainDays = days % 30;
-      if (remainDays == 0) return '$months month${months > 1 ? 's' : ''} ago';
-      return '$months mo, $remainDays d ago';
-    }
-    final years = days ~/ 365;
-    final remainDays = days % 365;
-    final months = remainDays ~/ 30;
-    if (months == 0) return '$years year${years > 1 ? 's' : ''} ago';
-    return '$years y, $months mo ago';
+    return '$days days ago';
   }
 
   /// Returns a structured breakdown for the hero display on cards.
-  /// {value: '2', unit: 'years', sub: '3 mo'}
-  Map<String, String> formatElapsedHero(int days) {
-    if (days == 0) return {'value': '0', 'unit': 'days', 'sub': 'today'};
-    if (days < 7) return {'value': '$days', 'unit': days == 1 ? 'day' : 'days', 'sub': ''};
-    if (days < 30) {
-      final weeks = days ~/ 7;
-      final rem = days % 7;
+  /// {value: '2', unit: 'months', sub: '3 d'}
+  Map<String, String> formatElapsedHero(int totalDays) {
+    if (totalDays == 0) return {'value': '0', 'unit': 'days', 'sub': 'today'};
+    
+    if (totalDays < 7) {
+      return {'value': '$totalDays', 'unit': totalDays == 1 ? 'day' : 'days', 'sub': ''};
+    } else if (totalDays < 30) {
+      final weeks = totalDays ~/ 7;
+      final remDays = totalDays % 7;
       return {
         'value': '$weeks',
-        'unit': weeks == 1 ? 'week' : 'weeks',
-        'sub': rem > 0 ? '$rem d' : '',
+        'unit': weeks == 1 ? 'week' : 'wks',
+        'sub': remDays == 0 ? '' : '$remDays d',
       };
-    }
-    if (days < 365) {
-      final months = days ~/ 30;
-      final rem = days % 30;
+    } else if (totalDays < 365) {
+      final months = totalDays ~/ 30;
+      final remDays = totalDays % 30;
       return {
         'value': '$months',
-        'unit': months == 1 ? 'month' : 'months',
-        'sub': rem > 0 ? '$rem d' : '',
+        'unit': months == 1 ? 'month' : 'mos',
+        'sub': remDays == 0 ? '' : '$remDays d',
+      };
+    } else {
+      final years = totalDays ~/ 365;
+      final remDays = totalDays % 365;
+      final months = remDays ~/ 30;
+      return {
+        'value': '$years',
+        'unit': years == 1 ? 'year' : 'yrs',
+        'sub': months == 0 ? '' : '$months mo',
       };
     }
-    final years = days ~/ 365;
-    final remDays = days % 365;
-    final months = remDays ~/ 30;
-    return {
-      'value': '$years',
-      'unit': years == 1 ? 'year' : 'years',
-      'sub': months > 0 ? '$months mo' : '',
-    };
   }
 
   @override
