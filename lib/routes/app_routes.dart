@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:utility/features/export_import/export_imports.dart';
-import '../features/home/home_screen.dart';
-import '../features/expenses/expense.dart';
-import '../features/autoclicker/autoclicker_screen.dart';
-import '../features/data_vault/data_vault.dart';
-import '../features/pot_tracker/pot_tracker.dart';
-import '../features/cooldown/cooldown_screen.dart';
+import '../features/export_import/presentation/export_import_screen.dart';
+import '../features/home/presentation/home_screen.dart';
+import '../features/expenses/presentation/expense_screen.dart';
+import '../features/autoclicker/presentation/autoclicker_screen.dart';
+import '../features/data_vault/presentation/data_vault_screen.dart';
+import '../features/pot_tracker/presentation/pot_tracker_screen.dart';
+import '../features/cooldown/presentation/cooldown_screen.dart';
 
 class AppRoutes {
   static const home = '/';

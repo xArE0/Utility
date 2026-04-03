@@ -3,7 +3,8 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'db_helper.dart';
+import '../features/home/data/local_schedule_repository.dart';
+import '../features/home/domain/schedule_entities.dart';
 
 /// Top-level background handler — MUST be a top-level function (not a class
 /// method) so the Android OS can invoke it even when the app process is dead.
@@ -262,9 +263,10 @@ class NotificationService {
   Future<void> rescheduleAllNotifications() async {
     try {
       debugPrint('Rescheduling all notifications...');
-      final db = await DBHelper.database;
-      final maps = await db.query('events', where: 'remindMe = ?', whereArgs: [1]);
-      final events = maps.map((e) => Event.fromMap(e)).toList();
+      final repository = LocalScheduleRepository();
+      await repository.init();
+      final allEvents = await repository.getAllEvents();
+      final events = allEvents.where((e) => e.remindMe == true).toList();
 
       // Cancel all existing notifications first
       await _notifications.cancelAll();

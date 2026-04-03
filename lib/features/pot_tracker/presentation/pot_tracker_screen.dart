@@ -1,40 +1,10 @@
-import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart' as p;
-import '../../core/theme/app_colors.dart';
-
-class Player {
-  String name;
-  double net;
-  Player({required this.name, this.net = 0});
-
-  Map<String, dynamic> toMap() => {'name': name, 'net': net};
-  static Player fromMap(Map m) => Player(name: m['name'] as String, net: (m['net'] as num).toDouble());
-}
-
-class RoundRecord {
-  final DateTime time;
-  final List<String> winners;
-  final double ante;
-  final int playerCount;
-  RoundRecord({required this.time, required this.winners, required this.ante, required this.playerCount});
-
-  Map<String, dynamic> toMap() => {
-    'time': time.toIso8601String(),
-    'winners': winners,
-    'ante': ante,
-    'playerCount': playerCount,
-  };
-  static RoundRecord fromMap(Map m) => RoundRecord(
-    time: DateTime.parse(m['time'] as String),
-    winners: List<String>.from(m['winners'] as List),
-    ante: (m['ante'] as num).toDouble(),
-    playerCount: (m['playerCount'] as num).toInt(),
-  );
-}
+import '../../../core/theme/app_colors.dart';
+import '../domain/pot_entities.dart';
+import '../data/local_pot_repository.dart';
+import 'pot_tracker_controller.dart';
 
 class PotTrackerPage extends StatefulWidget {
   const PotTrackerPage({super.key});
@@ -44,94 +14,42 @@ class PotTrackerPage extends StatefulWidget {
 }
 
 class _PotTrackerPageState extends State<PotTrackerPage> {
-  final List<Player> players = [];
-  double ante = 0.0;
-  final List<RoundRecord> history = [];
-
+  late final PotTrackerController _controller;
   final TextEditingController _newPlayerCtl = TextEditingController();
   final TextEditingController _anteCtl = TextEditingController();
 
-  Database? _db;
   OverlayEntry? _overlayEntry;
   bool _isDragging = false;
 
   @override
   void initState() {
     super.initState();
-    _initDbAndLoad();
+    // In a full production app, you might use GetIt to inject the repository
+    _controller = PotTrackerController(repository: LocalPotRepository());
+    _controller.init();
+    _controller.addListener(_onControllerNotify);
+  }
+
+  void _onControllerNotify() {
+    if (mounted) {
+      if (_anteCtl.text.isEmpty && _controller.ante > 0) {
+        _anteCtl.text = _controller.ante.toStringAsFixed(2);
+      }
+      setState(() {});
+    }
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_onControllerNotify);
     _newPlayerCtl.dispose();
     _anteCtl.dispose();
-    _db?.close();
+    _controller.dispose();
     super.dispose();
   }
 
-  Future<void> _initDbAndLoad() async {
-    final databasesPath = await getDatabasesPath();
-    final path = p.join(databasesPath, 'pottracker_session.db');
-    _db = await openDatabase(path, version: 1, onCreate: (db, v) async {
-      await db.execute('CREATE TABLE IF NOT EXISTS session (key TEXT PRIMARY KEY, value TEXT)');
-    });
-    await _loadSession();
-  }
-
-  Future<void> _saveSession() async {
-    if (_db == null) return;
-    final map = {
-      'players': players.map((p) => p.toMap()).toList(),
-      'ante': ante,
-      'history': history.map((r) => r.toMap()).toList(),
-    };
-    final jsonStr = jsonEncode(map);
-    await _db!.insert('session', {'key': 'latest', 'value': jsonStr}, conflictAlgorithm: ConflictAlgorithm.replace);
-  }
-
-  Future<void> _loadSession() async {
-    if (_db == null) return;
-    final rows = await _db!.query('session', where: 'key = ?', whereArgs: ['latest']);
-    if (rows.isEmpty) return;
-    final value = rows.first['value'] as String;
-    final map = jsonDecode(value) as Map<String, dynamic>;
-    final loadedPlayers = (map['players'] as List).map((e) => Player.fromMap(e as Map)).toList();
-    final loadedAnte = (map['ante'] as num).toDouble();
-    final loadedHistory = (map['history'] as List).map((e) => RoundRecord.fromMap(e as Map)).toList();
-    setState(() {
-      players.clear();
-      players.addAll(loadedPlayers);
-      ante = loadedAnte;
-      history.clear();
-      history.addAll(loadedHistory);
-      _anteCtl.text = ante > 0 ? ante.toStringAsFixed(2) : '';
-    });
-  }
-
-  String _generateDefaultName() {
-    final regex = RegExp(r'^Player (\d+)$');
-    var maxN = 0;
-    for (final p in players) {
-      final m = regex.firstMatch(p.name);
-      if (m != null) {
-        final n = int.tryParse(m.group(1) ?? '') ?? 0;
-        if (n > maxN) maxN = n;
-      }
-    }
-    return 'Player ${maxN + 1}';
-  }
-
-  void addPlayer(String name) {
-    final useName = (name.trim().isEmpty) ? _generateDefaultName() : name.trim();
-    setState(() {
-      players.add(Player(name: useName));
-      _newPlayerCtl.clear();
-    });
-    _saveSession();
-  }
-
   void renamePlayer(int index) async {
-    final ctl = TextEditingController(text: players[index].name);
+    final ctl = TextEditingController(text: _controller.players[index].name);
     final res = await showDialog<String>(
       context: context,
       builder: (_) => AlertDialog(
@@ -156,28 +74,21 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
         ],
       ),
     );
-    if (res != null && res.trim().isNotEmpty) {
-      setState(() => players[index].name = res.trim());
-      await _saveSession();
+    if (res != null) {
+      _controller.renamePlayer(index, res);
     }
-  }
-
-  void removePlayer(int index) {
-    setState(() => players.removeAt(index));
-    _saveSession();
   }
 
   void setAnteFromInput() {
     final v = double.tryParse(_anteCtl.text);
     if (v != null && v >= 0) {
-      setState(() => ante = double.parse(v.toStringAsFixed(2)));
-      _saveSession();
+      _controller.setAnte(v);
     }
   }
 
   void settleWinner(int winnerIndex) {
-    if (players.isEmpty) return;
-    if (ante <= 0) {
+    if (_controller.players.isEmpty) return;
+    if (_controller.ante <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Set a non-zero ante first.'),
@@ -187,28 +98,16 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
       );
       return;
     }
-    final n = players.length;
-    setState(() {
-      for (var i = 0; i < n; i++) {
-        if (i == winnerIndex) continue;
-        players[i].net = double.parse((players[i].net - ante).toStringAsFixed(2));
-      }
-      players[winnerIndex].net = double.parse((players[winnerIndex].net + ante * (n - 1)).toStringAsFixed(2));
-      history.insert(
-        0,
-        RoundRecord(time: DateTime.now(), winners: [players[winnerIndex].name], ante: ante, playerCount: n),
-      );
-      _removeOverlay();
-      _isDragging = false;
-    });
-    _saveSession();
+    _controller.settleWinner(winnerIndex);
+    _removeOverlay();
+    setState(() => _isDragging = false);
   }
 
   void _showRadialMenu(Offset startGlobal) {
     final overlay = Overlay.of(context);
     _overlayEntry = OverlayEntry(
       builder: (_) => RadialMenuOverlay(
-        players: players,
+        players: _controller.players,
         startGlobal: startGlobal,
         onSelect: (index) => settleWinner(index),
         onCancel: _removeOverlay,
@@ -245,14 +144,9 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
         ],
       ),
     );
-    if (confirmed != true) return;
-    setState(() {
-      for (final p in players) {
-        p.net = 0.0;
-      }
-      history.clear();
-    });
-    await _saveSession();
+    if (confirmed == true) {
+      _controller.resetTransactions();
+    }
   }
 
   @override
@@ -287,12 +181,12 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        '${players.length} Players',
+                        '${_controller.players.length} Players',
                         style: const TextStyle(color: Colors.white70, fontSize: 13),
                       ),
                       const SizedBox(width: 16),
                       Text(
-                        'Ante: $ante',
+                        'Ante: ${_controller.ante}',
                         style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
                       ),
                     ],
@@ -309,9 +203,8 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
               IconButton(
                 icon: const Icon(Icons.delete_sweep),
                 tooltip: 'Clear history',
-                onPressed: () async {
-                  setState(() => history.clear());
-                  await _saveSession();
+                onPressed: () {
+                  _controller.clearHistory();
                 },
               ),
             ],
@@ -412,12 +305,18 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
                                   ),
                                 ),
                                 style: TextStyle(color: isDark ? AppColors.slate50 : AppColors.slate900),
-                                onSubmitted: addPlayer,
+                                onSubmitted: (v) {
+                                  _controller.addPlayer(v);
+                                  _newPlayerCtl.clear();
+                                },
                               ),
                             ),
                             const SizedBox(width: 12),
                             ElevatedButton(
-                              onPressed: () => addPlayer(_newPlayerCtl.text),
+                              onPressed: () {
+                                _controller.addPlayer(_newPlayerCtl.text);
+                                _newPlayerCtl.clear();
+                              },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF27AE60),
                                 foregroundColor: Colors.white,
@@ -436,8 +335,8 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text('Players', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                      if (players.isNotEmpty)
-                        Text('${players.length} total', style: TextStyle(color: Colors.grey.shade600)),
+                      if (_controller.players.isNotEmpty)
+                        Text('${_controller.players.length} total', style: TextStyle(color: Colors.grey.shade600)),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -445,7 +344,7 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
                   const SizedBox(height: 20),
                   GestureDetector(
                     onTapDown: (details) {
-                      if (players.isEmpty) return;
+                      if (_controller.players.isEmpty) return;
                       _showRadialMenu(details.globalPosition);
                     },
                     child: Container(
@@ -486,8 +385,8 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text('History', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                      if (history.isNotEmpty)
-                        Text('${history.length} rounds', style: TextStyle(color: Colors.grey.shade600)),
+                      if (_controller.history.isNotEmpty)
+                        Text('${_controller.history.length} rounds', style: TextStyle(color: Colors.grey.shade600)),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -528,7 +427,7 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
   Widget _buildPlayersList() {
     final theme = Theme.of(context);
     final bool isDark = theme.brightness == Brightness.dark;
-    if (players.isEmpty) {
+    if (_controller.players.isEmpty) {
       return _buildCard(
         child: Center(
           child: Padding(
@@ -548,7 +447,7 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
     }
 
     return Column(
-      children: players.asMap().entries.map((entry) {
+      children: _controller.players.asMap().entries.map((entry) {
         final i = entry.key;
         final p = entry.value;
         final isPositive = p.net > 0;
@@ -611,7 +510,7 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
-                  onPressed: () => removePlayer(i),
+                  onPressed: () => _controller.removePlayer(i),
                   color: isDark ? AppColors.slate300 : Colors.grey.shade600,
                 ),
               ],
@@ -626,7 +525,7 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
   Widget _buildHistory() {
     final theme = Theme.of(context);
     final bool isDark = theme.brightness == Brightness.dark;
-    if (history.isEmpty) {
+    if (_controller.history.isEmpty) {
       return _buildCard(
         child: Center(
           child: Padding(
@@ -644,7 +543,7 @@ class _PotTrackerPageState extends State<PotTrackerPage> {
     }
 
     return Column(
-      children: history.map((r) {
+      children: _controller.history.map((r) {
         final winnings = r.ante * (r.playerCount - 1);
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
@@ -741,24 +640,18 @@ class _RadialMenuOverlayState extends State<RadialMenuOverlay> with SingleTicker
   int? _getNearestIndex(Offset currentPos) {
     if (_startPos == null) return null;
 
-    // Calculate movement delta from start position
     final delta = currentPos - _startPos!;
     final moveDistance = delta.distance;
 
-    // Need minimum movement to select
     if (moveDistance < 30) return null;
 
-    // Calculate angle of movement direction
     var angle = atan2(delta.dy, delta.dx);
 
-    // Normalize angle to 0-2π range
     if (angle < 0) angle += 2 * pi;
 
-    // Adjust for starting at top (-π/2)
     angle = angle + pi / 2;
     if (angle >= 2 * pi) angle -= 2 * pi;
 
-    // Find which slice this angle falls into
     final angleStep = 2 * pi / widget.players.length;
     final sliceIndex = (angle / angleStep).floor() % widget.players.length;
 

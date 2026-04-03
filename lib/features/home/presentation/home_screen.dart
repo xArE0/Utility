@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../routes/app_routes.dart';
+import '../../../routes/app_routes.dart';
 import 'schedule_screen.dart';
 import 'package:intl/intl.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_typography.dart';
-import '../../core/widgets/static_background.dart';
-import '../../core/widgets/glass_card.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/static_background.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'datavault_db.dart';
-import '../../core/theme/app_colors.dart';
+import 'datavault_controller.dart';
+import '../domain/vault_entities.dart';
+import '../data/local_vault_repository.dart';
+import '../../../core/theme/app_colors.dart';
 
 class DataVaultPage extends StatefulWidget {
   const DataVaultPage({super.key});
@@ -11,30 +13,29 @@ class DataVaultPage extends StatefulWidget {
 }
 
 class _DataVaultPageState extends State<DataVaultPage> {
-  final db = DataVaultDB();
-  List<Map<String, dynamic>> items = [];
-  Set<int> visibleIds = {}; // Track visibility of password text
-  
-  String searchQuery = '';
+  late final DataVaultController _controller;
   final TextEditingController _searchController = TextEditingController();
-
-  final List<String> categories = ['Passwords', 'IDs', 'Cards', 'Bank Accounts'];
 
   @override
   void initState() {
     super.initState();
-    _loadItems();
+    _controller = DataVaultController(repository: LocalVaultRepository());
+    _controller.init();
+    _controller.addListener(_onControllerNotify);
+  }
+
+  void _onControllerNotify() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_onControllerNotify);
     _searchController.dispose();
+    _controller.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadItems() async {
-    final data = await db.getAllItems();
-    setState(() => items = data);
   }
 
   void _copyToClipboard(String value) {
@@ -57,9 +58,8 @@ class _DataVaultPageState extends State<DataVaultPage> {
           ),
           TextButton(
             onPressed: () async {
-              await db.deleteItem(id);
-              Navigator.pop(dialogContext);
-              _loadItems();
+              await _controller.deleteItem(id);
+              if (mounted) Navigator.pop(dialogContext);
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
@@ -68,14 +68,14 @@ class _DataVaultPageState extends State<DataVaultPage> {
     );
   }
 
-  void _showItemDialog({Map<String, dynamic>? item}) async {
+  void _showItemDialog({VaultItem? item}) async {
     final isEditing = item != null;
-    final labelController = TextEditingController(text: isEditing ? item['label'] : '');
-    final valueController = TextEditingController(text: isEditing ? item['value'] : '');
-    String selectedCategory = isEditing ? item['category'] : categories[0];
+    final labelController = TextEditingController(text: isEditing ? item.label : '');
+    final valueController = TextEditingController(text: isEditing ? item.value : '');
+    String selectedCategory = isEditing ? item.category : _controller.categories[0];
 
-    if (!categories.contains(selectedCategory)) {
-      selectedCategory = categories[0];
+    if (!_controller.categories.contains(selectedCategory)) {
+      selectedCategory = _controller.categories[0];
     }
 
     await showDialog(
@@ -88,7 +88,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
             children: [
               DropdownButtonFormField<String>(
                 value: selectedCategory,
-                items: categories
+                items: _controller.categories
                     .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                     .toList(),
                 onChanged: (val) {
@@ -118,21 +118,20 @@ class _DataVaultPageState extends State<DataVaultPage> {
               if (labelController.text.isNotEmpty &&
                   valueController.text.isNotEmpty) {
                 if (isEditing) {
-                  await db.updateItem(
-                    item['id'],
+                  await _controller.updateItem(
+                    item.id!,
                     labelController.text,
                     valueController.text,
                     selectedCategory,
                   );
                 } else {
-                  await db.addItem(
+                  await _controller.addItem(
                     labelController.text,
                     valueController.text,
                     selectedCategory,
                   );
                 }
-                Navigator.pop(dialogContext);
-                _loadItems();
+                if (mounted) Navigator.pop(dialogContext);
               }
             },
             child: const Text('Save'),
@@ -142,7 +141,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
     );
   }
 
-  Widget _buildVaultCard(Map<String, dynamic> item) {
+  Widget _buildVaultCard(VaultItem item) {
     final theme = Theme.of(context);
     final bool isDark = theme.brightness == Brightness.dark;
     final cs = theme.colorScheme;
@@ -151,8 +150,8 @@ class _DataVaultPageState extends State<DataVaultPage> {
     final Color primaryText = isDark ? AppColors.slate50 : AppColors.slate900;
     final Color secondaryText = isDark ? AppColors.slate300 : Colors.grey[600]!;
 
-    final id = item['id'] as int;
-    final isVisible = visibleIds.contains(id);
+    final id = item.id!;
+    final isVisible = _controller.visibleIds.contains(id);
 
     return Card(
       elevation: isDark ? 0 : 4,
@@ -167,7 +166,6 @@ class _DataVaultPageState extends State<DataVaultPage> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Left Content: Icon + Label + Value
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -185,13 +183,12 @@ class _DataVaultPageState extends State<DataVaultPage> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          item['label'],
+                          item.label,
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: primaryText,
                           ),
-                          // No maxLines, allow wrap
                         ),
                       ),
                     ],
@@ -209,15 +206,14 @@ class _DataVaultPageState extends State<DataVaultPage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    isVisible ? item['value'] : '••••••••',
+                    isVisible ? item.value : '••••••••',
                     style: TextStyle(
                       fontSize: 16,
-                      letterSpacing: 2.0, // Requested spacing
+                      letterSpacing: 2.0,
                       fontWeight: FontWeight.bold,
                       fontFamily: isVisible ? null : 'monospace',
                       color: primaryText,
                     ),
-                    // No maxLines, allow wrap
                   ),
                 ],
               ),
@@ -225,7 +221,6 @@ class _DataVaultPageState extends State<DataVaultPage> {
             
             const SizedBox(width: 12),
             
-            // Right Content: 2x2 Button Matrix
             Container(
               decoration: BoxDecoration(
                  color: isDark ? AppColors.slate900.withOpacity(0.55) : Colors.grey[100],
@@ -241,21 +236,13 @@ class _DataVaultPageState extends State<DataVaultPage> {
                       _MatrixButton(
                         icon: isVisible ? Icons.visibility_off : Icons.visibility,
                         color: cs.primary,
-                        onPressed: () {
-                           setState(() {
-                            if (isVisible) {
-                              visibleIds.remove(id);
-                            } else {
-                              visibleIds.add(id);
-                            }
-                          });
-                        },
+                        onPressed: () => _controller.toggleVisibility(id),
                       ),
                       Container(width: 1, height: 40, color: border),
                       _MatrixButton(
                         icon: Icons.copy,
                         color: cs.primary,
-                        onPressed: () => _copyToClipboard(item['value']),
+                        onPressed: () => _copyToClipboard(item.value),
                       ),
                     ],
                   ),
@@ -296,12 +283,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
     final Color primaryText = isDark ? AppColors.slate50 : AppColors.slate900;
     final Color secondaryText = isDark ? AppColors.slate300 : Colors.grey[600]!;
 
-    final filteredItems = items.where((item) {
-      final label = item['label'].toString().toLowerCase();
-      final category = item['category'].toString().toLowerCase();
-      final query = searchQuery.toLowerCase();
-      return label.contains(query) || category.contains(query);
-    }).toList();
+    final filteredItems = _controller.filteredItems;
 
     return Scaffold(
       backgroundColor: pageBg,
@@ -313,7 +295,6 @@ class _DataVaultPageState extends State<DataVaultPage> {
       ),
       body: Column(
         children: [
-          // Styled Search Bar
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
@@ -333,24 +314,18 @@ class _DataVaultPageState extends State<DataVaultPage> {
                   borderSide: BorderSide(color: border),
                 ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                suffixIcon: searchQuery.isNotEmpty
+                suffixIcon: _controller.searchQuery.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear),
                       onPressed: () {
                          _searchController.clear();
-                         setState(() {
-                           searchQuery = '';
-                         });
+                         _controller.searchQuery = '';
                       },
                     )
                   : null,
               ),
               style: TextStyle(color: primaryText),
-              onChanged: (val) {
-                setState(() {
-                  searchQuery = val;
-                });
-              },
+              onChanged: (val) => _controller.searchQuery = val,
             ),
           ),
           
@@ -363,7 +338,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
                         Icon(Icons.lock_open, size: 60, color: isDark ? AppColors.slate500 : Colors.grey[400]),
                         const SizedBox(height: 16),
                         Text(
-                          items.isEmpty 
+                          _controller.items.isEmpty 
                             ? 'Your vault is empty.\nProtect your data now!' 
                             : 'No matches found.',
                           textAlign: TextAlign.center,
@@ -374,9 +349,9 @@ class _DataVaultPageState extends State<DataVaultPage> {
                   )
                 : ListView(
                     padding: const EdgeInsets.only(bottom: 80),
-                    children: categories.map((category) {
+                    children: _controller.categories.map((category) {
                       final categoryItems = filteredItems
-                          .where((i) => i['category'] == category)
+                          .where((i) => i.category == category)
                           .toList();
                       
                       if (categoryItems.isEmpty) return const SizedBox.shrink();

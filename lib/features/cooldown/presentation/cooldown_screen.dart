@@ -1,22 +1,21 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_typography.dart';
-import '../../core/widgets/static_background.dart';
-import '../../core/widgets/glass_card.dart';
-import 'cooldown_item.dart';
-import 'cooldown_db.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/static_background.dart';
+import '../../../core/widgets/glass_card.dart';
+import '../domain/cooldown_entities.dart';
+import '../data/local_cooldown_repository.dart';
+import 'cooldown_controller.dart';
 
-// ─── Accent palette for item color tags ───
 const _accentColors = [
-  Color(0xFF06B6D4), // Cyan
-  Color(0xFF8B5CF6), // Violet
-  Color(0xFFF59E0B), // Amber
-  Color(0xFFEC4899), // Pink
-  Color(0xFF10B981), // Emerald
-  Color(0xFFEF4444), // Red
+  Color(0xFF06B6D4), 
+  Color(0xFF8B5CF6), 
+  Color(0xFFF59E0B), 
+  Color(0xFFEC4899), 
+  Color(0xFF10B981), 
+  Color(0xFFEF4444), 
 ];
 
 class CooldownScreen extends StatefulWidget {
@@ -28,86 +27,36 @@ class CooldownScreen extends StatefulWidget {
 
 class _CooldownScreenState extends State<CooldownScreen>
     with TickerProviderStateMixin {
-  List<CooldownItem> _items = [];
-  Timer? _ticker;
-  bool _loading = true;
-
-  // Track items that just became available for pulse animation
-  final Set<int> _justBecameAvailable = {};
+  late final CooldownController _controller;
 
   @override
   void initState() {
     super.initState();
-    _loadItems();
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) {
-        _checkTransitions();
-        setState(() {}); // Refresh countdown text
-      }
-    });
+    _controller = CooldownController(repository: LocalCooldownRepository());
+    _controller.init();
+    _controller.addListener(_onControllerNotify);
+  }
+
+  void _onControllerNotify() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
   void dispose() {
-    _ticker?.cancel();
+    _controller.removeListener(_onControllerNotify);
+    _controller.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadItems() async {
-    final items = await CooldownDB.getAll();
-    if (mounted) setState(() { _items = items; _loading = false; });
-  }
-
-  void _checkTransitions() {
-    for (final item in _items) {
-      if (item.cooldownEnd != null &&
-          !item.isOnCooldown &&
-          !_justBecameAvailable.contains(item.id)) {
-        _justBecameAvailable.add(item.id!);
-        // Clear the pulse flag after animation duration
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) setState(() => _justBecameAvailable.remove(item.id));
-        });
-      }
-    }
-  }
-
-  // ─── Derived lists ───
-  List<CooldownItem> get _available =>
-      _items.where((i) => !i.isOnCooldown).toList();
-
-  List<CooldownItem> get _onCooldown =>
-      _items.where((i) => i.isOnCooldown).toList()
-        ..sort((a, b) => a.cooldownEnd!.compareTo(b.cooldownEnd!));
-
-  // ─── CRUD ───
-  Future<void> _addItem(CooldownItem item) async {
-    await CooldownDB.insert(item);
-    await _loadItems();
-  }
-
-  Future<void> _updateItem(CooldownItem item) async {
-    await CooldownDB.update(item);
-    await _loadItems();
-  }
-
-  Future<void> _deleteItem(int id) async {
-    await CooldownDB.delete(id);
-    await _loadItems();
   }
 
   Future<void> _startCooldown(CooldownItem item) async {
     final result = await _showCooldownPicker(context, item.name);
     if (result != null) {
-      await _updateItem(item.copyWith(cooldownEnd: result, createdAt: DateTime.now()));
+      await _controller.startCooldown(item, result);
     }
   }
 
-  Future<void> _clearCooldown(CooldownItem item) async {
-    await _updateItem(item.copyWith(clearCooldown: true));
-  }
-
-  // ─── BUILD ───
   @override
   Widget build(BuildContext context) {
     return StaticBackground(
@@ -122,9 +71,9 @@ class _CooldownScreenState extends State<CooldownScreen>
           backgroundColor: const Color(0xFF06B6D4),
           child: const Icon(Icons.add, color: Colors.white),
         ),
-        body: _loading
+        body: _controller.loading
             ? const Center(child: CircularProgressIndicator(color: Color(0xFF06B6D4)))
-            : _items.isEmpty
+            : _controller.items.isEmpty
                 ? _buildEmptyState()
                 : _buildContent(),
       ),
@@ -152,17 +101,14 @@ class _CooldownScreenState extends State<CooldownScreen>
   }
 
   Widget _buildContent() {
-    final available = _available;
-    final cooldown = _onCooldown;
+    final available = _controller.available;
+    final cooldown = _controller.onCooldown;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
       children: [
-        // ─── Summary card ───
         _buildSummaryCard(available.length, cooldown.length),
         const SizedBox(height: 20),
-
-        // ─── On Cooldown section ───
         if (cooldown.isNotEmpty) ...[
           _buildSectionHeader(
             "ON COOLDOWN",
@@ -174,8 +120,6 @@ class _CooldownScreenState extends State<CooldownScreen>
           ...cooldown.map(_buildCooldownTile),
           const SizedBox(height: 20),
         ],
-
-        // ─── Available section ───
         if (available.isNotEmpty) ...[
           _buildSectionHeader(
             "AVAILABLE",
@@ -190,7 +134,6 @@ class _CooldownScreenState extends State<CooldownScreen>
     );
   }
 
-  // ─── Summary Card ───
   Widget _buildSummaryCard(int availCount, int coolCount) {
     return GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -215,7 +158,7 @@ class _CooldownScreenState extends State<CooldownScreen>
           Container(width: 1, height: 36, color: AppColors.slate600),
           const Spacer(),
           _buildStatChip(
-            _items.length.toString(),
+            _controller.items.length.toString(),
             "Total",
             const Color(0xFF06B6D4),
             Icons.inventory_2_outlined,
@@ -247,7 +190,6 @@ class _CooldownScreenState extends State<CooldownScreen>
     );
   }
 
-  // ─── Section Header ───
   Widget _buildSectionHeader(
       String title, IconData icon, Color color, int count) {
     return Padding(
@@ -281,11 +223,9 @@ class _CooldownScreenState extends State<CooldownScreen>
     );
   }
 
-  // ─── Cooldown Tile ───
   Widget _buildCooldownTile(CooldownItem item) {
     final accent = _accentColors[item.colorIndex % _accentColors.length];
     final progress = item.cooldownProgress;
-    // Shift from amber → red as cooldown nears end
     final progressColor = Color.lerp(AppColors.govGold, AppColors.error, progress)!;
 
     return Padding(
@@ -296,7 +236,7 @@ class _CooldownScreenState extends State<CooldownScreen>
         background: _buildDismissBackground(
             Colors.green, Icons.check, Alignment.centerRight, 'Mark Ready'),
         confirmDismiss: (_) async {
-          await _clearCooldown(item);
+          await _controller.clearCooldown(item);
           return false;
         },
         child: GlassCard(
@@ -304,7 +244,6 @@ class _CooldownScreenState extends State<CooldownScreen>
           child: IntrinsicHeight(
             child: Row(
               children: [
-                // Animated accent strip
                 Container(
                   width: 4,
                   decoration: BoxDecoration(
@@ -319,7 +258,6 @@ class _CooldownScreenState extends State<CooldownScreen>
                     ),
                   ),
                 ),
-                // Progress ring
                 Padding(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 14),
@@ -341,7 +279,6 @@ class _CooldownScreenState extends State<CooldownScreen>
                     ),
                   ),
                 ),
-                // Info
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -374,13 +311,12 @@ class _CooldownScreenState extends State<CooldownScreen>
                     ),
                   ),
                 ),
-                // Actions
                 PopupMenuButton<String>(
                   icon: Icon(Icons.more_vert,
                       color: AppColors.slate400, size: 20),
                   color: AppColors.slate800,
                   onSelected: (v) {
-                    if (v == 'ready') _clearCooldown(item);
+                    if (v == 'ready') _controller.clearCooldown(item);
                     if (v == 'edit') _showEditSheet(context, item);
                     if (v == 'delete') _confirmDelete(item);
                   },
@@ -401,10 +337,9 @@ class _CooldownScreenState extends State<CooldownScreen>
     );
   }
 
-  // ─── Available Tile ───
   Widget _buildAvailableTile(CooldownItem item) {
     final accent = _accentColors[item.colorIndex % _accentColors.length];
-    final justReady = _justBecameAvailable.contains(item.id);
+    final justReady = _controller.justBecameAvailable.contains(item.id);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -437,7 +372,6 @@ class _CooldownScreenState extends State<CooldownScreen>
             child: IntrinsicHeight(
               child: Row(
                 children: [
-                  // Green accent strip
                   Container(
                     width: 4,
                     decoration: BoxDecoration(
@@ -496,7 +430,6 @@ class _CooldownScreenState extends State<CooldownScreen>
                       ),
                     ),
                   ),
-                  // Colored dot indicator
                   Container(
                     width: 10, height: 10,
                     margin: const EdgeInsets.only(right: 4),
@@ -537,7 +470,6 @@ class _CooldownScreenState extends State<CooldownScreen>
     );
   }
 
-  // ─── Dismiss background ───
   Widget _buildDismissBackground(
       Color color, IconData icon, Alignment align, String label) {
     return Container(
@@ -581,7 +513,6 @@ class _CooldownScreenState extends State<CooldownScreen>
     );
   }
 
-  // ─── Format end time ───
   String _formatEnd(DateTime dt) {
     final now = DateTime.now();
     final isToday = dt.year == now.year &&
@@ -594,7 +525,6 @@ class _CooldownScreenState extends State<CooldownScreen>
     return DateFormat('MMM d, h:mm a').format(dt);
   }
 
-  // ─── Confirm delete ───
   Future<void> _confirmDelete(CooldownItem item) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -622,12 +552,8 @@ class _CooldownScreenState extends State<CooldownScreen>
         ],
       ),
     );
-    if (confirmed == true) _deleteItem(item.id!);
+    if (confirmed == true) _controller.deleteItem(item.id!);
   }
-
-  // ───────────────────────────────────────────────
-  // ADD / EDIT BOTTOM SHEETS
-  // ───────────────────────────────────────────────
 
   Future<void> _showAddSheet(BuildContext context) async {
     final result = await showModalBottomSheet<CooldownItem>(
@@ -636,7 +562,7 @@ class _CooldownScreenState extends State<CooldownScreen>
       backgroundColor: Colors.transparent,
       builder: (ctx) => _AddEditSheet(),
     );
-    if (result != null) await _addItem(result);
+    if (result != null) await _controller.addItem(result);
   }
 
   Future<void> _showEditSheet(
@@ -647,10 +573,9 @@ class _CooldownScreenState extends State<CooldownScreen>
       backgroundColor: Colors.transparent,
       builder: (ctx) => _AddEditSheet(existing: item),
     );
-    if (result != null) await _updateItem(result);
+    if (result != null) await _controller.updateItem(result);
   }
 
-  // ─── Cooldown picker (date/time/both) ───
   Future<DateTime?> _showCooldownPicker(
       BuildContext context, String itemName) async {
     return showModalBottomSheet<DateTime>(
@@ -661,10 +586,6 @@ class _CooldownScreenState extends State<CooldownScreen>
     );
   }
 }
-
-// ───────────────────────────────────────────────
-// Add / Edit Sheet Widget
-// ───────────────────────────────────────────────
 
 class _AddEditSheet extends StatefulWidget {
   final CooldownItem? existing;
@@ -713,7 +634,6 @@ class _AddEditSheetState extends State<_AddEditSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Handle bar
                 Center(
                   child: Container(
                     width: 40, height: 4,
@@ -729,8 +649,6 @@ class _AddEditSheetState extends State<_AddEditSheet> {
                   style: AppTypography.titleLarge,
                 ),
                 const SizedBox(height: 20),
-
-                // Name field
                 TextField(
                   controller: _nameCtrl,
                   autofocus: true,
@@ -752,8 +670,6 @@ class _AddEditSheetState extends State<_AddEditSheet> {
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                // Color picker
                 Text('Color Tag',
                     style: AppTypography.bodySmall
                         .copyWith(color: AppColors.slate400)),
@@ -795,8 +711,6 @@ class _AddEditSheetState extends State<_AddEditSheet> {
                   ),
                 ),
                 const SizedBox(height: 24),
-
-                // Save button
                 SizedBox(
                   width: double.infinity,
                   height: 50,
@@ -836,10 +750,6 @@ class _AddEditSheetState extends State<_AddEditSheet> {
   }
 }
 
-// ───────────────────────────────────────────────
-// Cooldown Picker Sheet (Date / Time / Both)
-// ───────────────────────────────────────────────
-
 enum _PickMode { dateOnly, timeOnly, dateAndTime }
 
 class _CooldownPickerSheet extends StatefulWidget {
@@ -874,7 +784,6 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Handle bar
                 Center(
                   child: Container(
                     width: 40, height: 4,
@@ -892,8 +801,6 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
                     style: AppTypography.bodyMedium
                         .copyWith(color: AppColors.slate400)),
                 const SizedBox(height: 20),
-
-                // Mode chips
                 Row(
                   children: [
                     _buildModeChip('Date', _PickMode.dateOnly, Icons.calendar_today),
@@ -904,29 +811,21 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
                   ],
                 ),
                 const SizedBox(height: 20),
-
-                // Date picker button
                 if (_mode != _PickMode.timeOnly)
                   _buildPickerButton(
                     icon: Icons.calendar_today,
                     label: DateFormat('EEE, MMM d, yyyy').format(_selectedDate),
                     onTap: _pickDate,
                   ),
-
                 if (_mode == _PickMode.dateAndTime)
                   const SizedBox(height: 12),
-
-                // Time picker button
                 if (_mode != _PickMode.dateOnly)
                   _buildPickerButton(
                     icon: Icons.access_time,
                     label: _selectedTime.format(context),
                     onTap: _pickTime,
                   ),
-
                 const SizedBox(height: 12),
-
-                // Preview
                 Container(
                   width: double.infinity,
                   padding:
@@ -953,8 +852,6 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // Confirm button
                 SizedBox(
                   width: double.infinity,
                   height: 50,
@@ -1059,17 +956,14 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
   DateTime _buildDateTime() {
     switch (_mode) {
       case _PickMode.dateOnly:
-        // End of the chosen day
         return DateTime(
             _selectedDate.year, _selectedDate.month, _selectedDate.day,
             23, 59, 59);
       case _PickMode.timeOnly:
-        // Today at the chosen time
         final now = DateTime.now();
         var dt = DateTime(
             now.year, now.month, now.day,
             _selectedTime.hour, _selectedTime.minute);
-        // If the time is in the past today, push to tomorrow
         if (dt.isBefore(now)) dt = dt.add(const Duration(days: 1));
         return dt;
       case _PickMode.dateAndTime:

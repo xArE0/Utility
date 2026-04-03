@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../core/theme/app_colors.dart';
+import '../../../core/theme/app_colors.dart';
+import 'autoclicker_controller.dart';
+import '../data/android_autoclicker_repository.dart';
 
 class AutoClickerScreen extends StatefulWidget {
   const AutoClickerScreen({super.key});
@@ -11,90 +11,27 @@ class AutoClickerScreen extends StatefulWidget {
 }
 
 class _AutoClickerScreenState extends State<AutoClickerScreen> {
-  static const platform = MethodChannel("floating_dot");
+  late final AutoClickerController _controller;
 
-  int _delay = 1200;
-  int _x = 500;
-  int _y = 800;
-  bool _accessEnabled = false;
-  bool _checking = true;
-  String? _error;
-
-  Future<void> _loadPrefs() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _delay = prefs.getInt('autoclick_delay') ?? 1200;
-      _x = prefs.getInt('autoclick_x') ?? _x;
-      _y = prefs.getInt('autoclick_y') ?? _y;
-    });
+  @override
+  void initState() {
+    super.initState();
+    _controller = AutoClickerController(repository: AndroidAutoClickerRepository());
+    _controller.init();
+    _controller.addListener(_onControllerNotify);
   }
 
-  Future<void> _saveDelay(int value) async {
-    setState(() => _delay = value);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('autoclick_delay', value);
-  }
-
-  Future<void> _saveCoords(int x, int y) async {
-    setState(() {
-      _x = x;
-      _y = y;
-    });
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('autoclick_x', x);
-    await prefs.setInt('autoclick_y', y);
-  }
-
-  Future<void> _checkAccessibility() async {
-    try {
-      final enabled = await platform.invokeMethod<bool>("isAccessibilityEnabled") ?? false;
-      setState(() => _accessEnabled = enabled);
-    } catch (e) {
-      debugPrint("Accessibility check failed: $e");
-    }
-  }
-
-  Future<void> _openAccessibilitySettings() async {
-    try {
-      await platform.invokeMethod("openAccessibilitySettings");
-    } catch (e) {
-      setState(() => _error = "Couldn't open accessibility settings: $e");
-    }
-  }
-
-  Future<void> _startFloatingService() async {
-    setState(() => _error = null);
-    await _checkAccessibility();
-    if (!_accessEnabled) {
-      setState(() => _error = "Enable the Accessibility Service first.");
-      return;
-    }
-    try {
-      await platform.invokeMethod("startService");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Floating dot shown. Move it, then tap the dot to start/stop autoclicking.")),
-        );
-      }
-    } on PlatformException catch (e) {
-      setState(() => _error = e.message);
+  void _onControllerNotify() {
+    if (mounted) {
+      setState(() {});
     }
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_onControllerNotify);
+    _controller.dispose();
     super.dispose();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    Future.wait([
-      _loadPrefs(),
-      _checkAccessibility(),
-    ]).whenComplete(() {
-      if (mounted) setState(() => _checking = false);
-    });
   }
 
   @override
@@ -105,21 +42,21 @@ class _AutoClickerScreenState extends State<AutoClickerScreen> {
     final statusChip = Row(
       children: [
         Icon(
-          _accessEnabled ? Icons.verified_user : Icons.error_outline,
-          color: _accessEnabled ? accent : Colors.orange,
+          _controller.accessEnabled ? Icons.verified_user : Icons.error_outline,
+          color: _controller.accessEnabled ? accent : Colors.orange,
           size: 18,
         ),
         const SizedBox(width: 8),
         Text(
-          _accessEnabled ? "Accessibility enabled" : "Accessibility not enabled",
+          _controller.accessEnabled ? "Accessibility enabled" : "Accessibility not enabled",
           style: TextStyle(
-            color: _accessEnabled ? accent : Colors.orange,
+            color: _controller.accessEnabled ? accent : Colors.orange,
             fontWeight: FontWeight.w600,
           ),
         ),
         const Spacer(),
         TextButton(
-          onPressed: _openAccessibilitySettings,
+          onPressed: _controller.openAccessibilitySettings,
           child: const Text("Open settings"),
         ),
       ],
@@ -162,11 +99,12 @@ class _AutoClickerScreenState extends State<AutoClickerScreen> {
                 SizedBox(
                   width: 120,
                   child: TextFormField(
-                    initialValue: _x.toString(),
+                    key: ValueKey('x_${_controller.x}'),
+                    initialValue: _controller.x.toString(),
                     keyboardType: TextInputType.number,
                     onChanged: (v) {
-                      final val = int.tryParse(v) ?? _x;
-                      _saveCoords(val, _y);
+                      final val = int.tryParse(v) ?? _controller.x;
+                      _controller.saveCoords(val, _controller.y);
                     },
                     decoration: const InputDecoration(isDense: true),
                   ),
@@ -181,11 +119,12 @@ class _AutoClickerScreenState extends State<AutoClickerScreen> {
                 SizedBox(
                   width: 120,
                   child: TextFormField(
-                    initialValue: _y.toString(),
+                    key: ValueKey('y_${_controller.y}'),
+                    initialValue: _controller.y.toString(),
                     keyboardType: TextInputType.number,
                     onChanged: (v) {
-                      final val = int.tryParse(v) ?? _y;
-                      _saveCoords(_x, val);
+                      final val = int.tryParse(v) ?? _controller.y;
+                      _controller.saveCoords(_controller.x, val);
                     },
                     decoration: const InputDecoration(isDense: true),
                   ),
@@ -197,17 +136,17 @@ class _AutoClickerScreenState extends State<AutoClickerScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text("Delay per click", style: Theme.of(context).textTheme.titleMedium),
-                Text("${(_delay / 1000).toStringAsFixed(1)} s", style: Theme.of(context).textTheme.titleMedium),
+                Text("${(_controller.delay / 1000).toStringAsFixed(1)} s", style: Theme.of(context).textTheme.titleMedium),
               ],
             ),
             const SizedBox(height: 20),
             Slider(
-              value: _delay.toDouble(),
+              value: _controller.delay.toDouble(),
               min: 200,
               max: 4000,
               divisions: 19,
-              label: "${(_delay / 1000).toStringAsFixed(1)}s",
-              onChanged: (val) => _saveDelay(val.toInt()),
+              label: "${(_controller.delay / 1000).toStringAsFixed(1)}s",
+              onChanged: (val) => _controller.saveDelay(val.toInt()),
             ),
             const SizedBox(height: 8),
             Align(
@@ -218,11 +157,11 @@ class _AutoClickerScreenState extends State<AutoClickerScreen> {
               ),
             ),
             const Spacer(),
-            if (_error != null)
+            if (_controller.error != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Text(
-                  _error!,
+                  _controller.error!,
                   style: const TextStyle(color: Colors.redAccent),
                 ),
               ),
@@ -230,29 +169,20 @@ class _AutoClickerScreenState extends State<AutoClickerScreen> {
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: _checking ? null : _startFloatingService,
+                    onPressed: _controller.checking ? null : () => _controller.startFloatingService(context),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: accent,
                       foregroundColor: Colors.white,
                       minimumSize: const Size.fromHeight(52),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
-                     child: Text(_checking ? "Checking..." : "Show dot"),
+                     child: Text(_controller.checking ? "Checking..." : "Show dot"),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () async {
-                      try {
-                        await platform.invokeMethod("stopAutoclick");
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Autoclick stopped.")),
-                          );
-                        }
-                      } catch (_) {}
-                    },
+                    onPressed: () => _controller.stopAutoclick(context),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.redAccent,
                       foregroundColor: Colors.white,

@@ -1,44 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:file_picker/file_picker.dart';
-import 'dart:io';
-import 'package:sqflite/sqflite.dart';
+import 'export_import_controller.dart';
+import '../data/local_export_import_repository.dart';
 
-class ExportImportsPage extends StatelessWidget {
+class ExportImportsPage extends StatefulWidget {
+  const ExportImportsPage({super.key});
+
+  @override
+  State<ExportImportsPage> createState() => _ExportImportsPageState();
+}
+
+class _ExportImportsPageState extends State<ExportImportsPage> {
+  late final ExportImportController _controller;
+
   final String scheduleDbName = 'schedule.db';
   final String expenseDbName = 'expense_tracker.db';
   final String dataVaultDbName = 'datavault.db';
   final String potTrackerDbName = 'pottracker_session.db';
   final String cooldownDbName = 'cooldown.db';
 
-  const ExportImportsPage({super.key});
-
-  Future<String> _getDbPath(String dbName) async {
-    final dir = await getDatabasesPath();
-    return '$dir/$dbName';
+  @override
+  void initState() {
+    super.initState();
+    _controller = ExportImportController(
+      repository: LocalExportImportRepository(),
+    );
   }
 
-  Future<void> _exportDb(BuildContext context, String dbName) async {
-    final dbPath = await _getDbPath(dbName);
-    if (await File(dbPath).exists()) {
-      await Share.shareXFiles([XFile(dbPath)], text: 'Database backup: $dbName');
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Database file not found: $dbName')),
-      );
-    }
-  }
-
-  Future<void> _importDb(BuildContext context, String dbName) async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.any);
-    if (result != null && result.files.single.path != null) {
-      final pickedFile = File(result.files.single.path!);
-      final dbPath = await _getDbPath(dbName);
-      await pickedFile.copy(dbPath);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Database imported and overwritten: $dbName')),
-      );
-    }
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -52,14 +43,14 @@ class ExportImportsPage extends StatelessWidget {
             title: const Text('Export Schedule Database'),
             trailing: IconButton(
               icon: const Icon(Icons.share),
-              onPressed: () => _exportDb(context, scheduleDbName),
+              onPressed: () => _controller.exportDatabase(context, scheduleDbName),
             ),
           ),
           ListTile(
             title: const Text('Import Schedule Database'),
             trailing: IconButton(
               icon: const Icon(Icons.file_download_outlined),
-              onPressed: () => _importDb(context, scheduleDbName),
+              onPressed: () => _controller.importDatabase(context, scheduleDbName),
             ),
           ),
           const Divider(),
@@ -67,14 +58,14 @@ class ExportImportsPage extends StatelessWidget {
             title: const Text('Export Expense Database'),
             trailing: IconButton(
               icon: const Icon(Icons.share),
-              onPressed: () => _exportDb(context, expenseDbName),
+              onPressed: () => _controller.exportDatabase(context, expenseDbName),
             ),
           ),
           ListTile(
             title: const Text('Import Expense Database'),
             trailing: IconButton(
               icon: const Icon(Icons.file_download_outlined),
-              onPressed: () => _importDb(context, expenseDbName),
+              onPressed: () => _controller.importDatabase(context, expenseDbName),
             ),
           ),
           const Divider(),
@@ -82,14 +73,14 @@ class ExportImportsPage extends StatelessWidget {
             title: const Text('Export Data Vault'),
             trailing: IconButton(
               icon: const Icon(Icons.share),
-              onPressed: () => _exportDb(context, dataVaultDbName),
+              onPressed: () => _controller.exportDatabase(context, dataVaultDbName),
             ),
           ),
           ListTile(
             title: const Text('Import Data Vault'),
             trailing: IconButton(
               icon: const Icon(Icons.file_download_outlined),
-              onPressed: () => _importDb(context, dataVaultDbName),
+              onPressed: () => _controller.importDatabase(context, dataVaultDbName),
             ),
           ),
           const Divider(),
@@ -98,14 +89,14 @@ class ExportImportsPage extends StatelessWidget {
             title: const Text('Export Pot Tracker Session'),
             trailing: IconButton(
               icon: const Icon(Icons.share),
-              onPressed: () => _exportDb(context, potTrackerDbName),
+              onPressed: () => _controller.exportDatabase(context, potTrackerDbName),
             ),
           ),
           ListTile(
             title: const Text('Import Pot Tracker Session'),
             trailing: IconButton(
               icon: const Icon(Icons.file_download_outlined),
-              onPressed: () => _importDb(context, potTrackerDbName),
+              onPressed: () => _controller.importDatabase(context, potTrackerDbName),
             ),
           ),
           const Divider(),
@@ -114,14 +105,14 @@ class ExportImportsPage extends StatelessWidget {
             title: const Text('Export Cooldown Database'),
             trailing: IconButton(
               icon: const Icon(Icons.share),
-              onPressed: () => _exportDb(context, cooldownDbName),
+              onPressed: () => _controller.exportDatabase(context, cooldownDbName),
             ),
           ),
           ListTile(
             title: const Text('Import Cooldown Database'),
             trailing: IconButton(
               icon: const Icon(Icons.file_download_outlined),
-              onPressed: () => _importDb(context, cooldownDbName),
+              onPressed: () => _controller.importDatabase(context, cooldownDbName),
             ),
           ),
           const Divider(),
