@@ -17,15 +17,26 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _showNepaliDates = false;
   final GlobalKey<ScheduleScreenState> _scheduleKey = GlobalKey<ScheduleScreenState>();
 
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return "Good Morning, xArE0!";
+    if (hour < 17) return "Good Afternoon, xArE0!";
+    return "Good Evening, xArE0!";
+  }
+
   @override
   Widget build(BuildContext context) {
     return StaticBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: Text(
-            "Welcome, xArE0!",
-            style: AppTypography.titleLarge,
+          title: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              _getGreeting(),
+              style: AppTypography.titleLarge,
+            ),
           ),
           actions: [
             IconButton(
