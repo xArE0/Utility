@@ -48,7 +48,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
       }
 
       final bool didAuthenticate = await auth.authenticate(
-        localizedReason: 'Fingerprint ki Pattern Bayek NoNo...',
+        localizedReason: 'Fingerprint ki Pattern Bina NoNo...',
       );
 
       if (mounted) {

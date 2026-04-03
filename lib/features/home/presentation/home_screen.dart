@@ -175,13 +175,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               _buildDrawerItem(
                 context,
-                icon: Icons.touch_app,
-                title: "AutoClicker",
-                route: AppRoutes.autoclicker,
-                color: AppColors.slate500,
-              ),
-              _buildDrawerItem(
-                context,
                 icon: Icons.import_export_sharp,
                 title: "Import/Export",
                 route: AppRoutes.importexport,

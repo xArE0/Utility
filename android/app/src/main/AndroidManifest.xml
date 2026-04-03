@@ -4,18 +4,6 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
-        <service
-            android:name=".ClickAccessibilityService"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/accessibility_service_config" />
-        </service>
-
 
         <activity
             android:name=".MainActivity"
@@ -66,7 +54,7 @@
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
             </intent-filter>
         </receiver>
-        <receiver android:name=".NotificationActionReceiver" android:exported="false" />
+
     </application>
     <!-- Notification permissions -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
