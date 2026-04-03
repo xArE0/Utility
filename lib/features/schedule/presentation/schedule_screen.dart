@@ -18,10 +18,10 @@ class ScheduleScreen extends StatefulWidget {
   });
 
   @override
-  State<ScheduleScreen> createState() => _ScheduleScreenState();
+  State<ScheduleScreen> createState() => ScheduleScreenState();
 }
 
-class _ScheduleScreenState extends State<ScheduleScreen> {
+class ScheduleScreenState extends State<ScheduleScreen> {
   late final ScheduleController _controller;
   final ScrollController _scrollController = ScrollController();
 
@@ -35,6 +35,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     _controller.setScrollController(_scrollController);
     _controller.init();
     _controller.addListener(_onControllerNotify);
+  }
+
+  void triggerSyncHolidays() {
+    _controller.syncHolidays(context);
   }
 
   void _onControllerNotify() {

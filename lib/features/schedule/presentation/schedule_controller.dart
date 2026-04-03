@@ -6,6 +6,7 @@ import 'package:nepali_utils/nepali_utils.dart';
 import '../domain/schedule_entities.dart';
 import '../domain/schedule_repository.dart';
 import '../../../services/notification_service.dart';
+import '../../../utils/ics_parser.dart';
 
 enum ScheduleView { timeline, week, month }
 
@@ -435,6 +436,53 @@ class ScheduleController extends ChangeNotifier {
     await preloadEvents();
     _selectedDate = DateTime.parse(newEvent.date);
     notifyListeners();
+  }
+
+  Future<void> syncHolidays(BuildContext context) async {
+    try {
+      final fetchedHolidays = await IcsParser.fetchNepalHolidays();
+      if (fetchedHolidays.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Failed to fetch holidays or no holidays found. Check internet connection.")),
+          );
+        }
+        return;
+      }
+
+      int addedCount = 0;
+      for (final holiday in fetchedHolidays) {
+        // Prevent duplicates: Check if an event with exactly the same date and task already exists
+        bool exists = false;
+        if (_eventsByDate.containsKey(holiday.date)) {
+          exists = _eventsByDate[holiday.date]!.any((e) => e.task == holiday.task);
+        }
+        
+        if (!exists) {
+          await _repository.insertEvent(holiday);
+          addedCount++;
+        }
+      }
+
+      await preloadEvents();
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(addedCount > 0 
+                ? "Successfully synced $addedCount new Nepal holidays!" 
+                : "Holidays are already fully synced up to date."),
+            backgroundColor: Colors.teal,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error syncing holidays: $e"), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   bool isSameDay(DateTime a, DateTime b) {

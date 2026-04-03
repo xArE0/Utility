@@ -15,6 +15,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _showNepaliDates = false;
+  final GlobalKey<ScheduleScreenState> _scheduleKey = GlobalKey<ScheduleScreenState>();
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +28,13 @@ class _HomeScreenState extends State<HomeScreen> {
             style: AppTypography.titleLarge,
           ),
           actions: [
+            IconButton(
+              tooltip: "Sync Nepal Holidays",
+              onPressed: () {
+                _scheduleKey.currentState?.triggerSyncHolidays();
+              },
+              icon: const Icon(Icons.cloud_download_outlined, color: AppColors.govGreen, size: 22),
+            ),
             IconButton(
               tooltip: "Toggle Nepali Date",
               onPressed: () {
@@ -46,6 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         drawer: _buildGlassDrawer(context),
         body: ScheduleScreen(
+          key: _scheduleKey,
           showNepaliDates: _showNepaliDates,
           onToggleNepali: (val) => setState(() => _showNepaliDates = val),
         ),
