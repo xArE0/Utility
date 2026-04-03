@@ -55,9 +55,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           actions: [
             IconButton(
-              tooltip: "Sync Nepal Holidays",
-              onPressed: () {
-                _scheduleKey.currentState?.triggerSyncHolidays();
+              tooltip: "Sync All API Data",
+              onPressed: () async {
+                _scheduleKey.currentState?.triggerSyncApiData();
+                await Future.delayed(const Duration(milliseconds: 1500));
+                await _fetchDailyQuote();
               },
               icon: const Icon(Icons.cloud_download_outlined, color: AppColors.govGreen, size: 22),
             ),

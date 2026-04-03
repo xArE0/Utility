@@ -76,7 +76,7 @@ class LogbookController extends ChangeNotifier {
       final remDays = totalDays % 7;
       return {
         'value': '$weeks',
-        'unit': weeks == 1 ? 'week' : 'wks',
+        'unit': weeks == 1 ? 'week' : 'weeks',
         'sub': remDays == 0 ? '' : '$remDays d',
       };
     } else if (totalDays < 365) {
@@ -84,7 +84,7 @@ class LogbookController extends ChangeNotifier {
       final remDays = totalDays % 30;
       return {
         'value': '$months',
-        'unit': months == 1 ? 'month' : 'mos',
+        'unit': months == 1 ? 'month' : 'months',
         'sub': remDays == 0 ? '' : '$remDays d',
       };
     } else {
@@ -93,7 +93,7 @@ class LogbookController extends ChangeNotifier {
       final months = remDays ~/ 30;
       return {
         'value': '$years',
-        'unit': years == 1 ? 'year' : 'yrs',
+        'unit': years == 1 ? 'year' : 'years',
         'sub': months == 0 ? '' : '$months mo',
       };
     }

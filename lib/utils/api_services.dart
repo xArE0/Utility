@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiServices {
   static const String openMeteoUrl =
-      'https://api.open-meteo.com/v1/forecast?latitude=27.7172&longitude=85.3240&daily=weather_code&timezone=auto';
+      'https://api.open-meteo.com/v1/forecast?latitude=27.7278&longitude=85.3782&daily=weather_code&timezone=auto';
   static const String zenQuotesUrl = 'https://zenquotes.io/api/today';
 
   static String _getWeatherEmoji(int code) {

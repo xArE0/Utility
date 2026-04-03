@@ -37,8 +37,8 @@ class ScheduleScreenState extends State<ScheduleScreen> {
     _controller.addListener(_onControllerNotify);
   }
 
-  void triggerSyncHolidays() {
-    _controller.syncHolidays(context);
+  void triggerSyncApiData() {
+    _controller.syncAllApiData(context);
   }
 
   void _onControllerNotify() {

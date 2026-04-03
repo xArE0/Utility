@@ -450,13 +450,24 @@ class ScheduleController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> syncHolidays(BuildContext context) async {
+  Future<void> syncAllApiData(BuildContext context) async {
     try {
+      // 1. Sync Weather
+      final fetchedWeather = await ApiServices.fetchKathmanduWeather();
+      if (fetchedWeather.isNotEmpty) {
+        weatherMap = fetchedWeather;
+        notifyListeners();
+      }
+
+      // 2. Sync Quote
+      await ApiServices.fetchDailyQuote();
+
+      // 3. Sync Holidays
       final fetchedHolidays = await IcsParser.fetchNepalHolidays();
       if (fetchedHolidays.isEmpty) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Failed to fetch holidays or no holidays found. Check internet connection.")),
+            const SnackBar(content: Text("Partial success. Handled Weather & Quotes, but failed fetching holidays.")),
           );
         }
         return;
@@ -464,7 +475,6 @@ class ScheduleController extends ChangeNotifier {
 
       int addedCount = 0;
       for (final holiday in fetchedHolidays) {
-        // Prevent duplicates: Check if an event with exactly the same date and task already exists
         bool exists = false;
         if (_eventsByDate.containsKey(holiday.date)) {
           exists = _eventsByDate[holiday.date]!.any((e) => e.task == holiday.task);
@@ -482,8 +492,8 @@ class ScheduleController extends ChangeNotifier {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(addedCount > 0 
-                ? "Successfully synced $addedCount new Nepal holidays!" 
-                : "Holidays are already fully synced up to date."),
+                ? "Synced weather, quotes, and $addedCount new holidays!" 
+                : "Weather updated, quotes checked, and holidays synced."),
             backgroundColor: Colors.teal,
           ),
         );
@@ -491,7 +501,7 @@ class ScheduleController extends ChangeNotifier {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error syncing holidays: $e"), backgroundColor: Colors.red),
+          SnackBar(content: Text("Error syncing data: $e"), backgroundColor: Colors.red),
         );
       }
     }
