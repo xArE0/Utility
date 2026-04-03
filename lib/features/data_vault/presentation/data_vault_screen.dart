@@ -4,6 +4,8 @@ import 'datavault_controller.dart';
 import '../domain/vault_entities.dart';
 import '../data/local_vault_repository.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
+import 'package:local_auth/local_auth.dart';
 
 class DataVaultPage extends StatefulWidget {
   const DataVaultPage({super.key});
@@ -16,12 +18,53 @@ class _DataVaultPageState extends State<DataVaultPage> {
   late final DataVaultController _controller;
   final TextEditingController _searchController = TextEditingController();
 
+  bool _isAuthenticated = false;
+  bool _isAuthenticating = true;
+  final LocalAuthentication auth = LocalAuthentication();
+
   @override
   void initState() {
     super.initState();
     _controller = DataVaultController(repository: LocalVaultRepository());
     _controller.init();
     _controller.addListener(_onControllerNotify);
+    _authenticate();
+  }
+
+  Future<void> _authenticate() async {
+    try {
+      final bool canAuthenticateWithBiometrics = await auth.canCheckBiometrics;
+      final bool canAuthenticate =
+          canAuthenticateWithBiometrics || await auth.isDeviceSupported();
+
+      if (!canAuthenticate) {
+        if (mounted) {
+          setState(() {
+            _isAuthenticated = true;
+            _isAuthenticating = false;
+          });
+        }
+        return;
+      }
+
+      final bool didAuthenticate = await auth.authenticate(
+        localizedReason: 'Fingerprint ki Pattern Bayek NoNo...',
+      );
+
+      if (mounted) {
+        setState(() {
+          _isAuthenticated = didAuthenticate;
+          _isAuthenticating = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isAuthenticated = false;
+          _isAuthenticating = false;
+        });
+      }
+    }
   }
 
   void _onControllerNotify() {
@@ -295,7 +338,35 @@ class _DataVaultPageState extends State<DataVaultPage> {
       ),
       body: Column(
         children: [
-          Padding(
+          if (_isAuthenticating)
+            const Expanded(child: Center(child: CircularProgressIndicator())),
+          if (!_isAuthenticating && !_isAuthenticated)
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.lock, size: 80, color: isDark ? AppColors.slate500 : Colors.grey[400]),
+                    const SizedBox(height: 20),
+                    Text('Vault Locked', style: AppTypography.titleLarge.copyWith(color: primaryText)),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: _authenticate,
+                      icon: const Icon(Icons.fingerprint),
+                      label: const Text('Unlock Vault'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          if (!_isAuthenticating && _isAuthenticated) ...[
+            Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
               controller: _searchController,
@@ -388,16 +459,17 @@ class _DataVaultPageState extends State<DataVaultPage> {
                       );
                     }).toList(),
                   ),
-          ),
+          ), // Closing parenthesis for Expanded
+          ], // Closing bracket for Spread
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: (!_isAuthenticating && _isAuthenticated) ? FloatingActionButton.extended(
         onPressed: () => _showItemDialog(),
         icon: const Icon(Icons.add),
         label: const Text('Add Entry'),
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
-      ),
+      ) : null,
     );
   }
 }

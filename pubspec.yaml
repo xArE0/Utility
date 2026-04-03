@@ -27,6 +27,7 @@ dependencies:
   fl_chart: ^0.71.0
   flutter_svg: ^2.2.0
   google_fonts: ^6.3.0
+  local_auth: ^3.0.1
 
 dev_dependencies:
   flutter_lints: ^5.0.0
