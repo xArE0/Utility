@@ -15,7 +15,6 @@ class _ExportImportsPageState extends State<ExportImportsPage> {
   final String scheduleDbName = 'schedule.db';
   final String expenseDbName = 'expense_tracker.db';
   final String dataVaultDbName = 'datavault.db';
-  final String potTrackerDbName = 'pottracker_session.db';
   final String cooldownDbName = 'cooldown.db';
 
   @override
@@ -84,22 +83,7 @@ class _ExportImportsPageState extends State<ExportImportsPage> {
             ),
           ),
           const Divider(),
-          // Pot Tracker export/import entries
-          ListTile(
-            title: const Text('Export Pot Tracker Session'),
-            trailing: IconButton(
-              icon: const Icon(Icons.share),
-              onPressed: () => _controller.exportDatabase(context, potTrackerDbName),
-            ),
-          ),
-          ListTile(
-            title: const Text('Import Pot Tracker Session'),
-            trailing: IconButton(
-              icon: const Icon(Icons.file_download_outlined),
-              onPressed: () => _controller.importDatabase(context, potTrackerDbName),
-            ),
-          ),
-          const Divider(),
+
           // Cooldown export/import entries
           ListTile(
             title: const Text('Export Cooldown Database'),

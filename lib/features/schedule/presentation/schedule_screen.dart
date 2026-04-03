@@ -127,9 +127,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             backgroundColor: cs.surface.withOpacity(0.95),
             title: const Text("Add Schedule"),
-            contentPadding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+            contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             content: SizedBox(
-              width: 380,
+              width: 500,
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -149,31 +150,72 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         if (picked != null) setDialogState(() => chosenDate = picked);
                       },
                     ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      value: selectedType,
-                      decoration: InputDecoration(
-                        labelText: 'Event Type',
-                        filled: true,
-                        fillColor: inputFill,
-                        border: border,
-                        enabledBorder: border,
-                        focusedBorder: border.copyWith(
-                          borderSide: BorderSide(color: cs.primary, width: 1.2),
-                        ),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'normal', child: Text('Normal')),
-                        DropdownMenuItem(value: 'reminder', child: Text('Reminder')),
-                        DropdownMenuItem(value: 'birthday', child: Text('Birthday')),
-                        DropdownMenuItem(value: 'exam', child: Text('Exam')),
-                        DropdownMenuItem(value: 'homework', child: Text('Homework')),
-                        DropdownMenuItem(value: 'festival', child: Text('Festival')),
-                        DropdownMenuItem(value: 'event', child: Text('Event')),
-                      ],
-                      onChanged: (value) => setDialogState(() => selectedType = value!),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text("Event Type", style: TextStyle(color: theme.hintColor, fontSize: 13, fontWeight: FontWeight.w500)),
                     ),
-                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        'normal', 'reminder', 'birthday', 'exam', 'homework', 'festival', 'event'
+                      ].map((type) {
+                        final isSelected = selectedType == type;
+                        Color baseColor;
+                        IconData icon;
+                        switch (type) {
+                          case 'birthday': baseColor = const Color(0xFFE91E63); icon = Icons.cake; break;
+                          case 'reminder': baseColor = const Color(0xFF14B8A6); icon = Icons.notifications_active; break;
+                          case 'exam': baseColor = const Color(0xFF2563EB); icon = Icons.school; break;
+                          case 'homework': baseColor = const Color(0xFF8B5CF6); icon = Icons.assignment; break;
+                          case 'festival': baseColor = Colors.deepOrange; icon = Icons.celebration; break;
+                          case 'event': baseColor = const Color(0xFFFFA000); icon = Icons.event; break;
+                          case 'normal': default: baseColor = const Color(0xFF10B981); icon = Icons.task_alt; break;
+                        }
+                        final labelText = type[0].toUpperCase() + type.substring(1);
+                        
+                        return ActionChip(
+                          backgroundColor: isSelected ? baseColor.withOpacity(0.15) : inputFill,
+                          side: BorderSide(
+                            color: isSelected ? baseColor : cs.primary.withOpacity(0.15),
+                            width: isSelected ? 1.5 : 1,
+                          ),
+                          avatar: Icon(isSelected ? Icons.check : icon, size: 16, color: isSelected ? baseColor : theme.hintColor),
+                          label: Text(
+                            labelText,
+                            style: TextStyle(
+                              color: isSelected ? baseColor : theme.hintColor,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            )
+                          ),
+                          onPressed: () {
+                            setDialogState(() {
+                              selectedType = type;
+                              if (type == 'birthday') {
+                                remindMe = true;
+                                remindDaysBefore = 1;
+                                remindTime = const TimeOfDay(hour: 6, minute: 0);
+                                repeat = 'yearly';
+                              } else if (type == 'reminder') {
+                                remindMe = true;
+                                remindDaysBefore = 0;
+                                remindTime = const TimeOfDay(hour: 6, minute: 0);
+                                repeat = 'none';
+                              } else {
+                                // normal, exam, homework, festival, event -> reset to defaults
+                                remindMe = false;
+                                remindDaysBefore = 0;
+                                remindTime = null;
+                                repeat = 'none';
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 8),
                     TextField(
                       controller: taskController,
                       decoration: InputDecoration(
@@ -187,7 +229,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
                     SwitchListTile(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       tileColor: inputFill,
@@ -222,13 +264,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                               },
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Text("(today included)", style: TextStyle(color: theme.hintColor)),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
+                          const Spacer(),
                           const Text("At: "),
                           Text(
                             remindTime == null ? "Select Time" : remindTime!.format(context),
@@ -247,56 +283,68 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         ],
                       ),
                     ],
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     Container(
                       width: double.infinity,
                       alignment: Alignment.centerLeft,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text("Repeat:"),
-                          const SizedBox(width: 8),
-                          DropdownButton<String>(
-                            value: repeat,
-                            borderRadius: BorderRadius.circular(12),
-                            items: const [
-                              DropdownMenuItem(value: "none", child: Text("None")),
-                              DropdownMenuItem(value: "daily", child: Text("Daily")),
-                              DropdownMenuItem(value: "weekly", child: Text("Weekly")),
-                              DropdownMenuItem(value: "monthly", child: Text("Monthly")),
-                              DropdownMenuItem(value: "yearly", child: Text("Yearly")),
-                              DropdownMenuItem(value: "custom", child: Text("Custom...")),
-                            ],
-                            onChanged: (v) => setDialogState(() => repeat = v!),
+                          Text("Repeat", style: TextStyle(color: theme.hintColor, fontSize: 13, fontWeight: FontWeight.w500)),
+                          const SizedBox(height: 4),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: ["none", "daily", "weekly", "monthly", "yearly", "custom"].map((r) {
+                              final isSelected = repeat == r;
+                              final labelText = r == "custom" ? "Custom..." : (r[0].toUpperCase() + r.substring(1));
+                              return ChoiceChip(
+                                label: Text(labelText, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                                selected: isSelected,
+                                selectedColor: cs.primary.withOpacity(0.15),
+                                checkmarkColor: cs.primary,
+                                backgroundColor: inputFill,
+                                side: BorderSide(color: isSelected ? cs.primary : cs.primary.withOpacity(0.15), width: isSelected ? 1.5 : 1),
+                                onSelected: (b) {
+                                  if (b) setDialogState(() => repeat = r);
+                                },
+                              );
+                            }).toList(),
                           ),
                           if (repeat == "custom") ...[
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              width: 50,
-                              child: TextFormField(
-                                initialValue: "$repeatInterval",
-                                keyboardType: TextInputType.number,
-                                decoration: InputDecoration(
-                                  isDense: true,
-                                  filled: true,
-                                  fillColor: inputFill,
-                                  border: border,
-                                  enabledBorder: border,
-                                  focusedBorder: border.copyWith(
-                                    borderSide: BorderSide(color: cs.primary, width: 1.2),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                const Text("Every:"),
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  width: 60,
+                                  child: TextFormField(
+                                    initialValue: "$repeatInterval",
+                                    keyboardType: TextInputType.number,
+                                    decoration: InputDecoration(
+                                      isDense: true,
+                                      filled: true,
+                                      fillColor: inputFill,
+                                      border: border,
+                                      enabledBorder: border,
+                                      focusedBorder: border.copyWith(
+                                        borderSide: BorderSide(color: cs.primary, width: 1.2),
+                                      ),
+                                    ),
+                                    onChanged: (v) {
+                                      final num = int.tryParse(v) ?? 1;
+                                      setDialogState(() => repeatInterval = num.clamp(1, 999));
+                                    },
                                   ),
                                 ),
-                                onChanged: (v) {
-                                  final num = int.tryParse(v) ?? 1;
-                                  setDialogState(() => repeatInterval = num.clamp(1, 999));
-                                },
-                              ),
+                                const SizedBox(width: 8),
+                                const Text("days"),
+                              ],
                             ),
-                            const SizedBox(width: 4),
-                            const Text("days"),
                           ],
-                        ],
-                      ),
+                        ]
+                      )
                     ),
                     const SizedBox(height: 12),
                     Container(
@@ -1014,8 +1062,18 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 String englishMonth = DateFormat('MMMM yyyy').format(_controller.selectedDate);
                 String nepaliMonth = '';
                 if (_controller.showNepaliDates) {
-                  final info = _controller.getNepaliDateInfo(firstOfMonth);
-                  nepaliMonth = info['month'] ?? '';
+                  final infoStart = _controller.getNepaliDateInfo(firstOfMonth);
+                  final lastOfMonth = DateTime(_controller.selectedDate.year, _controller.selectedDate.month, daysInMonth);
+                  final infoEnd = _controller.getNepaliDateInfo(lastOfMonth);
+                  
+                  final m1 = infoStart['month'] ?? '';
+                  final m2 = infoEnd['month'] ?? '';
+                  
+                  if (m1.isNotEmpty && m2.isNotEmpty && m1 != m2) {
+                    nepaliMonth = "$m1/$m2";
+                  } else {
+                    nepaliMonth = m1.isNotEmpty ? m1 : m2;
+                  }
                 }
                 return Text(nepaliMonth.isEmpty ? englishMonth : "$englishMonth ($nepaliMonth)", style: TextStyle(color: isDark ? AppColors.slate200 : AppColors.slate800, fontWeight: FontWeight.w700));
               }),

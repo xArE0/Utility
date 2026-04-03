@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../routes/app_routes.dart';
-import 'schedule_screen.dart';
+import '../../schedule/presentation/schedule_screen.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -111,13 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 route: AppRoutes.cooldown,
                 color: const Color(0xFF06B6D4),
               ),
-              _buildDrawerItem(
-                context,
-                icon: Icons.account_balance_wallet,
-                title: "Pot Tracker",
-                route: AppRoutes.pottracker,
-                color: AppColors.govGold,
-              ),
+
               _buildDrawerItem(
                 context,
                 icon: Icons.touch_app,

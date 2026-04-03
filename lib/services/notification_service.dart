@@ -3,8 +3,8 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../features/home/data/local_schedule_repository.dart';
-import '../features/home/domain/schedule_entities.dart';
+import '../features/schedule/data/local_schedule_repository.dart';
+import '../features/schedule/domain/schedule_entities.dart';
 
 /// Top-level background handler — MUST be a top-level function (not a class
 /// method) so the Android OS can invoke it even when the app process is dead.
