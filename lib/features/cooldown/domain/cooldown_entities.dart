@@ -4,6 +4,7 @@ class CooldownItem {
   final DateTime? cooldownEnd;
   final DateTime createdAt;
   final int colorIndex;
+  final String? category;
 
   CooldownItem({
     this.id,
@@ -11,6 +12,7 @@ class CooldownItem {
     this.cooldownEnd,
     DateTime? createdAt,
     this.colorIndex = 0,
+    this.category,
   }) : createdAt = createdAt ?? DateTime.now();
 
   bool get isOnCooldown {
@@ -52,6 +54,7 @@ class CooldownItem {
       'cooldownEnd': cooldownEnd?.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
       'colorIndex': colorIndex,
+      'category': category,
     };
   }
 
@@ -64,6 +67,7 @@ class CooldownItem {
           : null,
       createdAt: DateTime.parse(map['createdAt']),
       colorIndex: map['colorIndex'] ?? 0,
+      category: map['category'],
     );
   }
 
@@ -74,6 +78,8 @@ class CooldownItem {
     bool clearCooldown = false,
     DateTime? createdAt,
     int? colorIndex,
+    String? category,
+    bool clearCategory = false,
   }) {
     return CooldownItem(
       id: id ?? this.id,
@@ -81,6 +87,7 @@ class CooldownItem {
       cooldownEnd: clearCooldown ? null : (cooldownEnd ?? this.cooldownEnd),
       createdAt: createdAt ?? this.createdAt,
       colorIndex: colorIndex ?? this.colorIndex,
+      category: clearCategory ? null : (category ?? this.category),
     );
   }
 }

@@ -103,35 +103,77 @@ class _CooldownScreenState extends State<CooldownScreen>
   Widget _buildContent() {
     final available = _controller.available;
     final cooldown = _controller.onCooldown;
+    final cats = _controller.categories;
+    final hasCategories = cats.length > 1 || (cats.length == 1 && cats.first != null);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
       children: [
         _buildSummaryCard(available.length, cooldown.length),
         const SizedBox(height: 20),
-        if (cooldown.isNotEmpty) ...[
-          _buildSectionHeader(
-            "ON COOLDOWN",
-            Icons.timer,
-            AppColors.govGold,
-            cooldown.length,
-          ),
-          const SizedBox(height: 8),
-          ...cooldown.map(_buildCooldownTile),
-          const SizedBox(height: 20),
-        ],
-        if (available.isNotEmpty) ...[
-          _buildSectionHeader(
-            "AVAILABLE",
-            Icons.check_circle_outline,
-            AppColors.govGreen,
-            available.length,
-          ),
-          const SizedBox(height: 8),
-          ...available.map(_buildAvailableTile),
+        if (!hasCategories) ...[
+          // No categories — flat list like before
+          if (cooldown.isNotEmpty) ...[
+            _buildSectionHeader("ON COOLDOWN", Icons.timer, AppColors.govGold, cooldown.length),
+            const SizedBox(height: 8),
+            ...cooldown.map(_buildCooldownTile),
+            const SizedBox(height: 20),
+          ],
+          if (available.isNotEmpty) ...[
+            _buildSectionHeader("AVAILABLE", Icons.check_circle_outline, AppColors.govGreen, available.length),
+            const SizedBox(height: 8),
+            ...available.map(_buildAvailableTile),
+          ],
+        ] else ...[
+          // Grouped by category
+          for (final cat in cats) ...[
+            _buildCategoryHeader(cat ?? 'General'),
+            ..._buildCategoryItems(_controller.itemsForCategory(cat)),
+            const SizedBox(height: 16),
+          ],
         ],
       ],
     );
+  }
+
+  Widget _buildCategoryHeader(String name) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8, top: 4),
+      child: Row(
+        children: [
+          Icon(Icons.folder_outlined, size: 16, color: const Color(0xFF06B6D4)),
+          const SizedBox(width: 8),
+          Text(
+            name.toUpperCase(),
+            style: AppTypography.labelLarge.copyWith(
+              color: const Color(0xFF06B6D4),
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Container(
+              height: 1,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [const Color(0xFF06B6D4).withOpacity(0.4), Colors.transparent],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildCategoryItems(List<CooldownItem> items) {
+    final cooldown = items.where((i) => i.isOnCooldown).toList()
+      ..sort((a, b) => a.cooldownEnd!.compareTo(b.cooldownEnd!));
+    final available = items.where((i) => !i.isOnCooldown).toList();
+    return [
+      ...cooldown.map(_buildCooldownTile),
+      ...available.map(_buildAvailableTile),
+    ];
   }
 
   Widget _buildSummaryCard(int availCount, int coolCount) {
@@ -597,6 +639,7 @@ class _AddEditSheet extends StatefulWidget {
 
 class _AddEditSheetState extends State<_AddEditSheet> {
   late TextEditingController _nameCtrl;
+  late TextEditingController _categoryCtrl;
   int _colorIndex = 0;
   bool _isEdit = false;
 
@@ -606,12 +649,15 @@ class _AddEditSheetState extends State<_AddEditSheet> {
     _isEdit = widget.existing != null;
     _nameCtrl =
         TextEditingController(text: widget.existing?.name ?? '');
+    _categoryCtrl =
+        TextEditingController(text: widget.existing?.category ?? '');
     _colorIndex = widget.existing?.colorIndex ?? 0;
   }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
+    _categoryCtrl.dispose();
     super.dispose();
   }
 
@@ -667,6 +713,26 @@ class _AddEditSheetState extends State<_AddEditSheet> {
                         horizontal: 16, vertical: 14),
                     prefixIcon: Icon(Icons.label_outline,
                         color: _accentColors[_colorIndex]),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _categoryCtrl,
+                  style: AppTypography.bodyLarge,
+                  decoration: InputDecoration(
+                    hintText: 'Category (optional)',
+                    hintStyle: AppTypography.bodyLarge
+                        .copyWith(color: AppColors.slate500),
+                    filled: true,
+                    fillColor: AppColors.slate800.withOpacity(0.6),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
+                    prefixIcon: Icon(Icons.folder_outlined,
+                        color: AppColors.slate400),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -741,10 +807,11 @@ class _AddEditSheetState extends State<_AddEditSheet> {
   void _save() {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) return;
+    final cat = _categoryCtrl.text.trim().isEmpty ? null : _categoryCtrl.text.trim();
 
     final item = widget.existing != null
-        ? widget.existing!.copyWith(name: name, colorIndex: _colorIndex)
-        : CooldownItem(name: name, colorIndex: _colorIndex);
+        ? widget.existing!.copyWith(name: name, colorIndex: _colorIndex, category: cat, clearCategory: cat == null)
+        : CooldownItem(name: name, colorIndex: _colorIndex, category: cat);
 
     Navigator.pop(context, item);
   }

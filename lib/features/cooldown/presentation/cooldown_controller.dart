@@ -25,6 +25,20 @@ class CooldownController extends ChangeNotifier {
       _items.where((i) => i.isOnCooldown).toList()
         ..sort((a, b) => a.cooldownEnd!.compareTo(b.cooldownEnd!));
 
+  List<String?> get categories {
+    final cats = _items.map((i) => i.category).toSet().toList();
+    cats.sort((a, b) {
+      if (a == null) return 1;
+      if (b == null) return -1;
+      return a.compareTo(b);
+    });
+    return cats;
+  }
+
+  List<CooldownItem> itemsForCategory(String? category) {
+    return _items.where((i) => i.category == category).toList();
+  }
+
   Future<void> init() async {
     await _repository.init();
     await loadItems();

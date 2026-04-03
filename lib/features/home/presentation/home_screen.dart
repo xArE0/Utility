@@ -161,12 +161,18 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               _buildDrawerItem(
                 context,
+                icon: Icons.menu_book,
+                title: "Logbook",
+                route: AppRoutes.logbook,
+                color: const Color(0xFFF59E0B),
+              ),
+              _buildDrawerItem(
+                context,
                 icon: Icons.timer,
                 title: "Cooldown",
                 route: AppRoutes.cooldown,
                 color: const Color(0xFF06B6D4),
               ),
-
               _buildDrawerItem(
                 context,
                 icon: Icons.touch_app,

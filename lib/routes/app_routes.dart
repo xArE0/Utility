@@ -5,6 +5,7 @@ import '../features/expenses/presentation/expense_screen.dart';
 import '../features/autoclicker/presentation/autoclicker_screen.dart';
 import '../features/data_vault/presentation/data_vault_screen.dart';
 import '../features/cooldown/presentation/cooldown_screen.dart';
+import '../features/logbook/presentation/logbook_screen.dart';
 
 class AppRoutes {
   static const home = '/';
@@ -14,6 +15,7 @@ class AppRoutes {
   static const schedule = '/schedule';
   static const datavault = '/datavault';
   static const cooldown = '/cooldown';
+  static const logbook = '/logbook';
 
   static Map<String, WidgetBuilder> get all => {
     home: (_) => const HomeScreen(),
@@ -22,5 +24,6 @@ class AppRoutes {
     importexport: (_) => ExportImportsPage(),
     datavault: (_) => const DataVaultPage(),
     cooldown: (_) => const CooldownScreen(),
+    logbook: (_) => const LogbookScreen(),
   };
 }

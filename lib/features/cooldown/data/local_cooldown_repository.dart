@@ -12,7 +12,7 @@ class LocalCooldownRepository implements ICooldownRepository {
     final dbPath = await getDatabasesPath();
     _db = await openDatabase(
       join(dbPath, 'cooldown.db'),
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE cooldowns(
@@ -20,9 +20,15 @@ class LocalCooldownRepository implements ICooldownRepository {
             name TEXT NOT NULL,
             cooldownEnd TEXT,
             createdAt TEXT NOT NULL,
-            colorIndex INTEGER DEFAULT 0
+            colorIndex INTEGER DEFAULT 0,
+            category TEXT
           )
         ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute('ALTER TABLE cooldowns ADD COLUMN category TEXT');
+        }
       },
     );
   }
