@@ -45,7 +45,8 @@ class ScheduleController extends ChangeNotifier {
   // Memoization cache for _eventsForDate to prevent recalculation
   final Map<String, List<Event>> _eventsForDateCache = {};
   
-  Map<String, String> weatherMap = {};
+  Map<String, Map<String, String>> weatherMap = {};
+  int? currentAqi;
 
   bool _isLoadingNepaliDates = false;
 
@@ -119,6 +120,12 @@ class ScheduleController extends ChangeNotifier {
     ApiServices.fetchKathmanduWeather().then((fetched) {
       if (fetched.isNotEmpty) {
         weatherMap = fetched;
+        notifyListeners();
+      }
+    });
+    ApiServices.fetchKathmanduAQI().then((fetched) {
+      if (fetched != null) {
+        currentAqi = fetched;
         notifyListeners();
       }
     });
@@ -450,12 +457,23 @@ class ScheduleController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> syncAllApiData(BuildContext context) async {
+  Future<bool> syncAllApiData() async {
     try {
       // 1. Sync Weather
       final fetchedWeather = await ApiServices.fetchKathmanduWeather();
+      final fetchedAqi = await ApiServices.fetchKathmanduAQI();
+
+      if (fetchedWeather.isEmpty && fetchedAqi == null) {
+        return false;
+      }
+
       if (fetchedWeather.isNotEmpty) {
         weatherMap = fetchedWeather;
+        notifyListeners();
+      }
+      
+      if (fetchedAqi != null) {
+        currentAqi = fetchedAqi;
         notifyListeners();
       }
 
@@ -465,12 +483,7 @@ class ScheduleController extends ChangeNotifier {
       // 3. Sync Holidays
       final fetchedHolidays = await IcsParser.fetchNepalHolidays();
       if (fetchedHolidays.isEmpty) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Partial success. Handled Weather & Quotes, but failed fetching holidays.")),
-          );
-        }
-        return;
+        return false;
       }
 
       int addedCount = 0;
@@ -487,23 +500,9 @@ class ScheduleController extends ChangeNotifier {
       }
 
       await preloadEvents();
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(addedCount > 0 
-                ? "Synced weather, quotes, and $addedCount new holidays!" 
-                : "Weather updated, quotes checked, and holidays synced."),
-            backgroundColor: Colors.teal,
-          ),
-        );
-      }
+      return true;
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error syncing data: $e"), backgroundColor: Colors.red),
-        );
-      }
+      return false;
     }
   }
 

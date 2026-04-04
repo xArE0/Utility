@@ -37,8 +37,8 @@ class ScheduleScreenState extends State<ScheduleScreen> {
     _controller.addListener(_onControllerNotify);
   }
 
-  void triggerSyncApiData() {
-    _controller.syncAllApiData(context);
+  Future<bool> triggerSyncApiData() {
+    return _controller.syncAllApiData();
   }
 
   ScheduleController get controller => _controller;

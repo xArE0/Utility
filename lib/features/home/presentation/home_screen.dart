@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../routes/app_routes.dart';
 import '../../schedule/presentation/schedule_screen.dart';
+import '../../schedule/presentation/schedule_controller.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -14,10 +15,13 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+enum SyncState { idle, syncing, success, error }
+
 class _HomeScreenState extends State<HomeScreen> {
   bool _showNepaliDates = false;
   final GlobalKey<ScheduleScreenState> _scheduleKey = GlobalKey<ScheduleScreenState>();
   String? _dailyQuote;
+  SyncState _syncState = SyncState.idle;
 
   @override
   void initState() {
@@ -30,6 +34,12 @@ class _HomeScreenState extends State<HomeScreen> {
     if (quote != null && mounted) {
       setState(() => _dailyQuote = quote);
     }
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scheduleKey.currentState?.controller.addListener(() {
+        if (mounted) setState(() {});
+      });
+    });
   }
 
   String _getGreeting() {
@@ -39,47 +49,125 @@ class _HomeScreenState extends State<HomeScreen> {
     return "Good Evening, xArE0!";
   }
 
+  Widget _buildSyncIcon() {
+    switch (_syncState) {
+      case SyncState.syncing:
+        return const SizedBox(
+          width: 20, height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2.0, color: AppColors.govGreen),
+        );
+      case SyncState.success:
+        return const Icon(Icons.check_circle, color: AppColors.govGreen, size: 22);
+      case SyncState.error:
+        return const Icon(Icons.error, color: Colors.orangeAccent, size: 22);
+      case SyncState.idle:
+      default:
+        return const Icon(Icons.cloud_download_outlined, color: AppColors.govGreen, size: 22);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return StaticBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              _getGreeting(),
-              style: AppTypography.titleLarge,
-            ),
+          toolbarHeight: 65.0,
+          leading: Builder(
+            builder: (context) {
+              return Align(
+                alignment: Alignment.topCenter,
+                child: IconButton(
+                  icon: const Icon(Icons.menu),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+              );
+            },
           ),
-          actions: [
-            IconButton(
-              tooltip: "Sync All API Data",
-              onPressed: () async {
-                _scheduleKey.currentState?.triggerSyncApiData();
-                await Future.delayed(const Duration(milliseconds: 1500));
-                await _fetchDailyQuote();
-              },
-              icon: const Icon(Icons.cloud_download_outlined, color: AppColors.govGreen, size: 22),
-            ),
-            IconButton(
-              tooltip: "Toggle Nepali Date",
-              onPressed: () {
-                setState(() => _showNepaliDates = !_showNepaliDates);
-              },
-              icon: Icon(
-                _showNepaliDates ? Icons.calendar_today : Icons.calendar_month,
-                color: _showNepaliDates ? AppColors.govGreen : null,
+          title: Align(
+            alignment: Alignment.topLeft,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 0.0),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.topLeft,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _getGreeting(),
+                      style: AppTypography.titleLarge,
+                    ),
+                  Builder(
+                    builder: (context) {
+                      final ctrl = _scheduleKey.currentState?.controller;
+                      final aqi = ctrl?.currentAqi;
+                      if (aqi == null) return const SizedBox.shrink();
+                      
+                      String icon = '🌞';
+                      if (aqi > 50) icon = '😐';
+                      if (aqi > 100) icon = '😷';
+                      if (aqi > 150) icon = '🤢';
+                      if (aqi > 200) icon = '☠️';
+
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 2.0),
+                        child: Text(
+                          "AQI: $aqi $icon", 
+                          style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.bold, color: AppColors.slate300, fontSize: 13),
+                        ),
+                      );
+                    }
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 8),
+          ),
+        ),
+        actions: [
+            Align(
+              alignment: Alignment.topCenter,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  IconButton(
+                    tooltip: _syncState == SyncState.syncing ? "Syncing..." : "Sync All API Data",
+                    onPressed: _syncState != SyncState.idle ? null : () async {
+                      setState(() => _syncState = SyncState.syncing);
+                      // Pull Schedule APIs
+                      final success = await _scheduleKey.currentState?.triggerSyncApiData() ?? false;
+                      // Pull Quote
+                      await _fetchDailyQuote();
+                      
+                      setState(() => _syncState = success ? SyncState.success : SyncState.error);
+                      
+                      await Future.delayed(const Duration(seconds: 2));
+                      if (mounted) setState(() => _syncState = SyncState.idle);
+                    },
+                    icon: _buildSyncIcon(),
+                  ),
+                  IconButton(
+                    tooltip: "Toggle Nepali Date",
+                    onPressed: () {
+                      setState(() => _showNepaliDates = !_showNepaliDates);
+                    },
+                    icon: Icon(
+                      _showNepaliDates ? Icons.calendar_today : Icons.calendar_month,
+                      color: _showNepaliDates ? AppColors.govGreen : null,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ),
+            ),
           ],
-          bottom: _dailyQuote != null 
+          bottom: (_dailyQuote != null && (_scheduleKey.currentState?.controller.viewMode == ScheduleView.timeline || _scheduleKey.currentState == null))
             ? PreferredSize(
                 preferredSize: const Size.fromHeight(36.0),
                 child: Padding(
-                  padding: const EdgeInsets.only(left: 22, right: 16, bottom: 8),
+                  padding: const EdgeInsets.only(left: 22, right: 16, bottom: 8, top: 0.0),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -143,6 +231,30 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       DateFormat('EEEE, MMM d, yyyy').format(DateTime.now()),
                       style: AppTypography.bodyMedium.copyWith(color: AppColors.slate300),
+                    ),
+                    Builder(
+                      builder: (context) {
+                        final ctrl = _scheduleKey.currentState?.controller;
+                        if (ctrl == null) return const SizedBox.shrink();
+                        
+                        // We use the same formatting key used in ScheduleController
+                        final todayKey = DateFormat('yyyy-MM-dd').format(DateTime.now());
+                        final w = ctrl.weatherMap[todayKey];
+                        if (w == null || (w['sunrise'] ?? '').isEmpty) return const SizedBox.shrink();
+                        
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Row(
+                            children: [
+                              const Text("🌅 ", style: TextStyle(fontSize: 14)),
+                              Text(w['sunrise']!, style: AppTypography.bodySmall.copyWith(color: AppColors.slate300)),
+                              const SizedBox(width: 12),
+                              const Text("🌇 ", style: TextStyle(fontSize: 14)),
+                              Text(w['sunset']!, style: AppTypography.bodySmall.copyWith(color: AppColors.slate300)),
+                            ],
+                          ),
+                        );
+                      }
                     ),
                   ],
                 ),

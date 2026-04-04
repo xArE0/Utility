@@ -4,8 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiServices {
   static const String openMeteoUrl =
-      'https://api.open-meteo.com/v1/forecast?latitude=27.7278&longitude=85.3782&daily=weather_code&timezone=auto';
-  static const String zenQuotesUrl = 'https://zenquotes.io/api/today';
+      'https://api.open-meteo.com/v1/forecast?latitude=27.7278&longitude=85.3782&daily=weather_code,sunrise,sunset&timezone=auto';
+  static const String aqiUrl = 
+      'https://air-quality-api.open-meteo.com/v1/air-quality?latitude=27.7278&longitude=85.3782&current=us_aqi&timezone=auto';
+  static const String zenQuotesUrl = 'https://zenquotes.io/api/random';
 
   static String _getWeatherEmoji(int code) {
     if (code == 0) return '☀️';
@@ -21,9 +23,9 @@ class ApiServices {
     return '';
   }
 
-  /// Fetches a 7-day weather forecast and maps standard 'yyyy-MM-dd' to weather emojis
-  static Future<Map<String, String>> fetchKathmanduWeather() async {
-    final Map<String, String> weatherMap = {};
+  /// Fetches a 7-day weather forecast and maps standard 'yyyy-MM-dd' to weather emoji and sunrise/sunset
+  static Future<Map<String, Map<String, String>>> fetchKathmanduWeather() async {
+    final Map<String, Map<String, String>> weatherMap = {};
     try {
       final client = HttpClient();
       client.connectionTimeout = const Duration(seconds: 5);
@@ -35,11 +37,36 @@ class ApiServices {
         final data = json.decode(text);
         final List dates = data['daily']['time'];
         final List codes = data['daily']['weather_code'];
+        final List sunrises = data['daily']['sunrise'];
+        final List sunsets = data['daily']['sunset'];
 
         for (int i = 0; i < dates.length && i < codes.length; i++) {
           final String dateStr = dates[i].toString();
           final int code = codes[i] as int;
-          weatherMap[dateStr] = _getWeatherEmoji(code);
+          
+          final String rawSunrise = sunrises[i].toString();
+          final String rawSunset = sunsets[i].toString();
+          
+          String sunrise = rawSunrise.length >= 16 ? rawSunrise.substring(11, 16) : '';
+          String sunset = rawSunset.length >= 16 ? rawSunset.substring(11, 16) : '';
+          
+          // Format times to 12-hour AM/PM if possible
+          if (sunrise.length == 5) {
+            int h = int.parse(sunrise.substring(0, 2));
+            String m = sunrise.substring(3, 5);
+            sunrise = "${h == 0 ? 12 : h > 12 ? h - 12 : h}:$m ${h >= 12 ? 'PM' : 'AM'}";
+          }
+          if (sunset.length == 5) {
+            int h = int.parse(sunset.substring(0, 2));
+            String m = sunset.substring(3, 5);
+            sunset = "${h == 0 ? 12 : h > 12 ? h - 12 : h}:$m ${h >= 12 ? 'PM' : 'AM'}";
+          }
+
+          weatherMap[dateStr] = {
+            'emoji': _getWeatherEmoji(code),
+            'sunrise': sunrise,
+            'sunset': sunset,
+          };
         }
       }
       client.close();
@@ -47,6 +74,27 @@ class ApiServices {
       // Fail silently to prevent interrupting UX
     }
     return weatherMap;
+  }
+
+  /// Fetches the current Air Quality Index (US AQI)
+  static Future<int?> fetchKathmanduAQI() async {
+    try {
+      final client = HttpClient();
+      client.connectionTimeout = const Duration(seconds: 5);
+      final req = await client.getUrl(Uri.parse(aqiUrl));
+      final res = await req.close();
+
+      if (res.statusCode == 200) {
+        final text = await res.transform(utf8.decoder).join();
+        final data = json.decode(text);
+        final int aqi = data['current']['us_aqi'];
+        return aqi;
+      }
+      client.close();
+    } catch (_) {
+      // Fail silently
+    }
+    return null;
   }
 
   /// Fetches the daily ZenQuote, caching it locally for 24 hours.
@@ -58,11 +106,6 @@ class ApiServices {
       
       final cachedDate = prefs.getString('cached_quote_date');
       final cachedQuote = prefs.getString('cached_quote_text');
-
-      // If we already fetched a quote today, return it immensely fast
-      if (cachedDate == todayKey && cachedQuote != null) {
-        return cachedQuote;
-      }
 
       final client = HttpClient();
       client.connectionTimeout = const Duration(seconds: 5);
