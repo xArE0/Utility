@@ -1,10 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:home_widget/home_widget.dart';
 import 'app.dart';
 import 'services/notification_service.dart';
 
+@pragma('vm:entry-point')
+Future<void> interactiveWidgetCallback(Uri? uri) async {
+  if (uri?.host == 'timer') {
+    final minsStr = uri?.queryParameters['mins'];
+    if (minsStr != null) {
+      final mins = int.parse(minsStr);
+      
+      // Natively schedule the notification
+      await NotificationService().initialize();
+      await NotificationService().scheduleQuickTimer(mins);
+      
+      // Morph button to tick
+      final btnId = "btn_${mins}m_tick";
+      await HomeWidget.saveWidgetData<bool>(btnId, true);
+      await HomeWidget.updateWidget(name: 'UtilityWidgetProvider');
+      
+      // Revert after 2 seconds safely
+      await Future.delayed(const Duration(seconds: 2));
+      await HomeWidget.saveWidgetData<bool>(btnId, false);
+      await HomeWidget.updateWidget(name: 'UtilityWidgetProvider');
+    }
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Register the background worker channel
+  HomeWidget.registerBackgroundCallback(interactiveWidgetCallback);
   
   // Lock app orientation to Portrait strictly
   await SystemChrome.setPreferredOrientations([

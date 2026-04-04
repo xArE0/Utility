@@ -319,4 +319,41 @@ class NotificationService {
     }
     return pending.length;
   }
+
+  /// Schedule a dynamic quick-timer notification
+  Future<void> scheduleQuickTimer(int minutes) async {
+    try {
+      final scheduledTime = DateTime.now().add(Duration(minutes: minutes));
+      final tzScheduledDate = tz.TZDateTime.from(scheduledTime, tz.local);
+      
+      final androidDetails = const AndroidNotificationDetails(
+        'quick_timers',
+        'Quick Timers',
+        channelDescription: 'Notifications for quick visual timers',
+        importance: Importance.max,
+        priority: Priority.max,
+        icon: '@mipmap/ic_launcher',
+        fullScreenIntent: true,
+        playSound: true,
+        enableVibration: true,
+      );
+
+      final details = NotificationDetails(android: androidDetails);
+      final timerId = 100000 + minutes; // Unique ID space safe from SQLite ranges
+
+      await _notifications.zonedSchedule(
+        timerId,
+        '⏱️ Time is Up!',
+        'Your $minutes minute timer finished.',
+        tzScheduledDate,
+        details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      );
+
+      debugPrint('✓ Quick timer set for $minutes minutes at $scheduledTime');
+    } catch (e) {
+      debugPrint('Error scheduling quick timer: $e');
+    }
+  }
 }

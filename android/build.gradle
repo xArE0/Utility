@@ -1,4 +1,3 @@
-
 allprojects {
     repositories {
         google()
@@ -7,8 +6,12 @@ allprojects {
 }
 
 rootProject.buildDir = "../build"
+def rootProjectPath = rootProject.projectDir.canonicalPath
 subprojects {
-    project.buildDir = "${rootProject.buildDir}/${project.name}"
+    def subprojectPath = project.projectDir.canonicalPath
+    if (subprojectPath.startsWith(rootProjectPath)) {
+        project.buildDir = "${rootProject.buildDir}/${project.name}"
+    }
 }
 subprojects {
     project.evaluationDependsOn(":app")

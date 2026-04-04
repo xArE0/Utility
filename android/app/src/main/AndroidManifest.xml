@@ -55,6 +55,20 @@
             </intent-filter>
         </receiver>
 
+        <!-- Home Widget Receiver -->
+        <receiver android:name="com.example.utility.UtilityWidgetProvider" android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/utility_widget_info" />
+        </receiver>
+        
+        <receiver android:name="es.antonborri.home_widget.HomeWidgetBackgroundReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="es.antonborri.home_widget.action.BACKGROUND" />
+            </intent-filter>
+        </receiver>
+
     </application>
     <!-- Notification & Network permissions -->
     <uses-permission android:name="android.permission.INTERNET" />

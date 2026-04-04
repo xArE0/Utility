@@ -165,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
           bottom: (_dailyQuote != null && (_scheduleKey.currentState?.controller.viewMode == ScheduleView.timeline || _scheduleKey.currentState == null))
             ? PreferredSize(
-                preferredSize: const Size.fromHeight(36.0),
+                preferredSize: const Size.fromHeight(50.0),
                 child: Padding(
                   padding: const EdgeInsets.only(left: 22, right: 16, bottom: 8, top: 0.0),
                   child: Align(
@@ -176,7 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         fontStyle: FontStyle.italic,
                         color: AppColors.slate400,
                       ),
-                      maxLines: 2,
+                      maxLines: 4,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
