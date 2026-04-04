@@ -41,6 +41,8 @@ class ScheduleScreenState extends State<ScheduleScreen> {
     _controller.syncAllApiData(context);
   }
 
+  ScheduleController get controller => _controller;
+
   void _onControllerNotify() {
     if (mounted) {
       setState(() {});
@@ -731,7 +733,7 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                           else if (dayDiff < 0) diffText = "${-dayDiff} days ago";
                           else diffText = "in $dayDiff days";
 
-                          final weatherEmoji = _controller.weatherMap[key];
+                          final weatherEmoji = _controller.weatherMap[key]?['emoji'];
 
                           return DragTarget<Map<String, dynamic>>(
                             onWillAccept: (data) => data != null && (data['canMove'] == true),
@@ -789,7 +791,7 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                                               if (weatherEmoji != null && weatherEmoji.isNotEmpty)
                                                 Padding(
                                                   padding: const EdgeInsets.only(left: 4.0),
-                                                  child: Text(weatherEmoji, style: const TextStyle(fontSize: 16)),
+                                                  child: Text(weatherEmoji, style: const TextStyle(fontSize: 20)),
                                                 ),
                                             ],
                                           ),
