@@ -1,107 +1,49 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:background="@drawable/widget_glass_bg"
-    android:padding="10dp">
+    android:gravity="center_vertical"
+    android:paddingHorizontal="14dp"
+    android:paddingVertical="14dp">
 
-    <!-- LEFT COLUMN: Content -->
-    <LinearLayout
+    <!-- App Launcher Button (Leftmost) -->
+    <ImageView
+        android:id="@+id/btn_launch_app"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:src="@mipmap/ic_launcher"
+        android:layout_marginEnd="10dp"
+        android:clickable="true"
+        android:focusable="true"/>
+
+    <!-- AQI and Weather -->
+    <TextView
+        android:id="@+id/widget_aqi"
         android:layout_width="0dp"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:orientation="vertical"
-        android:layout_marginEnd="8dp">
+        android:text="Air Quality: --"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:paddingStart="4dp" />
 
-        <!-- Header -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="4dp">
-
-            <TextView
-                android:id="@+id/widget_date"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Date"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/widget_aqi"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="AQI: --"
-                android:textColor="#FFFFFF"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:background="@drawable/timer_btn_bg"
-                android:paddingHorizontal="6dp"
-                android:paddingVertical="2dp"/>
-        </LinearLayout>
-        
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#22FFFFFF"
-            android:layout_marginBottom="6dp"/>
-
-        <!-- Tasks Section -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Today's Schedule"
-            android:textColor="#94A3B8"
-            android:textSize="10sp"
-            android:layout_marginBottom="2dp"
-            android:textAllCaps="true"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/widget_tasks"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:text="No tasks scheduled."
-            android:textColor="#F8FAFC"
-            android:textSize="13sp"
-            android:lineSpacingExtra="2dp" />
-
-        <!-- Quote Footer -->
-        <TextView
-            android:id="@+id/widget_quote"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Quote"
-            android:textColor="#CBD5E1"
-            android:textStyle="italic"
-            android:textSize="11sp"
-            android:layout_marginTop="4dp"
-            android:maxLines="4"
-            android:ellipsize="end"/>
-    </LinearLayout>
-
-    <!-- RIGHT COLUMN: Timers -->
+    <!-- RIGHT SECTION: Timers -->
     <LinearLayout
-        android:layout_width="44dp"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:gravity="center_vertical"
-        android:weightSum="3">
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
         
         <!-- Button 5m -->
         <FrameLayout
             android:id="@+id/btn_5m_root"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
+            android:layout_width="44dp"
+            android:layout_height="40dp"
             android:background="@drawable/timer_btn_bg"
-            android:layout_marginBottom="4dp"
+            android:layout_marginEnd="6dp"
             android:clickable="true"
             android:focusable="true">
             <TextView
@@ -111,12 +53,12 @@
                 android:gravity="center"
                 android:text="5m"
                 android:textColor="#F8FAFC"
-                android:textSize="13sp"
+                android:textSize="14sp"
                 android:textStyle="bold" />
             <ImageView
                 android:id="@+id/btn_5m_icon"
-                android:layout_width="16dp"
-                android:layout_height="16dp"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
                 android:layout_gravity="center"
                 android:src="@drawable/ic_check_white"
                 android:visibility="gone" />
@@ -125,11 +67,10 @@
         <!-- Button 15m -->
         <FrameLayout
             android:id="@+id/btn_15m_root"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
+            android:layout_width="44dp"
+            android:layout_height="40dp"
             android:background="@drawable/timer_btn_bg"
-            android:layout_marginBottom="4dp"
+            android:layout_marginEnd="6dp"
             android:clickable="true"
             android:focusable="true">
             <TextView
@@ -139,12 +80,12 @@
                 android:gravity="center"
                 android:text="15m"
                 android:textColor="#F8FAFC"
-                android:textSize="13sp"
+                android:textSize="14sp"
                 android:textStyle="bold" />
             <ImageView
                 android:id="@+id/btn_15m_icon"
-                android:layout_width="16dp"
-                android:layout_height="16dp"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
                 android:layout_gravity="center"
                 android:src="@drawable/ic_check_white"
                 android:visibility="gone" />
@@ -153,9 +94,8 @@
         <!-- Button 30m -->
         <FrameLayout
             android:id="@+id/btn_30m_root"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
+            android:layout_width="44dp"
+            android:layout_height="40dp"
             android:background="@drawable/timer_btn_bg"
             android:clickable="true"
             android:focusable="true">
@@ -166,12 +106,12 @@
                 android:gravity="center"
                 android:text="30m"
                 android:textColor="#F8FAFC"
-                android:textSize="13sp"
+                android:textSize="14sp"
                 android:textStyle="bold" />
             <ImageView
                 android:id="@+id/btn_30m_icon"
-                android:layout_width="16dp"
-                android:layout_height="16dp"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
                 android:layout_gravity="center"
                 android:src="@drawable/ic_check_white"
                 android:visibility="gone" />

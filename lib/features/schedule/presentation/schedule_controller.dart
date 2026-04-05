@@ -288,15 +288,16 @@ class ScheduleController extends ChangeNotifier {
       // Date Display
       final dateStr = DateFormat('EEEE, MMM d').format(now);
       
+      final dateStrForWeather = DateFormat('yyyy-MM-dd').format(now);
+      final todayWeather = weatherMap[dateStrForWeather];
+      final weatherEmoji = todayWeather?['emoji'] ?? '';
+
       // AQI Display
-      String aqiStr = "AQI: --";
+      String aqiStr = "Air Quality: --";
       if (currentAqi != null) {
-        String icon = '🌞';
-        if (currentAqi! > 50) icon = '😐';
-        if (currentAqi! > 100) icon = '😷';
-        if (currentAqi! > 150) icon = '🤢';
-        if (currentAqi! > 200) icon = '☠️';
-        aqiStr = "AQI: $currentAqi $icon";
+        aqiStr = "$weatherEmoji   Air Quality: $currentAqi".trim();
+      } else if (weatherEmoji.isNotEmpty) {
+        aqiStr = weatherEmoji;
       }
 
       // Tasks Display
@@ -319,8 +320,8 @@ class ScheduleController extends ChangeNotifier {
       await HomeWidget.saveWidgetData<String>('widget_quote', quoteStr ?? "");
       
       await HomeWidget.updateWidget(
-        name: 'UtilityWidgetProvider',
-        androidName: 'UtilityWidgetProvider',
+        name: 'ScheduleWidgetProvider',
+        androidName: 'ScheduleWidgetProvider',
       );
     } catch (_) {
       // Fail silently if widget not ready

@@ -56,11 +56,11 @@
         </receiver>
 
         <!-- Home Widget Receiver -->
-        <receiver android:name="com.example.utility.UtilityWidgetProvider" android:exported="true">
+        <receiver android:name="com.example.utility.ScheduleWidgetProvider" android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
-            <meta-data android:name="android.appwidget.provider" android:resource="@xml/utility_widget_info" />
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/schedule_widget_info" />
         </receiver>
         
         <receiver android:name="es.antonborri.home_widget.HomeWidgetBackgroundReceiver" android:exported="true">

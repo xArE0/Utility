@@ -268,8 +268,13 @@ class NotificationService {
       final allEvents = await repository.getAllEvents();
       final events = allEvents.where((e) => e.remindMe == true).toList();
 
-      // Cancel all existing notifications first
-      await _notifications.cancelAll();
+      // Cancel existing event notifications first, but preserve widget quick-timers (IDs > 100000)
+      final pending = await _notifications.pendingNotificationRequests();
+      for (final req in pending) {
+        if (req.id < 100000) {
+          await _notifications.cancel(req.id);
+        }
+      }
 
       // Reschedule each event
       for (final event in events) {

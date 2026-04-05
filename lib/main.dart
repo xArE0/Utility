@@ -18,12 +18,12 @@ Future<void> interactiveWidgetCallback(Uri? uri) async {
       // Morph button to tick
       final btnId = "btn_${mins}m_tick";
       await HomeWidget.saveWidgetData<bool>(btnId, true);
-      await HomeWidget.updateWidget(name: 'UtilityWidgetProvider');
+      await HomeWidget.updateWidget(name: 'ScheduleWidgetProvider', androidName: 'ScheduleWidgetProvider');
       
       // Revert after 2 seconds safely
       await Future.delayed(const Duration(seconds: 2));
       await HomeWidget.saveWidgetData<bool>(btnId, false);
-      await HomeWidget.updateWidget(name: 'UtilityWidgetProvider');
+      await HomeWidget.updateWidget(name: 'ScheduleWidgetProvider', androidName: 'ScheduleWidgetProvider');
     }
   }
 }
