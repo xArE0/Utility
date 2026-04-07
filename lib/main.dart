@@ -34,6 +34,10 @@ void main() async {
   // Register the background worker channel
   HomeWidget.registerBackgroundCallback(interactiveWidgetCallback);
   
+  // Register active listener to catch widget interactions when the app is alive 
+  // (otherwise the background isolate gets blocked and drops the event!)
+  HomeWidget.widgetClicked.listen(interactiveWidgetCallback);
+  
   // Lock app orientation to Portrait strictly
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
