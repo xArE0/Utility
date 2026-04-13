@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/static_background.dart';
 import '../../../utils/api_services.dart';
+import '../../../core/services/settings_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,10 +24,24 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _dailyQuote;
   SyncState _syncState = SyncState.idle;
 
+  int _secretTapCount = 0;
+  DateTime? _lastSecretTapTime;
+
   @override
   void initState() {
     super.initState();
     _fetchDailyQuote();
+    SettingsService.instance.addListener(_onSettingsChanged);
+  }
+
+  void _onSettingsChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    SettingsService.instance.removeListener(_onSettingsChanged);
+    super.dispose();
   }
 
   Future<void> _fetchDailyQuote() async {
@@ -44,9 +59,88 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
-    if (hour < 12) return "Good Morning, xArE0!";
-    if (hour < 17) return "Good Afternoon, xArE0!";
-    return "Good Evening, xArE0!";
+    final name = SettingsService.instance.scheduleName;
+    if (hour < 12) return "Good Morning, $name!";
+    if (hour < 17) return "Good Afternoon, $name!";
+    return "Good Evening, $name!";
+  }
+
+  void _onSidebarNameTap() {
+    final now = DateTime.now();
+    if (_lastSecretTapTime == null || now.difference(_lastSecretTapTime!).inSeconds > 2) {
+      _secretTapCount = 1;
+    } else {
+      _secretTapCount++;
+    }
+    _lastSecretTapTime = now;
+
+    if (_secretTapCount >= 7) {
+      _secretTapCount = 0;
+      _showSecretAuthDialog();
+    }
+  }
+
+  void _showSecretAuthDialog() async {
+    final currentPassword = SettingsService.instance.secretPassword;
+    final isSetup = currentPassword.isEmpty;
+    final controller = TextEditingController();
+    String? errorText;
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setStateBuilder) {
+            void handleSubmit(String input) async {
+              if (isSetup) {
+                if (input.length < 4) {
+                  setStateBuilder(() => errorText = 'Password must be at least 4 chars');
+                  return;
+                }
+                await SettingsService.instance.updateSecretPassword(input);
+                if (mounted) {
+                  Navigator.pop(dialogContext); // close dialog
+                  Navigator.pop(this.context); // close drawer
+                  Navigator.pushNamed(this.context, AppRoutes.settings);
+                }
+              } else {
+                if (input == currentPassword) {
+                  Navigator.pop(dialogContext); // close dialog
+                  Navigator.pop(this.context); // close drawer
+                  Navigator.pushNamed(this.context, AppRoutes.settings);
+                } else {
+                  setStateBuilder(() => errorText = 'Incorrect password');
+                }
+              }
+            }
+
+            return AlertDialog(
+              title: Text(isSetup ? 'Setup Password' : 'Enter  Password'),
+              content: TextField(
+                controller: controller,
+                obscureText: true,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  errorText: errorText,
+                ),
+                onSubmitted: handleSubmit,
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () => handleSubmit(controller.text),
+                  child: Text(isSetup ? 'Save & Enter' : 'Enter'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   Widget _buildSyncIcon() {
@@ -220,13 +314,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      "Avishek Shrestha",
+                      SettingsService.instance.sidebarName,
                       style: AppTypography.headlineSmall.copyWith(color: Colors.white),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      DateFormat('hh:mm a').format(DateTime.now()),
-                      style: AppTypography.titleMedium.copyWith(color: AppColors.slate200),
+                    GestureDetector(
+                      onTap: _onSidebarNameTap,
+                      child: Text(
+                        DateFormat('hh:mm a').format(DateTime.now()),
+                        style: AppTypography.titleMedium.copyWith(color: AppColors.slate200),
+                      ),
                     ),
                     Text(
                       DateFormat('EEEE, MMM d, yyyy').format(DateTime.now()),

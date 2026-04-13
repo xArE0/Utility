@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:home_widget/home_widget.dart';
 import 'app.dart';
 import 'services/notification_service.dart';
+import 'core/services/settings_service.dart';
 
 @pragma('vm:entry-point')
 Future<void> interactiveWidgetCallback(Uri? uri) async {
@@ -30,6 +31,8 @@ Future<void> interactiveWidgetCallback(Uri? uri) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  await SettingsService.instance.init();
   
   // Register the background worker channel
   HomeWidget.registerBackgroundCallback(interactiveWidgetCallback);
