@@ -15,3 +15,6 @@
 -dontwarn com.google.android.play.core.splitcompat.**
 -dontwarn com.google.android.play.core.splitinstall.**
 -dontwarn com.google.android.play.core.tasks.**
+
+# SQLCipher — keep native crypto libs from R8 stripping
+-keep class net.sqlcipher.** { *; }

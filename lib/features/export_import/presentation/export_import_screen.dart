@@ -71,16 +71,18 @@ class _ExportImportsPageState extends State<ExportImportsPage> {
           const Divider(),
           ListTile(
             title: const Text('Export Data Vault'),
+            subtitle: const Text('Encrypted .vault file'),
             trailing: IconButton(
-              icon: const Icon(Icons.share),
-              onPressed: () => _controller.exportDatabase(context, dataVaultDbName),
+              icon: const Icon(Icons.shield),
+              onPressed: () => _controller.exportEncryptedVault(context, dataVaultDbName),
             ),
           ),
           ListTile(
             title: const Text('Import Data Vault'),
+            subtitle: const Text('Decrypt .vault file'),
             trailing: IconButton(
-              icon: const Icon(Icons.file_download_outlined),
-              onPressed: () => _controller.importDatabase(context, dataVaultDbName),
+              icon: const Icon(Icons.lock_open),
+              onPressed: () => _controller.importEncryptedVault(context, dataVaultDbName),
             ),
           ),
           const Divider(),
