@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../routes/app_routes.dart';
 import '../../schedule/presentation/schedule_screen.dart';
 import '../../schedule/presentation/schedule_controller.dart';
+import '../../schedule/domain/schedule_entities.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -160,6 +161,183 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  /// Compute a compact height for the quote area based on estimated line count.
+  double _computeQuoteHeight(String quote) {
+    // Rough estimate: ~45 chars per line on typical phone width
+    final lineCount = (quote.length / 45).ceil().clamp(1, 4);
+    if (lineCount <= 1) return 16.0;
+    if (lineCount <= 2) return 28.0;
+    return 44.0;
+  }
+
+  void _showSearchDialog() {
+    final searchController = TextEditingController();
+    List<Map<String, dynamic>> results = [];
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            void performSearch(String query) {
+              final ctrl = _scheduleKey.currentState?.controller;
+              if (ctrl == null || query.trim().isEmpty) {
+                setDialogState(() => results = []);
+                return;
+              }
+              final q = query.trim().toLowerCase();
+              final Set<String> seen = {};
+              final List<Map<String, dynamic>> found = [];
+              final center = ctrl.selectedDate;
+
+              // 1. Search raw database for non-recurring events so we can find them instantly regardless of date
+              for (final e in ctrl.allEvents) {
+                if (e.task.toLowerCase().contains(q) || e.type.toLowerCase().contains(q)) {
+                  bool isRecurring = e.type == 'birthday' || e.type == 'exam' || (e.repeat != null && e.repeat != "none") || (e.durationDays != null && e.durationDays! > 1);
+                  if (!isRecurring) {
+                    final uniqueKey = '${e.date}_${e.task}_${e.type}';
+                    if (!seen.contains(uniqueKey)) {
+                      try {
+                        found.add({'event': e, 'targetDate': DateTime.parse(e.date)});
+                        seen.add(uniqueKey);
+                      } catch (_) {}
+                    }
+                  }
+                }
+              }
+
+              // 2. Scan +- 1 year for occurrences of recurring events
+              for (int i = -365; i <= 365; i++) {
+                final date = center.add(Duration(days: i));
+                final events = ctrl.eventsForDate(date);
+                for (final e in events) {
+                  bool isRecurring = e.type == 'birthday' || e.type == 'exam' || (e.repeat != null && e.repeat != "none") || (e.durationDays != null && e.durationDays! > 1);
+                  if (!isRecurring) continue; // Already handled above
+
+                  final targetDateStr = '${date.year}-${date.month}-${date.day}';
+                  final uniqueKey = '${targetDateStr}_${e.task}_${e.type}';
+                  if (seen.contains(uniqueKey)) continue;
+
+                  if (e.task.toLowerCase().contains(q) || e.type.toLowerCase().contains(q)) {
+                    found.add({'event': e, 'targetDate': date});
+                    seen.add(uniqueKey);
+                  }
+                }
+              }
+
+              // Sort by closest to currently selected date
+              found.sort((a, b) {
+                final dateA = a['targetDate'] as DateTime;
+                final dateB = b['targetDate'] as DateTime;
+                final diffA = dateA.difference(center).inDays.abs();
+                final diffB = dateB.difference(center).inDays.abs();
+                return diffA.compareTo(diffB);
+              });
+
+              setDialogState(() => results = found);
+            }
+
+            final theme = Theme.of(context);
+            final cs = theme.colorScheme;
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              backgroundColor: cs.surface.withOpacity(0.95),
+              title: const Text("Search Events"),
+              contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              content: SizedBox(
+                width: 500,
+                height: 400,
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: searchController,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: "Type to search...",
+                        prefixIcon: const Icon(Icons.search),
+                        filled: true,
+                        fillColor: cs.surface.withOpacity(0.08),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: cs.primary.withOpacity(0.4)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: cs.primary.withOpacity(0.4)),
+                        ),
+                      ),
+                      onChanged: performSearch,
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: results.isEmpty
+                          ? Center(
+                              child: Text(
+                                searchController.text.isEmpty
+                                    ? "Search for events by name or type"
+                                    : "No events found",
+                                style: TextStyle(color: cs.onSurface.withOpacity(0.5)),
+                              ),
+                            )
+                          : ListView.builder(
+                              itemCount: results.length,
+                              itemBuilder: (context, i) {
+                                final item = results[i];
+                                final event = item['event'] as Event;
+                                final targetDate = item['targetDate'] as DateTime;
+                                final dateStr = DateFormat('yyyy-MM-dd').format(targetDate);
+
+                                Color typeColor;
+                                IconData typeIcon;
+                                switch (event.type) {
+                                  case 'birthday': typeColor = const Color(0xFFE91E63); typeIcon = Icons.cake; break;
+                                  case 'reminder': typeColor = const Color(0xFF14B8A6); typeIcon = Icons.notifications_active; break;
+                                  case 'exam': typeColor = const Color(0xFF2563EB); typeIcon = Icons.school; break;
+                                  case 'homework': typeColor = const Color(0xFF8B5CF6); typeIcon = Icons.assignment; break;
+                                  case 'festival': typeColor = Colors.deepOrange; typeIcon = Icons.celebration; break;
+                                  case 'event': typeColor = const Color(0xFFFFA000); typeIcon = Icons.event; break;
+                                  case 'normal': default: typeColor = const Color(0xFF10B981); typeIcon = Icons.task_alt; break;
+                                }
+                                return ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor: typeColor.withOpacity(0.15),
+                                    child: Icon(typeIcon, color: typeColor, size: 20),
+                                  ),
+                                  title: Text(event.task, maxLines: 1, overflow: TextOverflow.ellipsis),
+                                  subtitle: Text(
+                                    "$dateStr  •  ${event.type[0].toUpperCase()}${event.type.substring(1)}",
+                                    style: TextStyle(fontSize: 12, color: cs.onSurface.withOpacity(0.6)),
+                                  ),
+                                  dense: true,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  onTap: () {
+                                    Navigator.pop(dialogContext);
+                                    final ctrl = _scheduleKey.currentState?.controller;
+                                    if (ctrl != null) {
+                                      ctrl.jumpToDate(targetDate);
+                                    }
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text("Close"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return StaticBackground(
@@ -197,18 +375,25 @@ class _HomeScreenState extends State<HomeScreen> {
                     builder: (context) {
                       final ctrl = _scheduleKey.currentState?.controller;
                       final aqi = ctrl?.currentAqi;
-                      if (aqi == null) return const SizedBox.shrink();
                       
-                      String icon = '🌞';
-                      if (aqi > 50) icon = '😐';
-                      if (aqi > 100) icon = '😷';
-                      if (aqi > 150) icon = '🤢';
-                      if (aqi > 200) icon = '☠️';
+                      String aqiText;
+                      String icon;
+                      if (aqi == null) {
+                        aqiText = '--';
+                        icon = '🌞';
+                      } else {
+                        aqiText = '$aqi';
+                        icon = '🌞';
+                        if (aqi > 50) icon = '😐';
+                        if (aqi > 100) icon = '😷';
+                        if (aqi > 150) icon = '🤢';
+                        if (aqi > 200) icon = '☠️';
+                      }
 
                       return Padding(
                         padding: const EdgeInsets.only(top: 2.0),
                         child: Text(
-                          "AQI: $aqi $icon", 
+                          "AQI: $aqiText $icon", 
                           style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.bold, color: AppColors.slate300, fontSize: 13),
                         ),
                       );
@@ -227,6 +412,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   IconButton(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                    constraints: const BoxConstraints(),
+                    tooltip: "Search Events",
+                    onPressed: _showSearchDialog,
+                    icon: const Icon(Icons.search, color: AppColors.slate300, size: 22),
+                  ),
+                  IconButton(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                    constraints: const BoxConstraints(),
                     tooltip: _syncState == SyncState.syncing ? "Syncing..." : "Sync All API Data",
                     onPressed: _syncState != SyncState.idle ? null : () async {
                       setState(() => _syncState = SyncState.syncing);
@@ -243,6 +437,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: _buildSyncIcon(),
                   ),
                   IconButton(
+                    padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
+                    constraints: const BoxConstraints(),
                     tooltip: "Toggle Nepali Date",
                     onPressed: () {
                       setState(() => _showNepaliDates = !_showNepaliDates);
@@ -250,18 +446,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: Icon(
                       _showNepaliDates ? Icons.calendar_today : Icons.calendar_month,
                       color: _showNepaliDates ? AppColors.govGreen : null,
+                      size: 24,
                     ),
                   ),
-                  const SizedBox(width: 8),
                 ],
               ),
             ),
           ],
           bottom: (_dailyQuote != null && (_scheduleKey.currentState?.controller.viewMode == ScheduleView.timeline || _scheduleKey.currentState == null))
             ? PreferredSize(
-                preferredSize: const Size.fromHeight(50.0),
+                preferredSize: Size.fromHeight(_computeQuoteHeight(_dailyQuote!)),
                 child: Padding(
-                  padding: const EdgeInsets.only(left: 22, right: 16, bottom: 8, top: 0.0),
+                  padding: const EdgeInsets.only(left: 22, right: 16, bottom: 4, top: 0.0),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Text(

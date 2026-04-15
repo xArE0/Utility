@@ -69,6 +69,7 @@ class ScheduleController extends ChangeNotifier {
   bool get isLoadingNepaliDates => _isLoadingNepaliDates;
   DateTime get baseDate => _baseDate;
   ScrollController? get scrollController => _scrollController;
+  List<Event> get allEvents => _allEvents;
 
   // Setters
   set showNepaliDates(bool value) {
