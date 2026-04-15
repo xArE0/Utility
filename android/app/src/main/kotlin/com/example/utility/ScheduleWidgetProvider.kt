@@ -16,22 +16,22 @@ class ScheduleWidgetProvider : HomeWidgetProvider() {
     ) {
         for (appWidgetId in appWidgetIds) {
             val views = RemoteViews(context.packageName, R.layout.utility_widget).apply {
-                val aqi = widgetData.getString("widget_aqi", "Air Quality: --")
+                val aqi = widgetData.getString("widget_aqi", "AQI: --")
                 
                 // Button 5m
                 val is5Tick = widgetData.getBoolean("btn_5m_tick", false)
-                setViewVisibility(R.id.btn_5m_text, if (is5Tick) android.view.View.GONE else android.view.View.VISIBLE)
-                setViewVisibility(R.id.btn_5m_icon, if (is5Tick) android.view.View.VISIBLE else android.view.View.GONE)
+                setViewVisibility(R.id.btn_5m_text, if (is5Tick) android.view.View.INVISIBLE else android.view.View.VISIBLE)
+                setViewVisibility(R.id.btn_5m_icon, if (is5Tick) android.view.View.VISIBLE else android.view.View.INVISIBLE)
 
                 // Button 15m
                 val is15Tick = widgetData.getBoolean("btn_15m_tick", false)
-                setViewVisibility(R.id.btn_15m_text, if (is15Tick) android.view.View.GONE else android.view.View.VISIBLE)
-                setViewVisibility(R.id.btn_15m_icon, if (is15Tick) android.view.View.VISIBLE else android.view.View.GONE)
+                setViewVisibility(R.id.btn_15m_text, if (is15Tick) android.view.View.INVISIBLE else android.view.View.VISIBLE)
+                setViewVisibility(R.id.btn_15m_icon, if (is15Tick) android.view.View.VISIBLE else android.view.View.INVISIBLE)
 
                 // Button 30m
                 val is30Tick = widgetData.getBoolean("btn_30m_tick", false)
-                setViewVisibility(R.id.btn_30m_text, if (is30Tick) android.view.View.GONE else android.view.View.VISIBLE)
-                setViewVisibility(R.id.btn_30m_icon, if (is30Tick) android.view.View.VISIBLE else android.view.View.GONE)
+                setViewVisibility(R.id.btn_30m_text, if (is30Tick) android.view.View.INVISIBLE else android.view.View.VISIBLE)
+                setViewVisibility(R.id.btn_30m_icon, if (is30Tick) android.view.View.VISIBLE else android.view.View.INVISIBLE)
 
                 setTextViewText(R.id.widget_aqi, aqi)
                 
@@ -75,9 +75,7 @@ class ScheduleWidgetProvider : HomeWidgetProvider() {
                     context, 0, launchIntent, 
                     android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
                 )
-                setOnClickPendingIntent(R.id.widget_root, launchPendingIntent)
                 setOnClickPendingIntent(R.id.btn_launch_app, launchPendingIntent)
-                setOnClickPendingIntent(R.id.widget_aqi, launchPendingIntent)
             }
             appWidgetManager.updateAppWidget(appWidgetId, views)
         }
