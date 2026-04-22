@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/widgets/static_background.dart';
+import '../../../core/widgets/animated_background.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../domain/cooldown_entities.dart';
 import '../data/local_cooldown_repository.dart';
@@ -59,7 +59,7 @@ class _CooldownScreenState extends State<CooldownScreen>
 
   @override
   Widget build(BuildContext context) {
-    return StaticBackground(
+    return AnimatedBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(

@@ -5,6 +5,7 @@ import '../domain/vault_entities.dart';
 import '../data/local_vault_repository.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/animated_background.dart';
 import 'package:local_auth/local_auth.dart';
 
 class DataVaultPage extends StatefulWidget {
@@ -320,7 +321,6 @@ class _DataVaultPageState extends State<DataVaultPage> {
     final theme = Theme.of(context);
     final bool isDark = theme.brightness == Brightness.dark;
 
-    final Color pageBg = isDark ? theme.scaffoldBackgroundColor : Colors.white;
     final Color inputFill = isDark ? AppColors.slate900.withOpacity(0.55) : Colors.grey[100]!;
     final Color border = isDark ? AppColors.slate700.withOpacity(0.8) : Colors.grey[300]!;
     final Color primaryText = isDark ? AppColors.slate50 : AppColors.slate900;
@@ -328,8 +328,9 @@ class _DataVaultPageState extends State<DataVaultPage> {
 
     final filteredItems = _controller.filteredItems;
 
-    return Scaffold(
-      backgroundColor: pageBg,
+    return AnimatedBackground(
+      child: Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Data Vault'),
         centerTitle: true,
@@ -470,6 +471,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
       ) : null,
+    ),
     );
   }
 }

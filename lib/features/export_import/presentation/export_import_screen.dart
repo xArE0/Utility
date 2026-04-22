@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'export_import_controller.dart';
 import '../data/local_export_import_repository.dart';
+import '../../../core/widgets/animated_background.dart';
 
 class ExportImportsPage extends StatefulWidget {
   const ExportImportsPage({super.key});
@@ -34,7 +35,9 @@ class _ExportImportsPageState extends State<ExportImportsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AnimatedBackground(
+      child: Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(title: const Text('Export & Import Databases')),
       body: ListView(
         children: [
@@ -122,6 +125,7 @@ class _ExportImportsPageState extends State<ExportImportsPage> {
           const Divider(),
         ],
       ),
+    ),
     );
   }
 }

@@ -42,13 +42,13 @@ class AnimatedBackground extends StatelessWidget {
           )
           .animate(onPlay: (controller) => controller.repeat(reverse: true))
           .move(
-            duration: 5.seconds,
+            duration: 12.seconds,
             begin: const Offset(0, 0),
             end: const Offset(50, 50),
             curve: Curves.easeInOut,
           )
           .scale(
-             duration: 7.seconds,
+             duration: 16.seconds,
              begin: const Offset(1,1),
              end: const Offset(1.2, 1.2),
           ),
@@ -77,7 +77,7 @@ class AnimatedBackground extends StatelessWidget {
           )
           .animate(onPlay: (controller) => controller.repeat(reverse: true))
           .move(
-            duration: 6.seconds,
+            duration: 14.seconds,
             begin: const Offset(0, 0),
             end: const Offset(-40, -40),
             curve: Curves.easeInOut,
@@ -107,7 +107,7 @@ class AnimatedBackground extends StatelessWidget {
           )
           .animate(onPlay: (controller) => controller.repeat(reverse: true))
           .move(
-            duration: 8.seconds,
+            duration: 18.seconds,
             begin: const Offset(0, 0),
             end: const Offset(-30, 60),
             curve: Curves.easeInOut,

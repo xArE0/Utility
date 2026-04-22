@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/glass_card.dart';
-import '../../../core/widgets/static_background.dart';
+import '../../../core/widgets/animated_background.dart';
 import '../domain/logbook_entities.dart';
 import '../data/local_logbook_repository.dart';
 import 'logbook_controller.dart';
@@ -616,7 +616,7 @@ class _LogbookScreenState extends State<LogbookScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return StaticBackground(
+    return AnimatedBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(

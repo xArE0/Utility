@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/widgets/static_background.dart';
+import '../../../core/widgets/animated_background.dart';
 import '../../../core/services/settings_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -41,7 +41,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final secondaryText = isDark ? AppColors.slate300 : Colors.grey[600]!;
     final cardBg = isDark ? AppColors.slate900.withOpacity(0.55) : Colors.grey[100]!;
 
-    return StaticBackground(
+    return AnimatedBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(

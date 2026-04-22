@@ -669,7 +669,6 @@ class ScheduleScreenState extends State<ScheduleScreen> {
 
     final Color headerSurface = (isDark ? AppColors.slate900 : Colors.white).withOpacity(0.55);
     final Color bodySurface = (isDark ? AppColors.slate900 : Colors.white).withOpacity(0.35);
-    final Color dividerColor = (isDark ? AppColors.slate800 : AppColors.slate200).withOpacity(0.8);
     final Color secondaryText = isDark ? AppColors.slate400 : AppColors.slate600;
 
     _controller.clearOldCache();

@@ -6,7 +6,7 @@ import '../../schedule/domain/schedule_entities.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/widgets/static_background.dart';
+import '../../../core/widgets/animated_background.dart';
 import '../../../utils/api_services.dart';
 import 'dart:async';
 import 'dart:ui';
@@ -346,7 +346,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return StaticBackground(
+    return AnimatedBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
