@@ -482,7 +482,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildGlassDrawer(BuildContext context) {
     return RepaintBoundary(
-      child: Drawer(
+      child: SizedBox(
+        width: 260,
+        child: Drawer(
       backgroundColor: Colors.transparent,
       elevation: 0,
       child: Container(
@@ -583,6 +585,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

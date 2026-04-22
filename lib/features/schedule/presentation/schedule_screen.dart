@@ -803,6 +803,7 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                                                     else
                                                       Icon(Icons.account_balance, size: 14,
                                                           color: isToday ? AppColors.govGreen : (isDark ? const Color(0xFF7EB8E0) : const Color(0xFF4A90B8))),
+                                                    const SizedBox(height: 4),
                                                     Text(nepaliMonth,
                                                         style: TextStyle(
                                                           fontSize: 12,
