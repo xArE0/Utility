@@ -544,7 +544,7 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                   const SizedBox(width: 2),
                   Flexible(
                     child: Text(
-                      "${event.remindDaysBefore ?? 0}d, ${event.remindTime ?? ''}",
+                      "${event.remindDaysBefore == 0 ? 'Now' : '${event.remindDaysBefore ?? 0}d'}, ${event.remindTime ?? ''}",
                       style: TextStyle(color: subtleFg, fontSize: 11),
                       softWrap: true,
                       overflow: TextOverflow.ellipsis,
@@ -630,7 +630,7 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                       const SizedBox(width: 2),
                       Flexible(
                         child: Text(
-                          "${event.remindDaysBefore ?? 0}d, ${event.remindTime ?? ''}",
+                          "${event.remindDaysBefore == 0 ? 'Today' : '${event.remindDaysBefore ?? 0}d'}, ${event.remindTime ?? ''}",
                           style: TextStyle(color: subtleFg, fontSize: 10),
                           overflow: TextOverflow.ellipsis,
                           softWrap: true,

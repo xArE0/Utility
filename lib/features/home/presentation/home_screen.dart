@@ -80,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     _lastSecretTapTime = now;
 
-    if (_secretTapCount >= 7) {
+    if (_secretTapCount >= 5) {
       _secretTapCount = 0;
       _showSecretAuthDialog();
     }
@@ -94,6 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     await showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setStateBuilder) {
