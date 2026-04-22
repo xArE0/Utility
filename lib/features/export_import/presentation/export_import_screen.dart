@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'export_import_controller.dart';
 import '../data/local_export_import_repository.dart';
 import '../../../core/widgets/animated_background.dart';
+import '../../../core/theme/app_colors.dart';
 
 class ExportImportsPage extends StatefulWidget {
   const ExportImportsPage({super.key});
@@ -37,95 +38,250 @@ class _ExportImportsPageState extends State<ExportImportsPage> {
   Widget build(BuildContext context) {
     return AnimatedBackground(
       child: Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(title: const Text('Export & Import Databases')),
-      body: ListView(
-        children: [
-          const Divider(),
-          ListTile(
-            title: const Text('Export Schedule Database'),
-            trailing: IconButton(
-              icon: const Icon(Icons.share),
-              onPressed: () => _controller.exportDatabase(context, scheduleDbName),
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(title: const Text('Export & Import')),
+        body: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          children: [
+            // ── Full Backup Section ──
+            _sectionLabel('Full Backup'),
+            const SizedBox(height: 6),
+            Card(
+              color: Colors.white.withValues(alpha: 0.08),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.greenAccent.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.backup,
+                          color: Colors.greenAccent, size: 22),
+                    ),
+                    title: const Text('Export All Databases',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: const Text('Bundle everything into a .zip'),
+                    trailing:
+                        const Icon(Icons.arrow_forward_ios, size: 14),
+                    onTap: () => _controller.exportAll(context),
+                  ),
+                  Divider(
+                      height: 1,
+                      indent: 16,
+                      endIndent: 16,
+                      color: Colors.white.withValues(alpha: 0.1)),
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color:
+                            Colors.orangeAccent.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.restore,
+                          color: Colors.orangeAccent, size: 22),
+                    ),
+                    title: const Text('Import All Databases',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: const Text('Restore from a .zip backup'),
+                    trailing:
+                        const Icon(Icons.arrow_forward_ios, size: 14),
+                    onTap: () => _controller.importAll(context),
+                  ),
+                ],
+              ),
             ),
-          ),
-          ListTile(
-            title: const Text('Import Schedule Database'),
-            trailing: IconButton(
-              icon: const Icon(Icons.file_download_outlined),
-              onPressed: () => _controller.importDatabase(context, scheduleDbName),
-            ),
-          ),
-          const Divider(),
-          ListTile(
-            title: const Text('Export Expense Database'),
-            trailing: IconButton(
-              icon: const Icon(Icons.share),
-              onPressed: () => _controller.exportDatabase(context, expenseDbName),
-            ),
-          ),
-          ListTile(
-            title: const Text('Import Expense Database'),
-            trailing: IconButton(
-              icon: const Icon(Icons.file_download_outlined),
-              onPressed: () => _controller.importDatabase(context, expenseDbName),
-            ),
-          ),
-          const Divider(),
-          ListTile(
-            title: const Text('Export Data Vault'),
-            subtitle: const Text('Encrypted .vault file'),
-            trailing: IconButton(
-              icon: const Icon(Icons.shield),
-              onPressed: () => _controller.exportEncryptedVault(context, dataVaultDbName),
-            ),
-          ),
-          ListTile(
-            title: const Text('Import Data Vault'),
-            subtitle: const Text('Decrypt .vault file'),
-            trailing: IconButton(
-              icon: const Icon(Icons.lock_open),
-              onPressed: () => _controller.importEncryptedVault(context, dataVaultDbName),
-            ),
-          ),
-          const Divider(),
 
-          // Cooldown export/import entries
-          ListTile(
-            title: const Text('Export Cooldown Database'),
-            trailing: IconButton(
-              icon: const Icon(Icons.share),
-              onPressed: () => _controller.exportDatabase(context, cooldownDbName),
-            ),
-          ),
-          ListTile(
-            title: const Text('Import Cooldown Database'),
-            trailing: IconButton(
-              icon: const Icon(Icons.file_download_outlined),
-              onPressed: () => _controller.importDatabase(context, cooldownDbName),
-            ),
-          ),
-          const Divider(),
+            const SizedBox(height: 20),
 
-          // Logbook export/import entries
-          ListTile(
-            title: const Text('Export Logbook Database'),
-            trailing: IconButton(
-              icon: const Icon(Icons.share),
-              onPressed: () => _controller.exportDatabase(context, logbookDbName),
+            // ── Individual Databases ──
+            _sectionLabel('Individual Databases'),
+            const SizedBox(height: 6),
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: 0.85,
+              children: [
+                _dbCard(
+                  name: 'Schedule',
+                  icon: Icons.calendar_month,
+                  color: AppColors.govBlue,
+                  dbName: scheduleDbName,
+                  isEncrypted: false,
+                ),
+                _dbCard(
+                  name: 'Expenses',
+                  icon: Icons.account_balance_wallet,
+                  color: AppColors.govGreen,
+                  dbName: expenseDbName,
+                  isEncrypted: false,
+                ),
+                _dbCard(
+                  name: 'Data Vault',
+                  icon: Icons.shield,
+                  color: Colors.amberAccent,
+                  dbName: dataVaultDbName,
+                  isEncrypted: true,
+                ),
+                _dbCard(
+                  name: 'Cooldown',
+                  icon: Icons.timer,
+                  color: Colors.cyanAccent,
+                  dbName: cooldownDbName,
+                  isEncrypted: false,
+                ),
+                _dbCard(
+                  name: 'Logbook',
+                  icon: Icons.menu_book,
+                  color: Colors.purpleAccent,
+                  dbName: logbookDbName,
+                  isEncrypted: false,
+                ),
+              ],
             ),
-          ),
-          ListTile(
-            title: const Text('Import Logbook Database'),
-            trailing: IconButton(
-              icon: const Icon(Icons.file_download_outlined),
-              onPressed: () => _controller.importDatabase(context, logbookDbName),
-            ),
-          ),
-          const Divider(),
-        ],
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
-    ),
+    );
+  }
+
+  // ── Section label ──
+  Widget _sectionLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, top: 8),
+      child: Text(
+        text.toUpperCase(),
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: Colors.white54,
+          letterSpacing: 1.2,
+        ),
+      ),
+    );
+  }
+
+  // ── Individual DB card ──
+  Widget _dbCard({
+    required String name,
+    required IconData icon,
+    required Color color,
+    required String dbName,
+    required bool isEncrypted,
+  }) {
+    return Card(
+      color: Colors.white.withValues(alpha: 0.07),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 16, 14, 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Icon
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const Spacer(),
+            // Name
+            Text(
+              name,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+            if (isEncrypted)
+              const Text(
+                'Encrypted',
+                style: TextStyle(fontSize: 11, color: Colors.white38),
+              ),
+            if (!isEncrypted) const SizedBox(height: 14), // balance height difference
+            const SizedBox(height: 12),
+            // Export / Import buttons
+            Row(
+              children: [
+                Expanded(
+                  child: _miniButton(
+                    label: 'Export',
+                    icon: Icons.upload,
+                    color: color,
+                    onTap: () {
+                      if (isEncrypted) {
+                        _controller.exportEncryptedVault(context, dbName);
+                      } else {
+                        _controller.exportDatabase(context, dbName);
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: _miniButton(
+                    label: 'Import',
+                    icon: Icons.download,
+                    color: Colors.white54,
+                    onTap: () {
+                      if (isEncrypted) {
+                        _controller.importEncryptedVault(context, dbName);
+                      } else {
+                        _controller.importDatabase(context, dbName);
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Small action button inside DB card ──
+  Widget _miniButton({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: color.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            children: [
+              Icon(icon, size: 16, color: color),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

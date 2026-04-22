@@ -10,16 +10,19 @@ class SettingsService extends ChangeNotifier {
   String _sidebarName = 'Avishek Shrestha';
   String _scheduleName = 'xArE0';
   String _secretPassword = '';
+  String _vaultExportPassword = 'super123';
 
   String get sidebarName => _sidebarName;
   String get scheduleName => _scheduleName;
   String get secretPassword => _secretPassword;
+  String get vaultExportPassword => _vaultExportPassword;
 
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
     _sidebarName = _prefs.getString('sidebarName') ?? 'Avishek Shrestha';
     _scheduleName = _prefs.getString('scheduleName') ?? 'xArE0';
     _secretPassword = _prefs.getString('secretPassword') ?? '';
+    _vaultExportPassword = _prefs.getString('vaultExportPassword') ?? 'super123';
   }
 
   Future<void> updateSidebarName(String value) async {
@@ -37,6 +40,12 @@ class SettingsService extends ChangeNotifier {
   Future<void> updateSecretPassword(String value) async {
     _secretPassword = value;
     await _prefs.setString('secretPassword', value);
+    notifyListeners();
+  }
+
+  Future<void> updateVaultExportPassword(String value) async {
+    _vaultExportPassword = value.isEmpty ? 'super123' : value;
+    await _prefs.setString('vaultExportPassword', _vaultExportPassword);
     notifyListeners();
   }
 }

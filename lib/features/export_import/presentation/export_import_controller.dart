@@ -1,11 +1,26 @@
 import 'package:flutter/material.dart';
 import '../domain/export_import_repository.dart';
+import '../../../core/services/settings_service.dart';
 
 class ExportImportController extends ChangeNotifier {
   final IExportImportRepository _repository;
 
   ExportImportController({required IExportImportRepository repository})
       : _repository = repository;
+
+  /// All plain (unencrypted) database names.
+  static const List<String> plainDbNames = [
+    'schedule.db',
+    'expense_tracker.db',
+    'cooldown.db',
+    'logbook.db',
+  ];
+
+  /// The vault database name.
+  static const String vaultDbName = 'datavault.db';
+
+  /// Gets the vault export password from settings (default: super123).
+  String get _vaultPassword => SettingsService.instance.vaultExportPassword;
 
   Future<void> exportDatabase(BuildContext context, String dbName) async {
     final exists = await _repository.checkDatabaseExists(dbName);
@@ -45,7 +60,7 @@ class ExportImportController extends ChangeNotifier {
   //  Encrypted vault export / import
   // ─────────────────────────────────────────────
 
-  /// Shows a password dialog, then exports the vault as an encrypted .vault file.
+  /// Exports the vault as an encrypted .vault file using the stored password.
   Future<void> exportEncryptedVault(BuildContext context, String dbName) async {
     final exists = await _repository.checkDatabaseExists(dbName);
     if (!exists) {
@@ -58,26 +73,16 @@ class ExportImportController extends ChangeNotifier {
     }
 
     if (!context.mounted) return;
-    final password = await _showPasswordDialog(
-      context,
-      title: 'Encrypt Vault Export',
-      hint: 'Choose a strong password',
-      confirmMode: true,
-    );
-    if (password == null || password.isEmpty) return;
-
-    if (!context.mounted) return;
-    // Show a loading indicator
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
-    final success = await _repository.exportEncryptedVault(dbName, password);
+    final success = await _repository.exportEncryptedVault(dbName, _vaultPassword);
 
     if (context.mounted) {
-      Navigator.of(context).pop(); // dismiss loading
+      Navigator.of(context).pop();
       if (!success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Failed to export Data Vault.')),
@@ -86,17 +91,8 @@ class ExportImportController extends ChangeNotifier {
     }
   }
 
-  /// Shows a password dialog, then imports and decrypts a .vault file.
+  /// Imports and decrypts a .vault file using the stored password.
   Future<void> importEncryptedVault(BuildContext context, String dbName) async {
-    if (!context.mounted) return;
-    final password = await _showPasswordDialog(
-      context,
-      title: 'Decrypt Vault Import',
-      hint: 'Enter the export password',
-      confirmMode: false,
-    );
-    if (password == null || password.isEmpty) return;
-
     if (!context.mounted) return;
     showDialog(
       context: context,
@@ -104,10 +100,10 @@ class ExportImportController extends ChangeNotifier {
       builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
-    final success = await _repository.importEncryptedVault(dbName, password);
+    final success = await _repository.importEncryptedVault(dbName, _vaultPassword);
 
     if (context.mounted) {
-      Navigator.of(context).pop(); // dismiss loading
+      Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -120,80 +116,83 @@ class ExportImportController extends ChangeNotifier {
     }
   }
 
-  /// Shows a password entry dialog.
-  ///
-  /// If [confirmMode] is true, requires the user to type the password twice.
-  Future<String?> _showPasswordDialog(
-    BuildContext context, {
-    required String title,
-    required String hint,
-    required bool confirmMode,
-  }) async {
-    final passwordController = TextEditingController();
-    final confirmController = TextEditingController();
-    bool obscure = true;
-    String? errorText;
+  // ─────────────────────────────────────────────
+  //  Bulk export / import ALL databases
+  // ─────────────────────────────────────────────
 
-    return showDialog<String>(
+  /// Exports all databases as a single .zip file using the stored vault password.
+  Future<void> exportAll(BuildContext context) async {
+    if (!context.mounted) return;
+
+    showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: Text(title),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: passwordController,
-                    obscureText: obscure,
-                    decoration: InputDecoration(
-                      labelText: hint,
-                      errorText: errorText,
-                      suffixIcon: IconButton(
-                        icon: Icon(obscure ? Icons.visibility_off : Icons.visibility),
-                        onPressed: () => setState(() => obscure = !obscure),
-                      ),
-                    ),
-                  ),
-                  if (confirmMode) ...[
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: confirmController,
-                      obscureText: obscure,
-                      decoration: const InputDecoration(
-                        labelText: 'Confirm password',
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(null),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    final pw = passwordController.text;
-                    if (pw.length < 4) {
-                      setState(() => errorText = 'Password must be at least 4 characters');
-                      return;
-                    }
-                    if (confirmMode && pw != confirmController.text) {
-                      setState(() => errorText = 'Passwords do not match');
-                      return;
-                    }
-                    Navigator.of(dialogContext).pop(pw);
-                  },
-                  child: const Text('Continue'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
+
+    final success =
+        await _repository.exportAllDatabases(plainDbNames, vaultDbName, _vaultPassword);
+
+    if (context.mounted) {
+      Navigator.of(context).pop();
+      if (!success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to export all databases.')),
+        );
+      }
+    }
+  }
+
+  /// Imports all databases from a single .zip file using the stored vault password.
+  Future<void> importAll(BuildContext context) async {
+    if (!context.mounted) return;
+
+    // Confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Restore All Databases?'),
+        content: const Text(
+          'This will overwrite ALL existing data (schedules, expenses, '
+          'logbook, cooldowns, and your Data Vault) with the backup.\n\n'
+          'This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Overwrite All', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    if (!context.mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final success =
+        await _repository.importAllDatabases(plainDbNames, vaultDbName, _vaultPassword);
+
+    if (context.mounted) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? 'All databases restored! Restart the app to see changes.'
+                : 'Failed to restore. Wrong vault password or corrupted backup.',
+          ),
+        ),
+      );
+    }
   }
 }

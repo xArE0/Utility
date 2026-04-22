@@ -15,6 +15,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _sidebarNameController = TextEditingController();
   final _scheduleNameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _vaultExportPasswordController = TextEditingController();
 
   @override
   void initState() {
@@ -23,6 +24,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _sidebarNameController.text = settings.sidebarName;
     _scheduleNameController.text = settings.scheduleName;
     _passwordController.text = settings.secretPassword;
+    _vaultExportPasswordController.text = settings.vaultExportPassword;
   }
 
   @override
@@ -30,6 +32,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _sidebarNameController.dispose();
     _scheduleNameController.dispose();
     _passwordController.dispose();
+    _vaultExportPasswordController.dispose();
     super.dispose();
   }
 
@@ -87,12 +90,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildSectionTitle('Security', primaryText),
               _buildCard(
                 cardBg,
-                _buildTextField(
-                  controller: _passwordController,
-                  label: 'Secret Menu Password',
-                  hint: 'Enter a strong password',
-                  icon: Icons.lock,
-                  isPassword: true,
+                Column(
+                  children: [
+                    _buildTextField(
+                      controller: _passwordController,
+                      label: 'Secret Menu Password',
+                      hint: 'Enter a strong password',
+                      icon: Icons.lock,
+                      isPassword: true,
+                    ),
+                    const Divider(height: 32, indent: 40),
+                    _buildTextField(
+                      controller: _vaultExportPasswordController,
+                      label: 'Vault Export Password',
+                      hint: 'Default: super123',
+                      icon: Icons.shield,
+                      isPassword: true,
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -157,9 +172,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final finalSidebar = sidebar.isEmpty ? 'Avishek Shrestha' : sidebar;
     final finalSchedule = schedule.isEmpty ? 'xArE0' : schedule;
 
+    final vaultExportPw = _vaultExportPasswordController.text.trim();
+
     await SettingsService.instance.updateSidebarName(finalSidebar);
     await SettingsService.instance.updateScheduleName(finalSchedule);
     await SettingsService.instance.updateSecretPassword(password);
+    await SettingsService.instance.updateVaultExportPassword(vaultExportPw);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
