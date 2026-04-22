@@ -25,7 +25,7 @@ class HomeScreen extends StatefulWidget {
 enum SyncState { idle, syncing, success, error }
 
 class _HomeScreenState extends State<HomeScreen> {
-  bool _showNepaliDates = false;
+
   final GlobalKey<ScheduleScreenState> _scheduleKey = GlobalKey<ScheduleScreenState>();
   String? _dailyQuote;
   SyncState _syncState = SyncState.idle;
@@ -442,19 +442,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                     icon: _buildSyncIcon(),
                   ),
-                  IconButton(
-                    padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
-                    constraints: const BoxConstraints(),
-                    tooltip: "Toggle Nepali Date",
-                    onPressed: () {
-                      setState(() => _showNepaliDates = !_showNepaliDates);
-                    },
-                    icon: Icon(
-                      _showNepaliDates ? Icons.calendar_today : Icons.calendar_month,
-                      color: _showNepaliDates ? AppColors.govGreen : null,
-                      size: 24,
-                    ),
-                  ),
+
                 ],
               ),
             ),
@@ -487,8 +475,6 @@ class _HomeScreenState extends State<HomeScreen> {
         drawer: _buildGlassDrawer(context),
         body: ScheduleScreen(
           key: _scheduleKey,
-          showNepaliDates: _showNepaliDates,
-          onToggleNepali: (val) => setState(() => _showNepaliDates = val),
         ),
       ),
     );

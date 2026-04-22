@@ -8,13 +8,8 @@ import '../data/local_schedule_repository.dart';
 import 'schedule_controller.dart';
 
 class ScheduleScreen extends StatefulWidget {
-  final bool showNepaliDates;
-  final Function(bool)? onToggleNepali;
-
   const ScheduleScreen({
     super.key,
-    this.showNepaliDates = false,
-    this.onToggleNepali,
   });
 
   @override
@@ -30,7 +25,6 @@ class ScheduleScreenState extends State<ScheduleScreen> {
     super.initState();
     _controller = ScheduleController(
       repository: LocalScheduleRepository(),
-      showNepaliDates: widget.showNepaliDates,
     );
     _controller.setScrollController(_scrollController);
     _controller.init();
@@ -49,13 +43,7 @@ class ScheduleScreenState extends State<ScheduleScreen> {
     }
   }
 
-  @override
-  void didUpdateWidget(ScheduleScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.showNepaliDates != oldWidget.showNepaliDates) {
-      _controller.showNepaliDates = widget.showNepaliDates;
-    }
-  }
+
 
   @override
   void dispose() {
@@ -691,7 +679,7 @@ class ScheduleScreenState extends State<ScheduleScreen> {
       body: Stack(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 10),
+            padding: const EdgeInsets.fromLTRB(8, 3, 8, 10),
             child: GlassCard(
               borderRadius: BorderRadius.circular(24),
               padding: EdgeInsets.zero,
@@ -717,13 +705,9 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                           final key = ScheduleController.dateFormat.format(date);
                           final isToday = key == todayKey;
                           final events = _controller.eventsForDate(date);
-                          String nepaliMonth = '';
-                          String nepaliDay = '';
-                          if (_controller.showNepaliDates) {
-                            final nepaliInfo = _controller.getNepaliDateInfo(date);
-                            nepaliMonth = nepaliInfo['month'] ?? '';
-                            nepaliDay = nepaliInfo['day'] ?? '';
-                          }
+                          final nepaliInfo = _controller.getNepaliDateInfo(date);
+                          final nepaliMonth = nepaliInfo['month'] ?? '';
+                          final nepaliDay = nepaliInfo['day'] ?? '';
                           final dateOnly = DateTime(date.year, date.month, date.day);
                           final dayDiff = dateOnly.difference(today).inDays;
                           String diffText;
@@ -734,6 +718,9 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                           else diffText = "in $dayDiff days";
 
                           final weatherEmoji = _controller.weatherMap[key]?['emoji'];
+                          final Color colBorderColor = isDark
+                              ? AppColors.slate600.withOpacity(0.9)
+                              : AppColors.slate400.withOpacity(0.7);
 
                           return DragTarget<Map<String, dynamic>>(
                             onWillAccept: (data) => data != null && (data['canMove'] == true),
@@ -748,60 +735,94 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                               final isHighlighted = candidateData.isNotEmpty;
 
                               return Container(
-                                margin: const EdgeInsets.symmetric(vertical: 8),
+                                margin: const EdgeInsets.only(bottom: 8),
                                 decoration: BoxDecoration(
-                                  border: Border(right: BorderSide(color: dividerColor, width: 1)),
+                                  border: Border(right: BorderSide(color: colBorderColor.withOpacity(0.3), width: 1)),
                                   color: isHighlighted
                                       ? AppColors.govGreen.withOpacity(isDark ? 0.18 : 0.12)
                                       : (isToday ? cs.primary.withOpacity(isDark ? 0.12 : 0.06) : null),
                                 ),
                                 child: Column(
                                   children: [
+                                    // ── Dual-date header ──
                                     Container(
-                                      padding: const EdgeInsets.only(top: 12, bottom: 2),
-                                      color: headerSurface,
+                                      padding: const EdgeInsets.only(top: 8, bottom: 4),
+                                      decoration: BoxDecoration(
+                                        color: headerSurface,
+                                        border: Border(right: BorderSide(color: colBorderColor, width: 2)),
+                                      ),
                                       width: double.infinity,
                                       child: Column(
                                         children: [
-                                          Text(ScheduleController.monthFormat.format(date),
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                color: isToday ? AppColors.govGreen : secondaryText,
-                                                fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                                              )),
+                                          // English + Nepali side-by-side
                                           Row(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            crossAxisAlignment: CrossAxisAlignment.baseline,
-                                            textBaseline: TextBaseline.alphabetic,
                                             children: [
-                                              if (weatherEmoji != null && weatherEmoji.isNotEmpty)
-                                                Opacity(
-                                                  opacity: 0.0,
-                                                  child: Padding(
-                                                    padding: const EdgeInsets.only(right: 4.0),
-                                                    child: Text(weatherEmoji, style: const TextStyle(fontSize: 16)),
-                                                  ),
+                                              // Left: English date
+                                              Expanded(
+                                                child: Column(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Text(ScheduleController.monthFormat.format(date),
+                                                        style: TextStyle(
+                                                          fontSize: 13,
+                                                          color: isToday ? AppColors.govGreen : secondaryText,
+                                                          fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
+                                                        )),
+                                                    Row(
+                                                      mainAxisAlignment: MainAxisAlignment.center,
+                                                      children: [
+                                                        Text(ScheduleController.numFormat.format(date),
+                                                            style: TextStyle(
+                                                              fontSize: 28,
+                                                              color: isToday ? AppColors.govGreen : (isDark ? AppColors.slate50 : AppColors.slate800),
+                                                              fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                                                            )),
+                                                      ],
+                                                    ),
+                                                    Text(ScheduleController.dayFormat.format(date),
+                                                        style: TextStyle(
+                                                          fontSize: 13,
+                                                          color: isToday ? AppColors.govGreen : secondaryText,
+                                                          fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                                                        )),
+                                                  ],
                                                 ),
-                                              Text(ScheduleController.numFormat.format(date),
-                                                  style: TextStyle(
-                                                    fontSize: 32,
-                                                    color: isToday ? AppColors.govGreen : (isDark ? AppColors.slate50 : AppColors.slate800),
-                                                    fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                                                  )),
-                                              if (weatherEmoji != null && weatherEmoji.isNotEmpty)
-                                                Padding(
-                                                  padding: const EdgeInsets.only(left: 4.0),
-                                                  child: Text(weatherEmoji, style: const TextStyle(fontSize: 20)),
+                                              ),
+                                              // Vertical divider
+                                              Container(
+                                                width: 1.5,
+                                                height: 55,
+                                                color: isDark ? AppColors.slate500 : AppColors.slate400,
+                                              ),
+                                              // Right: Nepali date
+                                              Expanded(
+                                                child: Column(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    if (weatherEmoji != null && weatherEmoji.isNotEmpty)
+                                                      Text(weatherEmoji, style: const TextStyle(fontSize: 14))
+                                                    else
+                                                      Icon(Icons.account_balance, size: 14,
+                                                          color: isToday ? AppColors.govGreen : secondaryText),
+                                                    Text(nepaliMonth,
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          color: isToday ? AppColors.govGreen : secondaryText,
+                                                          fontWeight: FontWeight.w600,
+                                                        )),
+                                                    Text(nepaliDay,
+                                                        style: TextStyle(
+                                                          fontSize: 22,
+                                                          color: isToday ? (isDark ? AppColors.slate50 : AppColors.slate900) : (isDark ? AppColors.slate100 : AppColors.slate800),
+                                                          fontWeight: FontWeight.bold,
+                                                        )),
+                                                  ],
                                                 ),
+                                              ),
                                             ],
                                           ),
-                                          Text(ScheduleController.dayFormat.format(date),
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                color: isToday ? AppColors.govGreen : secondaryText,
-                                                fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                                              )),
                                           const SizedBox(height: 2),
+                                          // diffText
                                           Text(diffText, style: TextStyle(fontSize: 11, color: secondaryText)),
                                         ],
                                       ),
@@ -819,54 +840,7 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                                               ),
                                       ),
                                     ),
-                                    SizedBox(height: _controller.showNepaliDates ? 0 : 85),
-                                    if (_controller.showNepaliDates)
-                                      Container(
-                                        margin: const EdgeInsets.only(bottom: 85, top: 4),
-                                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                                        decoration: BoxDecoration(
-                                          color: (isDark ? AppColors.slate800 : Colors.white).withOpacity(isDark ? 0.85 : 0.9),
-                                          borderRadius: BorderRadius.circular(18),
-                                          border: Border.all(
-                                            color: isToday
-                                                ? AppColors.govGreen.withOpacity(0.9)
-                                                : (isDark ? AppColors.slate700 : AppColors.slate200).withOpacity(0.7),
-                                            width: 1.5,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(isDark ? 0.25 : 0.08),
-                                              blurRadius: 10,
-                                              offset: const Offset(0, 3),
-                                            ),
-                                          ],
-                                        ),
-                                        child: _controller.isLoadingNepaliDates && nepaliMonth.isEmpty
-                                            ? const SizedBox(
-                                                height: 45, width: 45,
-                                                child: Center(child: SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.teal))),
-                                              )
-                                            : Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Text(nepaliMonth,
-                                                      style: TextStyle(
-                                                        fontSize: 10,
-                                                        color: isToday ? AppColors.govGreen : (isDark ? AppColors.slate300 : Colors.grey.shade700),
-                                                        fontWeight: FontWeight.w600,
-                                                        letterSpacing: 0.5,
-                                                      )),
-                                                  const SizedBox(height: 2),
-                                                  Text(nepaliDay,
-                                                      style: TextStyle(
-                                                        fontSize: 25,
-                                                        color: isToday ? (isDark ? AppColors.slate50 : AppColors.slate900) : (isDark ? AppColors.slate50 : Colors.grey.shade900),
-                                                        fontWeight: FontWeight.bold,
-                                                        letterSpacing: 1,
-                                                      )),
-                                                ],
-                                              ),
-                                      ),
+                                    const SizedBox(height: 85),
                                   ],
                                 ),
                               );
@@ -1018,10 +992,8 @@ class ScheduleScreenState extends State<ScheduleScreen> {
               final isSelected = _controller.isSameDay(_controller.selectedDate, date);
 
               String nepaliDay = '';
-              if (_controller.showNepaliDates) {
-                final nepaliInfo = _controller.getNepaliDateInfo(date);
-                nepaliDay = nepaliInfo['day'] ?? '';
-              }
+              final nepaliInfo = _controller.getNepaliDateInfo(date);
+              nepaliDay = nepaliInfo['day'] ?? '';
 
               return Expanded(
                 child: GestureDetector(
@@ -1040,7 +1012,7 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                         Text(DateFormat('E').format(date), style: TextStyle(color: cs.onSurface.withOpacity(0.7), fontSize: 11, fontWeight: FontWeight.w600)),
                         const SizedBox(height: 3),
                         Text(DateFormat('d').format(date), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: isToday ? AppColors.govGreen : cs.onSurface)),
-                        if (_controller.showNepaliDates && nepaliDay.isNotEmpty) ...[
+                        if (nepaliDay.isNotEmpty) ...[
                           const SizedBox(height: 2),
                           Text(nepaliDay, style: TextStyle(fontSize: 10, color: cs.onSurface.withOpacity(0.6), fontWeight: FontWeight.w600)),
                         ],
@@ -1089,19 +1061,17 @@ class ScheduleScreenState extends State<ScheduleScreen> {
               Builder(builder: (context) {
                 String englishMonth = DateFormat('MMMM yyyy').format(_controller.selectedDate);
                 String nepaliMonth = '';
-                if (_controller.showNepaliDates) {
-                  final infoStart = _controller.getNepaliDateInfo(firstOfMonth);
-                  final lastOfMonth = DateTime(_controller.selectedDate.year, _controller.selectedDate.month, daysInMonth);
-                  final infoEnd = _controller.getNepaliDateInfo(lastOfMonth);
-                  
-                  final m1 = infoStart['month'] ?? '';
-                  final m2 = infoEnd['month'] ?? '';
-                  
-                  if (m1.isNotEmpty && m2.isNotEmpty && m1 != m2) {
-                    nepaliMonth = "$m1/$m2";
-                  } else {
-                    nepaliMonth = m1.isNotEmpty ? m1 : m2;
-                  }
+                final infoStart = _controller.getNepaliDateInfo(firstOfMonth);
+                final lastOfMonth = DateTime(_controller.selectedDate.year, _controller.selectedDate.month, daysInMonth);
+                final infoEnd = _controller.getNepaliDateInfo(lastOfMonth);
+                
+                final m1 = infoStart['month'] ?? '';
+                final m2 = infoEnd['month'] ?? '';
+                
+                if (m1.isNotEmpty && m2.isNotEmpty && m1 != m2) {
+                  nepaliMonth = "$m1/$m2";
+                } else {
+                  nepaliMonth = m1.isNotEmpty ? m1 : m2;
                 }
                 return Text(nepaliMonth.isEmpty ? englishMonth : "$englishMonth ($nepaliMonth)", style: TextStyle(color: isDark ? AppColors.slate200 : AppColors.slate800, fontWeight: FontWeight.w700));
               }),
@@ -1146,10 +1116,8 @@ class ScheduleScreenState extends State<ScheduleScreen> {
               final isSelected = _controller.isSameDay(_controller.selectedDate, date);
 
               String nepaliDay = '';
-              if (_controller.showNepaliDates) {
-                final nepaliInfo = _controller.getNepaliDateInfo(date);
-                nepaliDay = nepaliInfo['day'] ?? '';
-              }
+              final nepaliInfo = _controller.getNepaliDateInfo(date);
+              nepaliDay = nepaliInfo['day'] ?? '';
 
               return GestureDetector(
                 onTap: () => _controller.selectedDate = date,
@@ -1172,7 +1140,7 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                           if (isToday) ...[const SizedBox(width: 2), Icon(Icons.circle, size: 4, color: AppColors.govGreen)]
                         ],
                       ),
-                      if (_controller.showNepaliDates && nepaliDay.isNotEmpty) ...[
+                      if (nepaliDay.isNotEmpty) ...[
                         const SizedBox(height: 1),
                         Text(nepaliDay, style: TextStyle(fontSize: 9, color: cs.onSurface.withOpacity(0.5), fontWeight: FontWeight.w600)),
                       ],

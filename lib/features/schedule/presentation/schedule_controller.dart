@@ -15,8 +15,7 @@ enum ScheduleView { timeline, week, month }
 
 class ScheduleController extends ChangeNotifier {
   final IScheduleRepository _repository;
-  
-  bool _showNepaliDates = false;
+
   ScheduleView _viewMode = ScheduleView.timeline;
   late final DateTime _baseDate;
 
@@ -54,15 +53,14 @@ class ScheduleController extends ChangeNotifier {
 
   ScrollController? _scrollController;
 
-  ScheduleController({required IScheduleRepository repository, bool showNepaliDates = false}) : _repository = repository {
-    _showNepaliDates = showNepaliDates;
+  ScheduleController({required IScheduleRepository repository}) : _repository = repository {
     final now = DateTime.now();
     _baseDate = DateTime(now.year, now.month, now.day).subtract(const Duration(days: initialIndex));
     _selectedDate = DateTime(now.year, now.month, now.day);
   }
 
   // Getters
-  bool get showNepaliDates => _showNepaliDates;
+
   ScheduleView get viewMode => _viewMode;
   DateTime get selectedDate => _selectedDate;
   bool get isDragging => _isDragging;
@@ -72,15 +70,7 @@ class ScheduleController extends ChangeNotifier {
   List<Event> get allEvents => _allEvents;
 
   // Setters
-  set showNepaliDates(bool value) {
-    if (_showNepaliDates != value) {
-      _showNepaliDates = value;
-      if (_showNepaliDates) {
-        precomputeNepaliDates(_selectedDate);
-      }
-      notifyListeners();
-    }
-  }
+
 
   set viewMode(ScheduleView value) {
     if (_viewMode != value) {
@@ -118,6 +108,7 @@ class ScheduleController extends ChangeNotifier {
   Future<void> init() async {
     await _repository.init();
     await preloadEvents();
+    precomputeNepaliDates(_selectedDate);
     
     // Fetch weather asynchronously so it doesn't block UI
     ApiServices.fetchKathmanduWeather().then((fetched) {
@@ -200,7 +191,6 @@ class ScheduleController extends ChangeNotifier {
   }
 
   Map<String, String> getNepaliDateInfo(DateTime date) {
-    if (!_showNepaliDates) return {};
 
     final dateKey = dateFormat.format(date);
 
