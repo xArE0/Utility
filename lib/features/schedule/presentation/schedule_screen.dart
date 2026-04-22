@@ -679,7 +679,7 @@ class ScheduleScreenState extends State<ScheduleScreen> {
       body: Stack(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(8, 3, 8, 10),
+            padding: const EdgeInsets.fromLTRB(8, 5, 8, 10),
             child: GlassCard(
               borderRadius: BorderRadius.circular(24),
               padding: EdgeInsets.zero,
@@ -803,18 +803,18 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                                                       Text(weatherEmoji, style: const TextStyle(fontSize: 14))
                                                     else
                                                       Icon(Icons.account_balance, size: 14,
-                                                          color: isToday ? AppColors.govGreen : secondaryText),
+                                                          color: isToday ? AppColors.govGreen : (isDark ? const Color(0xFF7EB8E0) : const Color(0xFF4A90B8))),
                                                     Text(nepaliMonth,
                                                         style: TextStyle(
                                                           fontSize: 12,
-                                                          color: isToday ? AppColors.govGreen : secondaryText,
+                                                          color: isToday ? AppColors.govGreen : (isDark ? const Color(0xFF7EB8E0) : const Color(0xFF4A90B8)),
                                                           fontWeight: FontWeight.w600,
                                                         )),
                                                     Text(nepaliDay,
                                                         style: TextStyle(
                                                           fontSize: 22,
-                                                          color: isToday ? (isDark ? AppColors.slate50 : AppColors.slate900) : (isDark ? AppColors.slate100 : AppColors.slate800),
-                                                          fontWeight: FontWeight.bold,
+                                                          color: isToday ? (isDark ? AppColors.slate50 : AppColors.slate900) : (isDark ? const Color(0xFF9DC8E8) : const Color(0xFF3A7CA5)),
+                                                          fontWeight: FontWeight.w400,
                                                         )),
                                                   ],
                                                 ),
@@ -835,12 +835,11 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                                             ? const SizedBox.expand()
                                             : ListView.builder(
                                                 itemCount: events.length,
-                                                padding: EdgeInsets.zero,
+                                                padding: const EdgeInsets.only(bottom: 85),
                                                 itemBuilder: (context, i) => _buildEventContainer(events[i], date),
                                               ),
                                       ),
                                     ),
-                                    const SizedBox(height: 85),
                                   ],
                                 ),
                               );
