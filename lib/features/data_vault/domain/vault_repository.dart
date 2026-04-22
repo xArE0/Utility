@@ -6,5 +6,7 @@ abstract class IVaultRepository {
   Future<void> addItem(VaultItem item);
   Future<void> deleteItem(int id);
   Future<void> updateItem(VaultItem item);
+  Future<List<VaultHistory>> getHistory(int vaultItemId);
+  Future<void> addHistory(VaultHistory history);
   Future<void> dispose();
 }

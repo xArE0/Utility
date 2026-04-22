@@ -8,11 +8,20 @@ class DataVaultController extends ChangeNotifier {
   
   List<VaultItem> _items = [];
   final Set<int> _visibleIds = {}; 
+  final Set<int> _expandedIds = {};
+  final Set<int> _historyExpandedIds = {};
+  final Map<int, List<VaultHistory>> _historyCache = {};
   String _searchQuery = '';
+  bool _showAllPasswords = false;
+  bool _initialized = false;
 
   List<VaultItem> get items => _items;
   Set<int> get visibleIds => _visibleIds;
+  Set<int> get expandedIds => _expandedIds;
+  Set<int> get historyExpandedIds => _historyExpandedIds;
   String get searchQuery => _searchQuery;
+  bool get showAllPasswords => _showAllPasswords;
+  bool get initialized => _initialized;
 
   final List<String> categories = ['Passwords', 'IDs', 'Cards', 'Bank Accounts'];
 
@@ -26,6 +35,8 @@ class DataVaultController extends ChangeNotifier {
   Future<void> init() async {
     await _repository.init();
     await loadItems();
+    _initialized = true;
+    notifyListeners();
   }
 
   Future<void> loadItems() async {
@@ -43,8 +54,56 @@ class DataVaultController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void toggleExpand(int id) {
+    if (_expandedIds.contains(id)) {
+      _expandedIds.remove(id);
+    } else {
+      _expandedIds.add(id);
+    }
+    notifyListeners();
+  }
+
+  void toggleHistoryExpand(int id) {
+    if (_historyExpandedIds.contains(id)) {
+      _historyExpandedIds.remove(id);
+    } else {
+      _historyExpandedIds.add(id);
+      // Load history on first expand
+      if (!_historyCache.containsKey(id)) {
+        loadHistory(id);
+      }
+    }
+    notifyListeners();
+  }
+
+  void toggleShowAll() {
+    _showAllPasswords = !_showAllPasswords;
+    if (_showAllPasswords) {
+      for (final item in _items) {
+        if (item.id != null) _visibleIds.add(item.id!);
+      }
+    } else {
+      _visibleIds.clear();
+    }
+    notifyListeners();
+  }
+
+  Future<void> loadHistory(int itemId) async {
+    final history = await _repository.getHistory(itemId);
+    _historyCache[itemId] = history;
+    notifyListeners();
+  }
+
+  List<VaultHistory> getHistory(int itemId) {
+    return _historyCache[itemId] ?? [];
+  }
+
   Future<void> deleteItem(int id) async {
     await _repository.deleteItem(id);
+    _visibleIds.remove(id);
+    _expandedIds.remove(id);
+    _historyExpandedIds.remove(id);
+    _historyCache.remove(id);
     await loadItems();
   }
 
@@ -57,6 +116,11 @@ class DataVaultController extends ChangeNotifier {
   Future<void> updateItem(int id, String label, String value, String category) async {
     final item = VaultItem(id: id, label: label, value: value, category: category);
     await _repository.updateItem(item);
+    // Refresh history cache for this item
+    _historyCache.remove(id);
+    if (_historyExpandedIds.contains(id)) {
+      await loadHistory(id);
+    }
     await loadItems();
   }
 

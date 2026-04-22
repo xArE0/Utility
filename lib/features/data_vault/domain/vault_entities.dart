@@ -43,3 +43,35 @@ class VaultItem {
     );
   }
 }
+
+class VaultHistory {
+  final int? id;
+  final int vaultItemId;
+  final String oldValue;
+  final DateTime changedAt;
+
+  VaultHistory({
+    this.id,
+    required this.vaultItemId,
+    required this.oldValue,
+    required this.changedAt,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'vault_item_id': vaultItemId,
+      'old_value': oldValue,
+      'changed_at': changedAt.toIso8601String(),
+    };
+  }
+
+  factory VaultHistory.fromMap(Map<String, dynamic> map) {
+    return VaultHistory(
+      id: map['id'],
+      vaultItemId: map['vault_item_id'],
+      oldValue: map['old_value'] ?? '',
+      changedAt: DateTime.tryParse(map['changed_at'] ?? '') ?? DateTime.now(),
+    );
+  }
+}

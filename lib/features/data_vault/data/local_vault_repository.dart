@@ -25,7 +25,7 @@ class LocalVaultRepository implements IVaultRepository {
     _db = await openDatabase(
       path,
       password: password,
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE vault(
@@ -35,10 +35,28 @@ class LocalVaultRepository implements IVaultRepository {
             category TEXT
           )
         ''');
+        await db.execute('''
+          CREATE TABLE vault_history(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            vault_item_id INTEGER,
+            old_value TEXT,
+            changed_at TEXT
+          )
+        ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion == 1 && newVersion == 2) {
+        if (oldVersion < 2) {
           await db.execute("ALTER TABLE vault ADD COLUMN category TEXT");
+        }
+        if (oldVersion < 3) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS vault_history(
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              vault_item_id INTEGER,
+              old_value TEXT,
+              changed_at TEXT
+            )
+          ''');
         }
       },
     );
@@ -99,7 +117,7 @@ class LocalVaultRepository implements IVaultRepository {
       final newDb = await openDatabase(
         dbFilePath,
         password: password,
-        version: 2,
+        version: 3,
         onCreate: (db, version) async {
           await db.execute('''
             CREATE TABLE vault(
@@ -107,6 +125,14 @@ class LocalVaultRepository implements IVaultRepository {
               label TEXT,
               value TEXT,
               category TEXT
+            )
+          ''');
+          await db.execute('''
+            CREATE TABLE vault_history(
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              vault_item_id INTEGER,
+              old_value TEXT,
+              changed_at TEXT
             )
           ''');
         },
@@ -153,18 +179,52 @@ class LocalVaultRepository implements IVaultRepository {
   @override
   Future<void> deleteItem(int id) async {
     if (_db == null) await init();
+    // Also delete associated history
+    await _db!.delete('vault_history', where: 'vault_item_id = ?', whereArgs: [id]);
     await _db!.delete('vault', where: 'id = ?', whereArgs: [id]);
   }
 
   @override
   Future<void> updateItem(VaultItem item) async {
     if (_db == null) await init();
+
+    // Save the old value to history before updating
+    final existing = await _db!.query('vault', where: 'id = ?', whereArgs: [item.id]);
+    if (existing.isNotEmpty) {
+      final oldValue = existing.first['value'] as String? ?? '';
+      if (oldValue.isNotEmpty && oldValue != item.value) {
+        await _db!.insert('vault_history', {
+          'vault_item_id': item.id,
+          'old_value': oldValue,
+          'changed_at': DateTime.now().toIso8601String(),
+        });
+      }
+    }
+
     await _db!.update(
       'vault',
       item.toMap(),
       where: 'id = ?',
       whereArgs: [item.id],
     );
+  }
+
+  @override
+  Future<List<VaultHistory>> getHistory(int vaultItemId) async {
+    if (_db == null) await init();
+    final maps = await _db!.query(
+      'vault_history',
+      where: 'vault_item_id = ?',
+      whereArgs: [vaultItemId],
+      orderBy: 'changed_at DESC',
+    );
+    return maps.map((m) => VaultHistory.fromMap(m)).toList();
+  }
+
+  @override
+  Future<void> addHistory(VaultHistory history) async {
+    if (_db == null) await init();
+    await _db!.insert('vault_history', history.toMap());
   }
 
   @override

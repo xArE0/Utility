@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'datavault_controller.dart';
 import '../domain/vault_entities.dart';
 import '../data/local_vault_repository.dart';
@@ -22,6 +23,9 @@ class _DataVaultPageState extends State<DataVaultPage> {
   bool _isAuthenticated = false;
   bool _isAuthenticating = true;
   final LocalAuthentication auth = LocalAuthentication();
+
+  // Track which items just had their value copied (for checkmark feedback)
+  final Set<int> _copiedIds = {};
 
   @override
   void initState() {
@@ -82,19 +86,21 @@ class _DataVaultPageState extends State<DataVaultPage> {
     super.dispose();
   }
 
-  void _copyToClipboard(String value) {
+  void _copyToClipboard(String value, int itemId) {
     Clipboard.setData(ClipboardData(text: value));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Copied to clipboard'), duration: Duration(seconds: 1)),
-    );
+    setState(() { _copiedIds.add(itemId); });
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) setState(() { _copiedIds.remove(itemId); });
+    });
   }
 
   void _confirmDelete(int id) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) => AlertDialog(
-        title: const Text('Delete Entry'),
-        content: const Text('Are you sure you want to delete this item?'),
+        backgroundColor: AppColors.slate800,
+        title: Text('Delete Entry', style: AppTypography.titleLarge),
+        content: Text('Are you sure you want to delete this item?', style: AppTypography.bodyMedium),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -125,13 +131,15 @@ class _DataVaultPageState extends State<DataVaultPage> {
     await showDialog(
       context: context,
       builder: (BuildContext dialogContext) => AlertDialog(
-        title: Text(isEditing ? 'Edit Info' : 'Add Info'),
+        backgroundColor: AppColors.slate800,
+        title: Text(isEditing ? 'Edit Info' : 'Add Info', style: AppTypography.titleLarge),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<String>(
                 value: selectedCategory,
+                dropdownColor: AppColors.slate700,
                 items: _controller.categories
                     .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                     .toList(),
@@ -185,137 +193,239 @@ class _DataVaultPageState extends State<DataVaultPage> {
     );
   }
 
+  IconData _categoryIcon(String category) {
+    switch (category) {
+      case 'Passwords': return Icons.key;
+      case 'IDs': return Icons.badge;
+      case 'Cards': return Icons.credit_card;
+      case 'Bank Accounts': return Icons.account_balance;
+      default: return Icons.folder;
+    }
+  }
+
+  // ─── Card builder ────────────────────────────────────────────────
   Widget _buildVaultCard(VaultItem item) {
     final theme = Theme.of(context);
     final bool isDark = theme.brightness == Brightness.dark;
     final cs = theme.colorScheme;
-    final Color surface = isDark ? AppColors.slate800.withOpacity(0.6) : Colors.white;
-    final Color border = isDark ? AppColors.slate700.withOpacity(0.8) : Colors.grey[300]!;
+
+    final Color surface = isDark ? const Color(0xFF1E293B).withOpacity(0.85) : Colors.white.withOpacity(0.95);
+    final Color border = isDark ? AppColors.slate600.withOpacity(0.7) : Colors.grey[400]!;
     final Color primaryText = isDark ? AppColors.slate50 : AppColors.slate900;
     final Color secondaryText = isDark ? AppColors.slate300 : Colors.grey[600]!;
 
     final id = item.id!;
     final isVisible = _controller.visibleIds.contains(id);
+    final isExpanded = _controller.expandedIds.contains(id);
+    final isHistoryExpanded = _controller.historyExpandedIds.contains(id);
+    final isCopied = _copiedIds.contains(id);
+    final history = _controller.getHistory(id);
 
     return Card(
-      elevation: isDark ? 0 : 4,
+      elevation: isDark ? 2 : 3,
+      shadowColor: isDark ? Colors.black54 : Colors.black26,
       color: surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: border.withOpacity(isDark ? 0.6 : 1.0)),
+        side: BorderSide(color: border.withOpacity(isDark ? 0.6 : 0.8), width: 1.2),
       ),
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Row(
+        padding: const EdgeInsets.fromLTRB(16, 14, 12, 10),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            // ── Row 1: Label + COPY VALUE ──
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Lock icon
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: cs.primary.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.lock_outline, color: cs.primary, size: 20),
+                ),
+                const SizedBox(width: 12),
+                // Label + category
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).primaryColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
+                      Text(
+                        item.label,
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: primaryText,
                         ),
-                        child: Icon(Icons.lock, color: Theme.of(context).primaryColor),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          item.label,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: primaryText,
-                          ),
-                        ),
+                      const SizedBox(height: 2),
+                      Text(
+                        item.category,
+                        style: TextStyle(fontSize: 12, color: secondaryText),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  Divider(color: border.withOpacity(0.7)),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Value:',
-                    style: TextStyle(
-                      fontSize: 12, 
-                      color: secondaryText,
-                      fontWeight: FontWeight.w500
+                ),
+                // Copy button
+                _CopyValueButton(
+                  isCopied: isCopied,
+                  onPressed: () => _copyToClipboard(item.value, id),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 10),
+
+            // ── Row 2: Action buttons row ──
+            Row(
+              children: [
+                // Eye toggle
+                _ActionChip(
+                  icon: isVisible ? Icons.visibility_off : Icons.visibility,
+                  color: cs.primary,
+                  onPressed: () => _controller.toggleVisibility(id),
+                ),
+                const SizedBox(width: 8),
+                // Edit
+                _ActionChip(
+                  icon: Icons.edit,
+                  color: AppColors.govGold,
+                  onPressed: () => _showItemDialog(item: item),
+                ),
+                const SizedBox(width: 8),
+                // Delete
+                _ActionChip(
+                  icon: Icons.delete_outline,
+                  color: Colors.redAccent,
+                  onPressed: () => _confirmDelete(id),
+                ),
+                const Spacer(),
+                // Details expand
+                InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () => _controller.toggleExpand(id),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('Details', style: TextStyle(fontSize: 13, color: secondaryText, fontWeight: FontWeight.w500)),
+                        Icon(isExpanded ? Icons.expand_less : Icons.expand_more, size: 18, color: secondaryText),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    isVisible ? item.value : '••••••••',
-                    style: TextStyle(
-                      fontSize: 16,
-                      letterSpacing: 2.0,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: isVisible ? null : 'monospace',
-                      color: primaryText,
+                ),
+              ],
+            ),
+
+            // ── Expandable: Password value ──
+            if (isExpanded) ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.slate900.withOpacity(0.5) : Colors.grey[100],
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: border.withOpacity(0.5)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Value:', style: TextStyle(fontSize: 11, color: secondaryText, fontWeight: FontWeight.w500)),
+                    const SizedBox(height: 4),
+                    Text(
+                      isVisible ? item.value : '••••••••',
+                      style: TextStyle(
+                        fontSize: 16,
+                        letterSpacing: isVisible ? 0.5 : 3.0,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: isVisible ? null : 'monospace',
+                        color: primaryText,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            
-            const SizedBox(width: 12),
-            
-            Container(
-              decoration: BoxDecoration(
-                 color: isDark ? AppColors.slate900.withOpacity(0.55) : Colors.grey[100],
-                 borderRadius: BorderRadius.circular(12),
-                 border: Border.all(color: border)
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
+
+              // ── History section ──
+              const SizedBox(height: 6),
+              InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => _controller.toggleHistoryExpand(id),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _MatrixButton(
-                        icon: isVisible ? Icons.visibility_off : Icons.visibility,
-                        color: cs.primary,
-                        onPressed: () => _controller.toggleVisibility(id),
-                      ),
-                      Container(width: 1, height: 40, color: border),
-                      _MatrixButton(
-                        icon: Icons.copy,
-                        color: cs.primary,
-                        onPressed: () => _copyToClipboard(item.value),
-                      ),
+                      Icon(Icons.history, size: 15, color: secondaryText),
+                      const SizedBox(width: 4),
+                      Text('Password History', style: TextStyle(fontSize: 12, color: secondaryText, fontWeight: FontWeight.w500)),
+                      Icon(isHistoryExpanded ? Icons.expand_less : Icons.expand_more, size: 16, color: secondaryText),
                     ],
                   ),
-                  Container(height: 1, width: 80, color: border),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _MatrixButton(
-                        icon: Icons.edit,
-                        color: AppColors.govGold,
-                        onPressed: () => _showItemDialog(item: item),
-                      ),
-                      Container(width: 1, height: 40, color: border),
-                      _MatrixButton(
-                        icon: Icons.delete,
-                        color: Colors.red,
-                        onPressed: () => _confirmDelete(id),
-                      ),
-                    ],
-                  ),
-                ],
+                ),
               ),
-            ),
+
+              if (isHistoryExpanded) ...[
+                if (history.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8, top: 4, bottom: 4),
+                    child: Text('No previous passwords', style: TextStyle(fontSize: 12, color: secondaryText, fontStyle: FontStyle.italic)),
+                  )
+                else
+                  ...history.map((h) => _buildHistoryTile(h, isDark, primaryText, secondaryText, border)),
+              ],
+            ],
           ],
         ),
       ),
     );
   }
 
+  Widget _buildHistoryTile(VaultHistory h, bool isDark, Color primaryText, Color secondaryText, Color border) {
+    final dateStr = DateFormat('MMM dd, yyyy – hh:mm a').format(h.changedAt);
+    return Container(
+      margin: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.slate900.withOpacity(0.35) : Colors.grey[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: border.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(h.oldValue, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: primaryText)),
+                const SizedBox(height: 2),
+                Text(dateStr, style: TextStyle(fontSize: 10, color: secondaryText)),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.copy, size: 16, color: secondaryText),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: h.oldValue));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Old password copied'), duration: Duration(seconds: 1)),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Main build ──────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -336,6 +446,16 @@ class _DataVaultPageState extends State<DataVaultPage> {
         centerTitle: true,
         backgroundColor: isDark ? Colors.transparent : theme.primaryColor,
         foregroundColor: Colors.white,
+        actions: [
+          if (!_isAuthenticating && _isAuthenticated)
+            IconButton(
+              icon: Icon(
+                _controller.showAllPasswords ? Icons.visibility_off : Icons.visibility,
+              ),
+              tooltip: _controller.showAllPasswords ? 'Hide All' : 'Show All',
+              onPressed: () => _controller.toggleShowAll(),
+            ),
+        ],
       ),
       body: Column(
         children: [
@@ -367,8 +487,9 @@ class _DataVaultPageState extends State<DataVaultPage> {
               ),
             ),
           if (!_isAuthenticating && _isAuthenticated) ...[
+            // Search bar
             Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
@@ -401,6 +522,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
             ),
           ),
           
+          // Items list grouped by category
           Expanded(
             child: filteredItems.isEmpty
                 ? Center(
@@ -431,26 +553,33 @@ class _DataVaultPageState extends State<DataVaultPage> {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(20, 16, 16, 8),
+                          Container(
+                            margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: isDark ? AppColors.slate800.withOpacity(0.7) : Colors.grey[200]!.withOpacity(0.8),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border(
+                                left: BorderSide(color: theme.primaryColor, width: 4),
+                              ),
+                            ),
                             child: Row(
                               children: [
-                                Container(
-                                  width: 4, height: 18, 
-                                  decoration: BoxDecoration(
-                                    color: theme.primaryColor,
-                                    borderRadius: BorderRadius.circular(2)
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
+                                Icon(_categoryIcon(category), size: 18, color: theme.primaryColor),
+                                const SizedBox(width: 10),
                                 Text(
                                   category,
                                   style: TextStyle(
-                                    fontSize: 16, 
-                                    fontWeight: FontWeight.bold, 
+                                    fontSize: 15, 
+                                    fontWeight: FontWeight.w700, 
                                     color: primaryText,
                                     letterSpacing: 0.5
                                   ),
+                                ),
+                                const Spacer(),
+                                Text(
+                                  '${categoryItems.length}',
+                                  style: TextStyle(fontSize: 13, color: secondaryText, fontWeight: FontWeight.w600),
                                 ),
                               ],
                             ),
@@ -460,8 +589,8 @@ class _DataVaultPageState extends State<DataVaultPage> {
                       );
                     }).toList(),
                   ),
-          ), // Closing parenthesis for Expanded
-          ], // Closing bracket for Spread
+          ),
+          ],
         ],
       ),
       floatingActionButton: (!_isAuthenticating && _isAuthenticated) ? FloatingActionButton.extended(
@@ -476,27 +605,69 @@ class _DataVaultPageState extends State<DataVaultPage> {
   }
 }
 
-class _MatrixButton extends StatelessWidget {
+// ─── Helper widgets ──────────────────────────────────────────────
+
+class _CopyValueButton extends StatelessWidget {
+  final bool isCopied;
+  final VoidCallback onPressed;
+
+  const _CopyValueButton({required this.isCopied, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: isCopied ? Colors.green.withOpacity(0.15) : Colors.transparent,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onPressed,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isCopied ? Icons.check : Icons.copy,
+                size: 14,
+                color: isCopied ? Colors.green : AppColors.govGreen,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                isCopied ? 'COPIED' : 'COPY VALUE',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: isCopied ? Colors.green : AppColors.govGreen,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionChip extends StatelessWidget {
   final IconData icon;
   final Color color;
   final VoidCallback onPressed;
 
-  const _MatrixButton({
-    required this.icon,
-    required this.color,
-    required this.onPressed,
-  });
+  const _ActionChip({required this.icon, required this.color, required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 40,
-      height: 40,
-      child: IconButton(
-        padding: EdgeInsets.zero,
-        icon: Icon(icon, color: color, size: 20),
-        onPressed: onPressed,
-        splashRadius: 20,
+    return Material(
+      color: color.withOpacity(0.1),
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onPressed,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Icon(icon, size: 20, color: color),
+        ),
       ),
     );
   }
