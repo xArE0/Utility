@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
 import 'services/notification_service.dart';
 import 'core/services/settings_service.dart';
@@ -12,6 +13,10 @@ Future<void> interactiveWidgetCallback(Uri? uri) async {
     if (minsStr != null) {
       final mins = int.parse(minsStr);
       
+      // Save global target state for sidebar real-time visibility based on duration dynamically
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('active_timer_${mins}_start_ms', DateTime.now().millisecondsSinceEpoch);
+
       // Natively schedule the notification
       await NotificationService().initialize();
       await NotificationService().scheduleQuickTimer(mins);

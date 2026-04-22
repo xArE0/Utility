@@ -8,6 +8,11 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/static_background.dart';
 import '../../../utils/api_services.dart';
+import 'dart:async';
+import 'dart:ui';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:home_widget/home_widget.dart';
+import '../../../services/notification_service.dart';
 import '../../../core/services/settings_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -587,6 +592,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 route: AppRoutes.importexport,
                 color: AppColors.info,
               ),
+              const _SidebarActiveTimer(),
             ],
           ),
         ),
@@ -621,3 +627,164 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+class _SidebarActiveTimer extends StatefulWidget {
+  const _SidebarActiveTimer({super.key});
+
+  @override
+  State<_SidebarActiveTimer> createState() => _SidebarActiveTimerState();
+}
+
+class _SidebarActiveTimerState extends State<_SidebarActiveTimer> {
+  Timer? _timer;
+  Map<int, int> _activeTimers = {}; // key: mins, value: remainingMs
+
+  @override
+  void initState() {
+    super.initState();
+    _startPolling();
+  }
+
+  void _startPolling() {
+    _checkTimers(); // Initial immediate check
+    
+    // Continuous 1-second polling loop active only while drawer is open
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      _checkTimers();
+    });
+  }
+
+  Future<void> _checkTimers() async {
+    // We must invoke getInstance and reload() constantly because the Android background
+    // widget process writes to the shared preferences disk asynchronously. 
+    // Without reload(), the foreground app cache never realizes a new timer started.
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.reload(); 
+    
+    Map<int, int> active = {};
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    
+    for (final durationMins in [5, 15, 30]) {
+      final startMs = prefs.getInt('active_timer_${durationMins}_start_ms');
+      if (startMs != null) {
+        final totalDurationMs = durationMins * 60 * 1000;
+        final elapsedMs = nowMs - startMs;
+        if (elapsedMs < totalDurationMs) {
+          active[durationMins] = totalDurationMs - elapsedMs;
+        } else {
+          // Self-cleaning: destroy stale records to prevent minimal storage bloat
+          prefs.remove('active_timer_${durationMins}_start_ms');
+        }
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _activeTimers = active;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _cancelTimer(int durationMins) async {
+    // 1. Storage Scrub
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('active_timer_${durationMins}_start_ms');
+
+    // 2. Kill Android Notification Instantly
+    final timerId = 100000 + durationMins;
+    await NotificationService().cancelEventNotification(timerId);
+
+    // 3. Reset Android Widget RemoteViews configuration manually
+    final btnId = "btn_${durationMins}m_tick";
+    await HomeWidget.saveWidgetData<bool>(btnId, false);
+    await HomeWidget.updateWidget(name: 'ScheduleWidgetProvider', androidName: 'ScheduleWidgetProvider');
+
+    // Force synchronization locally to trigger instantaneous UI deletion
+    _checkTimers();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_activeTimers.isEmpty) return const SizedBox.shrink();
+
+    // Sort keys so smaller duration timers appear first (5m, then 15m, then 30m)
+    final activeKeys = _activeTimers.keys.toList()..sort();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: activeKeys.map((duration) {
+          final remainingMs = _activeTimers[duration]!;
+          final remainingSeconds = remainingMs ~/ 1000;
+          final mins = (remainingSeconds ~/ 60).toString().padLeft(2, '0');
+          final secs = (remainingSeconds % 60).toString().padLeft(2, '0');
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 8.0),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.slate800,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.slate700),
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Center alignment box using full width wrapper
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.timer, color: Color(0xFF06B6D4), size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        "$mins:$secs",
+                        style: AppTypography.headlineSmall.copyWith(
+                          color: Colors.white,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  bottom: -4,
+                  left: 2,
+                  child: Text(
+                    "${duration}m",
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.slate400,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: -12,
+                  bottom: -12,
+                  right: -12,
+                  child: IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 18),
+                    color: AppColors.slate400,
+                    splashRadius: 20,
+                    tooltip: "Cancel Timer",
+                    onPressed: () => _cancelTimer(duration),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
