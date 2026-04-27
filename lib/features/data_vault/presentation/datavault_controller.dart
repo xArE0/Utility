@@ -57,8 +57,10 @@ class DataVaultController extends ChangeNotifier {
   void toggleExpand(int id) {
     if (_expandedIds.contains(id)) {
       _expandedIds.remove(id);
+      _visibleIds.remove(id);
     } else {
       _expandedIds.add(id);
+      _visibleIds.add(id);
     }
     notifyListeners();
   }
@@ -80,9 +82,13 @@ class DataVaultController extends ChangeNotifier {
     _showAllPasswords = !_showAllPasswords;
     if (_showAllPasswords) {
       for (final item in _items) {
-        if (item.id != null) _visibleIds.add(item.id!);
+        if (item.id != null) {
+          _expandedIds.add(item.id!);
+          _visibleIds.add(item.id!);
+        }
       }
     } else {
+      _expandedIds.clear();
       _visibleIds.clear();
     }
     notifyListeners();

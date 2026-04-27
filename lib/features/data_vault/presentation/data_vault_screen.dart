@@ -215,7 +215,6 @@ class _DataVaultPageState extends State<DataVaultPage> {
     final Color secondaryText = isDark ? AppColors.slate300 : Colors.grey[600]!;
 
     final id = item.id!;
-    final isVisible = _controller.visibleIds.contains(id);
     final isExpanded = _controller.expandedIds.contains(id);
     final isHistoryExpanded = _controller.historyExpandedIds.contains(id);
     final isCopied = _copiedIds.contains(id);
@@ -283,13 +282,6 @@ class _DataVaultPageState extends State<DataVaultPage> {
             // ── Row 2: Action buttons row ──
             Row(
               children: [
-                // Eye toggle
-                _ActionChip(
-                  icon: isVisible ? Icons.visibility_off : Icons.visibility,
-                  color: cs.primary,
-                  onPressed: () => _controller.toggleVisibility(id),
-                ),
-                const SizedBox(width: 8),
                 // Edit
                 _ActionChip(
                   icon: Icons.edit,
@@ -339,12 +331,11 @@ class _DataVaultPageState extends State<DataVaultPage> {
                     Text('Value:', style: TextStyle(fontSize: 11, color: secondaryText, fontWeight: FontWeight.w500)),
                     const SizedBox(height: 4),
                     Text(
-                      isVisible ? item.value : '••••••••',
+                      item.value,
                       style: TextStyle(
                         fontSize: 16,
-                        letterSpacing: isVisible ? 0.5 : 3.0,
+                        letterSpacing: 0.5,
                         fontWeight: FontWeight.w600,
-                        fontFamily: isVisible ? null : 'monospace',
                         color: primaryText,
                       ),
                     ),
@@ -452,7 +443,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
               icon: Icon(
                 _controller.showAllPasswords ? Icons.visibility_off : Icons.visibility,
               ),
-              tooltip: _controller.showAllPasswords ? 'Hide All' : 'Show All',
+              tooltip: _controller.showAllPasswords ? 'Collapse All' : 'Expand All',
               onPressed: () => _controller.toggleShowAll(),
             ),
         ],
