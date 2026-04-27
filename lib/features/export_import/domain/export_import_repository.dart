@@ -9,6 +9,10 @@ abstract class IExportImportRepository {
   /// Decrypts a .vault file with [password] and overwrites the vault DB.
   Future<bool> importEncryptedVault(String dbName, String password);
 
+  /// Decrypts a .vault file at [filePath] with [password] and overwrites the vault DB.
+  Future<bool> importEncryptedVaultFromPath(
+      String filePath, String dbName, String password);
+
   /// Exports ALL databases into a single .zip archive.
   /// The vault is encrypted with [vaultPassword] inside the zip.
   Future<bool> exportAllDatabases(
@@ -17,5 +21,9 @@ abstract class IExportImportRepository {
   /// Imports ALL databases from a single .zip archive.
   /// The vault is decrypted with [vaultPassword].
   Future<bool> importAllDatabases(
+      List<String> plainDbNames, String vaultDbName, String vaultPassword);
+
+  /// Imports ALL databases from a .zip file at [filePath].
+  Future<bool> importAllDatabasesFromPath(String filePath,
       List<String> plainDbNames, String vaultDbName, String vaultPassword);
 }

@@ -101,50 +101,67 @@ class _ExportImportsPageState extends State<ExportImportsPage> {
             // ── Individual Databases ──
             _sectionLabel('Individual Databases'),
             const SizedBox(height: 6),
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              childAspectRatio: 0.85,
-              children: [
-                _dbCard(
-                  name: 'Schedule',
-                  icon: Icons.calendar_month,
-                  color: AppColors.govBlue,
-                  dbName: scheduleDbName,
-                  isEncrypted: false,
-                ),
-                _dbCard(
-                  name: 'Expenses',
-                  icon: Icons.account_balance_wallet,
-                  color: AppColors.govGreen,
-                  dbName: expenseDbName,
-                  isEncrypted: false,
-                ),
-                _dbCard(
-                  name: 'Data Vault',
-                  icon: Icons.shield,
-                  color: Colors.amberAccent,
-                  dbName: dataVaultDbName,
-                  isEncrypted: true,
-                ),
-                _dbCard(
-                  name: 'Cooldown',
-                  icon: Icons.timer,
-                  color: Colors.cyanAccent,
-                  dbName: cooldownDbName,
-                  isEncrypted: false,
-                ),
-                _dbCard(
-                  name: 'Logbook',
-                  icon: Icons.menu_book,
-                  color: Colors.purpleAccent,
-                  dbName: logbookDbName,
-                  isEncrypted: false,
-                ),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final spacing = 10.0;
+                final cardWidth = (constraints.maxWidth - spacing) / 2;
+                return Wrap(
+                  spacing: spacing,
+                  runSpacing: spacing,
+                  children: [
+                    SizedBox(
+                      width: cardWidth,
+                      child: _dbCard(
+                        name: 'Schedule',
+                        icon: Icons.calendar_month,
+                        color: AppColors.govBlue,
+                        dbName: scheduleDbName,
+                        isEncrypted: false,
+                      ),
+                    ),
+                    SizedBox(
+                      width: cardWidth,
+                      child: _dbCard(
+                        name: 'Expenses',
+                        icon: Icons.account_balance_wallet,
+                        color: AppColors.govGreen,
+                        dbName: expenseDbName,
+                        isEncrypted: false,
+                      ),
+                    ),
+                    SizedBox(
+                      width: cardWidth,
+                      child: _dbCard(
+                        name: 'Data Vault',
+                        icon: Icons.shield,
+                        color: Colors.amberAccent,
+                        dbName: dataVaultDbName,
+                        isEncrypted: true,
+                      ),
+                    ),
+                    SizedBox(
+                      width: cardWidth,
+                      child: _dbCard(
+                        name: 'Cooldown',
+                        icon: Icons.timer,
+                        color: Colors.cyanAccent,
+                        dbName: cooldownDbName,
+                        isEncrypted: false,
+                      ),
+                    ),
+                    SizedBox(
+                      width: cardWidth,
+                      child: _dbCard(
+                        name: 'Logbook',
+                        icon: Icons.menu_book,
+                        color: Colors.purpleAccent,
+                        dbName: logbookDbName,
+                        isEncrypted: false,
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 24),
           ],
@@ -185,16 +202,34 @@ class _ExportImportsPageState extends State<ExportImportsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Icon
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 24),
+            // Icon with optional lock badge
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: color, size: 24),
+                ),
+                if (isEncrypted)
+                  Positioned(
+                    right: -4,
+                    bottom: -4,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withValues(alpha: 0.9),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.lock, size: 10, color: Colors.black87),
+                    ),
+                  ),
+              ],
             ),
-            const Spacer(),
+            const SizedBox(height: 12),
             // Name
             Text(
               name,
@@ -204,13 +239,7 @@ class _ExportImportsPageState extends State<ExportImportsPage> {
                 color: Colors.white,
               ),
             ),
-            if (isEncrypted)
-              const Text(
-                'Encrypted',
-                style: TextStyle(fontSize: 11, color: Colors.white38),
-              ),
-            if (!isEncrypted) const SizedBox(height: 14), // balance height difference
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             // Export / Import buttons
             Row(
               children: [

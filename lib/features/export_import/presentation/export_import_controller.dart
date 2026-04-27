@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import '../domain/export_import_repository.dart';
 import '../../../core/services/settings_service.dart';
 
@@ -21,6 +22,45 @@ class ExportImportController extends ChangeNotifier {
 
   /// Gets the vault export password from settings (default: super123).
   String get _vaultPassword => SettingsService.instance.vaultExportPassword;
+
+  /// Shows a dialog prompting the user to enter the vault password for import.
+  Future<String?> _askVaultPassword(BuildContext context) async {
+    final controller = TextEditingController();
+    bool obscure = true;
+    final password = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Vault Password'),
+          content: TextField(
+            controller: controller,
+            obscureText: obscure,
+            autofocus: true,
+            decoration: InputDecoration(
+              hintText: 'Enter vault password',
+              prefixIcon: const Icon(Icons.lock),
+              suffixIcon: IconButton(
+                icon: Icon(obscure ? Icons.visibility_off : Icons.visibility),
+                onPressed: () => setDialogState(() => obscure = !obscure),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(null),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+              child: const Text('Decrypt'),
+            ),
+          ],
+        ),
+      ),
+    );
+    return password;
+  }
 
   Future<void> exportDatabase(BuildContext context, String dbName) async {
     final exists = await _repository.checkDatabaseExists(dbName);
@@ -91,8 +131,18 @@ class ExportImportController extends ChangeNotifier {
     }
   }
 
-  /// Imports and decrypts a .vault file using the stored password.
+  /// Imports and decrypts a .vault file — prompts the user for the password.
   Future<void> importEncryptedVault(BuildContext context, String dbName) async {
+    if (!context.mounted) return;
+
+    final password = await _askVaultPassword(context);
+    if (password == null || password.isEmpty) return;
+
+    // Pick file BEFORE showing the loading dialog to avoid InheritedWidget crash
+    final result = await FilePicker.platform.pickFiles(type: FileType.any);
+    if (result == null || result.files.single.path == null) return;
+    final filePath = result.files.single.path!;
+
     if (!context.mounted) return;
     showDialog(
       context: context,
@@ -100,7 +150,14 @@ class ExportImportController extends ChangeNotifier {
       builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
-    final success = await _repository.importEncryptedVault(dbName, _vaultPassword);
+    bool success = false;
+    try {
+      success = await _repository.importEncryptedVaultFromPath(
+          filePath, dbName, password);
+    } catch (e) {
+      debugPrint('Import vault error: $e');
+      success = false;
+    }
 
     if (context.mounted) {
       Navigator.of(context).pop();
@@ -143,7 +200,7 @@ class ExportImportController extends ChangeNotifier {
     }
   }
 
-  /// Imports all databases from a single .zip file using the stored vault password.
+  /// Imports all databases from a single .zip file — prompts for vault password.
   Future<void> importAll(BuildContext context) async {
     if (!context.mounted) return;
 
@@ -172,6 +229,16 @@ class ExportImportController extends ChangeNotifier {
     );
     if (confirmed != true) return;
 
+    // Ask for vault password
+    if (!context.mounted) return;
+    final password = await _askVaultPassword(context);
+    if (password == null || password.isEmpty) return;
+
+    // Pick file BEFORE showing the loading dialog
+    final result = await FilePicker.platform.pickFiles(type: FileType.any);
+    if (result == null || result.files.single.path == null) return;
+    final filePath = result.files.single.path!;
+
     if (!context.mounted) return;
     showDialog(
       context: context,
@@ -179,8 +246,13 @@ class ExportImportController extends ChangeNotifier {
       builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
-    final success =
-        await _repository.importAllDatabases(plainDbNames, vaultDbName, _vaultPassword);
+    bool success = false;
+    try {
+      success = await _repository.importAllDatabasesFromPath(
+          filePath, plainDbNames, vaultDbName, password);
+    } catch (_) {
+      success = false;
+    }
 
     if (context.mounted) {
       Navigator.of(context).pop();

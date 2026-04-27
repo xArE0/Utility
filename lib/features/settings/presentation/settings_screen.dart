@@ -17,6 +17,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _passwordController = TextEditingController();
   final _vaultExportPasswordController = TextEditingController();
 
+  bool _obscureSecretPassword = true;
+  bool _obscureVaultPassword = true;
+
   @override
   void initState() {
     super.initState();
@@ -98,6 +101,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       hint: 'Enter a strong password',
                       icon: Icons.lock,
                       isPassword: true,
+                      obscure: _obscureSecretPassword,
+                      onToggleObscure: () => setState(() {
+                        _obscureSecretPassword = !_obscureSecretPassword;
+                      }),
                     ),
                     const Divider(height: 32, indent: 40),
                     _buildTextField(
@@ -106,6 +113,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       hint: 'Default: super123',
                       icon: Icons.shield,
                       isPassword: true,
+                      obscure: _obscureVaultPassword,
+                      onToggleObscure: () => setState(() {
+                        _obscureVaultPassword = !_obscureVaultPassword;
+                      }),
                     ),
                   ],
                 ),
@@ -149,14 +160,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required String hint,
     required IconData icon,
     bool isPassword = false,
+    bool obscure = false,
+    VoidCallback? onToggleObscure,
   }) {
     return TextField(
       controller: controller,
-      obscureText: isPassword,
+      obscureText: isPassword && obscure,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
         prefixIcon: Icon(icon, color: AppColors.govBlue),
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  obscure ? Icons.visibility_off : Icons.visibility,
+                  color: AppColors.slate300,
+                  size: 20,
+                ),
+                onPressed: onToggleObscure,
+              )
+            : null,
         border: const OutlineInputBorder(borderSide: BorderSide.none),
         filled: false,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
