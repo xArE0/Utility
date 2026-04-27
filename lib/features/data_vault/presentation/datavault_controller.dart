@@ -104,6 +104,12 @@ class DataVaultController extends ChangeNotifier {
     return _historyCache[itemId] ?? [];
   }
 
+  Future<void> deleteHistory(int historyId, int vaultItemId) async {
+    await _repository.deleteHistory(historyId);
+    // Refresh the cache for this item
+    await loadHistory(vaultItemId);
+  }
+
   Future<void> deleteItem(int id) async {
     await _repository.deleteItem(id);
     _visibleIds.remove(id);

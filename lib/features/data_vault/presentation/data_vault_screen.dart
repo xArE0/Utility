@@ -411,6 +411,34 @@ class _DataVaultPageState extends State<DataVaultPage> {
               );
             },
           ),
+          IconButton(
+            icon: Icon(Icons.delete_outline, size: 16, color: Colors.redAccent.withOpacity(0.7)),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  backgroundColor: AppColors.slate800,
+                  title: Text('Delete History', style: AppTypography.titleLarge),
+                  content: Text('Remove this password history entry?', style: AppTypography.bodyMedium),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        await _controller.deleteHistory(h.id!, h.vaultItemId);
+                        if (mounted) Navigator.pop(dialogContext);
+                      },
+                      child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ],
       ),
     );

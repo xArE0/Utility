@@ -228,6 +228,12 @@ class LocalVaultRepository implements IVaultRepository {
   }
 
   @override
+  Future<void> deleteHistory(int historyId) async {
+    if (_db == null) await init();
+    await _db!.delete('vault_history', where: 'id = ?', whereArgs: [historyId]);
+  }
+
+  @override
   Future<void> dispose() async {
     await _db?.close();
     _db = null;
