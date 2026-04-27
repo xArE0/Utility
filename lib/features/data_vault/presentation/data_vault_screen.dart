@@ -128,68 +128,311 @@ class _DataVaultPageState extends State<DataVaultPage> {
       selectedCategory = _controller.categories[0];
     }
 
-    await showDialog(
+    await showModalBottomSheet(
       context: context,
-      builder: (BuildContext dialogContext) => AlertDialog(
-        backgroundColor: AppColors.slate800,
-        title: Text(isEditing ? 'Edit Info' : 'Add Info', style: AppTypography.titleLarge),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<String>(
-                value: selectedCategory,
-                dropdownColor: AppColors.slate700,
-                items: _controller.categories
-                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                    .toList(),
-                onChanged: (val) {
-                  if (val != null) selectedCategory = val;
-                },
-                decoration: const InputDecoration(labelText: 'Category'),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final theme = Theme.of(context);
+            final bool isDark = theme.brightness == Brightness.dark;
+            final cs = theme.colorScheme;
+
+            final Color sheetBg = isDark ? const Color(0xFF0F172A) : Colors.white;
+            final Color fieldFill = isDark ? AppColors.slate800.withOpacity(0.6) : Colors.grey[100]!;
+            final Color fieldBorder = isDark ? AppColors.slate600.withOpacity(0.5) : Colors.grey[300]!;
+            final Color primaryText = isDark ? AppColors.slate50 : AppColors.slate900;
+            final Color secondaryText = isDark ? AppColors.slate400 : Colors.grey[500]!;
+            final Color hintColor = isDark ? AppColors.slate500 : Colors.grey[400]!;
+
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-              TextField(
-                controller: labelController,
-                decoration: const InputDecoration(labelText: 'Label'),
-                textCapitalization: TextCapitalization.sentences,
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.85,
+                ),
+                decoration: BoxDecoration(
+                  color: sheetBg,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
+                ),
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // ── Drag handle ──
+                        Center(
+                          child: Container(
+                            margin: const EdgeInsets.only(top: 12, bottom: 20),
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: secondaryText.withOpacity(0.4),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+
+                        // ── Header ──
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: cs.primary.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                isEditing ? Icons.edit_note : Icons.add_circle_outline,
+                                color: cs.primary,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    isEditing ? 'Edit Entry' : 'New Entry',
+                                    style: TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w700,
+                                      color: primaryText,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    isEditing ? 'Update your saved credentials' : 'Store a new secret securely',
+                                    style: TextStyle(fontSize: 13, color: secondaryText),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.pop(context),
+                              icon: Icon(Icons.close, color: secondaryText),
+                              style: IconButton.styleFrom(
+                                backgroundColor: fieldFill,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 28),
+
+                        // ── Category selector ──
+                        Text(
+                          'CATEGORY',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: secondaryText,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _controller.categories.map((cat) {
+                            final isSelected = selectedCategory == cat;
+                            return GestureDetector(
+                              onTap: () {
+                                setSheetState(() { selectedCategory = cat; });
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? cs.primary.withOpacity(0.15)
+                                      : fieldFill,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? cs.primary.withOpacity(0.6)
+                                        : fieldBorder,
+                                    width: isSelected ? 1.5 : 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      _categoryIcon(cat),
+                                      size: 16,
+                                      color: isSelected ? cs.primary : secondaryText,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      cat,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                        color: isSelected ? cs.primary : primaryText,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // ── Label field ──
+                        Text(
+                          'LABEL',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: secondaryText,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: labelController,
+                          textCapitalization: TextCapitalization.sentences,
+                          style: TextStyle(fontSize: 16, color: primaryText),
+                          decoration: InputDecoration(
+                            hintText: 'e.g. Gmail, Netflix, Bank PIN',
+                            hintStyle: TextStyle(color: hintColor),
+                            prefixIcon: Icon(Icons.label_outline, color: secondaryText, size: 20),
+                            filled: true,
+                            fillColor: fieldFill,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide.none,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(color: fieldBorder),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(color: cs.primary, width: 1.5),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // ── Value field ──
+                        Text(
+                          'VALUE',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: secondaryText,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: valueController,
+                          style: TextStyle(fontSize: 16, color: primaryText),
+                          decoration: InputDecoration(
+                            hintText: 'Password, ID number, card number...',
+                            hintStyle: TextStyle(color: hintColor),
+                            prefixIcon: Icon(Icons.lock_outline, color: secondaryText, size: 20),
+                            filled: true,
+                            fillColor: fieldFill,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide.none,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(color: fieldBorder),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(color: cs.primary, width: 1.5),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                          ),
+                        ),
+
+                        const SizedBox(height: 32),
+
+                        // ── Save button ──
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              if (labelController.text.isNotEmpty &&
+                                  valueController.text.isNotEmpty) {
+                                if (isEditing) {
+                                  await _controller.updateItem(
+                                    item.id!,
+                                    labelController.text,
+                                    valueController.text,
+                                    selectedCategory,
+                                  );
+                                } else {
+                                  await _controller.addItem(
+                                    labelController.text,
+                                    valueController.text,
+                                    selectedCategory,
+                                  );
+                                }
+                                if (mounted) Navigator.pop(context);
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: cs.primary,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(isEditing ? Icons.save : Icons.add, size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  isEditing ? 'Save Changes' : 'Add to Vault',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-              TextField(
-                controller: valueController,
-                decoration: const InputDecoration(labelText: 'Value'),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (labelController.text.isNotEmpty &&
-                  valueController.text.isNotEmpty) {
-                if (isEditing) {
-                  await _controller.updateItem(
-                    item.id!,
-                    labelController.text,
-                    valueController.text,
-                    selectedCategory,
-                  );
-                } else {
-                  await _controller.addItem(
-                    labelController.text,
-                    valueController.text,
-                    selectedCategory,
-                  );
-                }
-                if (mounted) Navigator.pop(dialogContext);
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+            );
+          },
+        );
+      },
     );
   }
 
