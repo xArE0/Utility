@@ -598,7 +598,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
                     children: [
                       Icon(Icons.history, size: 15, color: secondaryText),
                       const SizedBox(width: 4),
-                      Text('Password History', style: TextStyle(fontSize: 12, color: secondaryText, fontWeight: FontWeight.w500)),
+                      Text('History', style: TextStyle(fontSize: 12, color: secondaryText, fontWeight: FontWeight.w500)),
                       Icon(isHistoryExpanded ? Icons.expand_less : Icons.expand_more, size: 16, color: secondaryText),
                     ],
                   ),
@@ -609,7 +609,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
                 if (history.isEmpty)
                   Padding(
                     padding: const EdgeInsets.only(left: 8, top: 4, bottom: 4),
-                    child: Text('No previous passwords', style: TextStyle(fontSize: 12, color: secondaryText, fontStyle: FontStyle.italic)),
+                    child: Text('No previous entries', style: TextStyle(fontSize: 12, color: secondaryText, fontStyle: FontStyle.italic)),
                   )
                 else
                   ...history.map((h) => _buildHistoryTile(h, isDark, primaryText, secondaryText, border)),
@@ -650,7 +650,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
             onPressed: () {
               Clipboard.setData(ClipboardData(text: h.oldValue));
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Old password copied'), duration: Duration(seconds: 1)),
+                const SnackBar(content: Text('Copied to clipboard'), duration: Duration(seconds: 1)),
               );
             },
           ),
@@ -664,7 +664,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
                 builder: (dialogContext) => AlertDialog(
                   backgroundColor: AppColors.slate800,
                   title: Text('Delete History', style: AppTypography.titleLarge),
-                  content: Text('Remove this password history entry?', style: AppTypography.bodyMedium),
+                  content: Text('Remove this history entry?', style: AppTypography.bodyMedium),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(dialogContext),
