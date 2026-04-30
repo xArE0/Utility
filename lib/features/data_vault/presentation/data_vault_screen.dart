@@ -122,6 +122,9 @@ class _DataVaultPageState extends State<DataVaultPage> {
     final isEditing = item != null;
     final labelController = TextEditingController(text: isEditing ? item.label : '');
     final valueController = TextEditingController(text: isEditing ? item.value : '');
+    final tagsController = TextEditingController(
+      text: isEditing ? item.tagList.map((t) => '#$t').join(' ') : '',
+    );
     String selectedCategory = isEditing ? item.category : _controller.categories[0];
 
     if (!_controller.categories.contains(selectedCategory)) {
@@ -372,6 +375,44 @@ class _DataVaultPageState extends State<DataVaultPage> {
                           ),
                         ),
 
+                        const SizedBox(height: 20),
+
+                        // ── Tags field ──
+                        Text(
+                          'TAGS',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: secondaryText,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: tagsController,
+                          style: TextStyle(fontSize: 16, color: primaryText),
+                          decoration: InputDecoration(
+                            hintText: '#share #money #personal',
+                            hintStyle: TextStyle(color: hintColor),
+                            prefixIcon: Icon(Icons.tag, color: secondaryText, size: 20),
+                            filled: true,
+                            fillColor: fieldFill,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide.none,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(color: fieldBorder),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(color: cs.primary, width: 1.5),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                          ),
+                        ),
+
                         const SizedBox(height: 32),
 
                         // ── Save button ──
@@ -382,18 +423,27 @@ class _DataVaultPageState extends State<DataVaultPage> {
                             onPressed: () async {
                               if (labelController.text.isNotEmpty &&
                                   valueController.text.isNotEmpty) {
+                                // Parse tags: split by # and whitespace, trim, deduplicate
+                                final rawTags = tagsController.text
+                                    .split(RegExp(r'[#\s]+'))
+                                    .map((t) => t.trim().toLowerCase())
+                                    .where((t) => t.isNotEmpty)
+                                    .toSet()
+                                    .join(',');
                                 if (isEditing) {
                                   await _controller.updateItem(
                                     item.id!,
                                     labelController.text,
                                     valueController.text,
                                     selectedCategory,
+                                    tags: rawTags,
                                   );
                                 } else {
                                   await _controller.addItem(
                                     labelController.text,
                                     valueController.text,
                                     selectedCategory,
+                                    tags: rawTags,
                                   );
                                 }
                                 if (mounted) Navigator.pop(context);
@@ -519,6 +569,47 @@ class _DataVaultPageState extends State<DataVaultPage> {
                 ),
               ],
             ),
+
+            // ── Tag chips ──
+            if (item.tagList.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8, left: 48),
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: item.tagList.map((tag) {
+                    return GestureDetector(
+                      onTap: () {
+                        _searchController.text = tag;
+                        _controller.searchQuery = tag;
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: cs.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: cs.primary.withOpacity(0.3), width: 0.8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.tag, size: 12, color: cs.primary.withOpacity(0.7)),
+                            const SizedBox(width: 2),
+                            Text(
+                              tag,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: cs.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
 
             const SizedBox(height: 10),
 

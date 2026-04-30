@@ -3,13 +3,19 @@ class VaultItem {
   final String label;
   final String value;
   final String category;
+  final String tags; // comma-separated, e.g. "share,money,family"
 
   VaultItem({
     this.id,
     required this.label,
     required this.value,
     required this.category,
+    this.tags = '',
   });
+
+  /// Parsed tag list for display/search
+  List<String> get tagList =>
+      tags.isEmpty ? [] : tags.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
 
   Map<String, dynamic> toMap() {
     return {
@@ -17,6 +23,7 @@ class VaultItem {
       'label': label,
       'value': value,
       'category': category,
+      'tags': tags,
     };
   }
 
@@ -26,6 +33,7 @@ class VaultItem {
       label: map['label'] ?? '',
       value: map['value'] ?? '',
       category: map['category'] ?? 'Passwords',
+      tags: map['tags'] ?? '',
     );
   }
 
@@ -34,12 +42,14 @@ class VaultItem {
     String? label,
     String? value,
     String? category,
+    String? tags,
   }) {
     return VaultItem(
       id: id ?? this.id,
       label: label ?? this.label,
       value: value ?? this.value,
       category: category ?? this.category,
+      tags: tags ?? this.tags,
     );
   }
 }

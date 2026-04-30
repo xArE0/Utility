@@ -154,7 +154,7 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                       spacing: 6,
                       runSpacing: 6,
                       children: [
-                        'normal', 'reminder', 'birthday', 'exam', 'homework', 'festival', 'event'
+                        'normal', 'reminder', 'birthday', 'exam', 'homework', 'festival', 'event', 'todo'
                       ].map((type) {
                         final isSelected = selectedType == type;
                         Color baseColor;
@@ -166,9 +166,10 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                           case 'homework': baseColor = const Color(0xFF8B5CF6); icon = Icons.assignment; break;
                           case 'festival': baseColor = Colors.deepOrange; icon = Icons.celebration; break;
                           case 'event': baseColor = const Color(0xFFFFA000); icon = Icons.event; break;
+                          case 'todo': baseColor = const Color(0xFF06B6D4); icon = Icons.checklist; break;
                           case 'normal': default: baseColor = const Color(0xFF10B981); icon = Icons.task_alt; break;
                         }
-                        final labelText = type[0].toUpperCase() + type.substring(1);
+                        final labelText = type == 'todo' ? 'ToDo' : (type[0].toUpperCase() + type.substring(1));
                         
                         return ActionChip(
                           backgroundColor: isSelected ? baseColor.withOpacity(0.15) : inputFill,
@@ -198,7 +199,7 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                                 remindTime = const TimeOfDay(hour: 6, minute: 0);
                                 repeat = 'none';
                               } else {
-                                // normal, exam, homework, festival, event -> reset to defaults
+                                // normal, exam, homework, festival, event, todo -> reset to defaults
                                 remindMe = false;
                                 remindDaysBefore = 0;
                                 remindTime = null;
@@ -441,6 +442,8 @@ class ScheduleScreenState extends State<ScheduleScreen> {
         return Colors.deepOrange;
       case 'event':
         return const Color(0xFFFFA000);
+      case 'todo':
+        return const Color(0xFF06B6D4);
       case 'normal':
       default:
         return const Color(0xFF10B981);
@@ -474,6 +477,10 @@ class ScheduleScreenState extends State<ScheduleScreen> {
       case 'festival':
         icon = Icons.celebration;
         label = "Festival";
+        break;
+      case 'todo':
+        icon = Icons.checklist;
+        label = "ToDo";
         break;
       default:
         return const SizedBox.shrink();
@@ -634,7 +641,7 @@ class ScheduleScreenState extends State<ScheduleScreen> {
       ),
     );
 
-    bool canMove = event.type == 'normal' || event.type == 'homework' || event.type == 'reminder';
+    bool canMove = event.type == 'normal' || event.type == 'homework' || event.type == 'reminder' || event.type == 'todo';
 
     return Draggable<Map<String, dynamic>>(
       data: {

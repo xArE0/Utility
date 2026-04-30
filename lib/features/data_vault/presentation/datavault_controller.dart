@@ -119,14 +119,14 @@ class DataVaultController extends ChangeNotifier {
     await loadItems();
   }
 
-  Future<void> addItem(String label, String value, String category) async {
-    final item = VaultItem(label: label, value: value, category: category);
+  Future<void> addItem(String label, String value, String category, {String tags = ''}) async {
+    final item = VaultItem(label: label, value: value, category: category, tags: tags);
     await _repository.addItem(item);
     await loadItems();
   }
 
-  Future<void> updateItem(int id, String label, String value, String category) async {
-    final item = VaultItem(id: id, label: label, value: value, category: category);
+  Future<void> updateItem(int id, String label, String value, String category, {String tags = ''}) async {
+    final item = VaultItem(id: id, label: label, value: value, category: category, tags: tags);
     await _repository.updateItem(item);
     // Refresh history cache for this item
     _historyCache.remove(id);
@@ -137,11 +137,23 @@ class DataVaultController extends ChangeNotifier {
   }
 
   List<VaultItem> get filteredItems {
+    final rawQuery = _searchQuery.toLowerCase().trim();
+    if (rawQuery.isEmpty) return List.of(_items);
+
+    // When query starts with '#', search tags only
+    if (rawQuery.startsWith('#')) {
+      final tagQuery = rawQuery.substring(1).trim();
+      if (tagQuery.isEmpty) return List.of(_items);
+      return _items.where((item) {
+        return item.tags.toLowerCase().contains(tagQuery);
+      }).toList();
+    }
+
     return _items.where((item) {
       final label = item.label.toLowerCase();
       final category = item.category.toLowerCase();
-      final query = _searchQuery.toLowerCase();
-      return label.contains(query) || category.contains(query);
+      final tags = item.tags.toLowerCase();
+      return label.contains(rawQuery) || category.contains(rawQuery) || tags.contains(rawQuery);
     }).toList();
   }
 

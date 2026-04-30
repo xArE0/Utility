@@ -25,14 +25,15 @@ class LocalVaultRepository implements IVaultRepository {
     _db = await openDatabase(
       path,
       password: password,
-      version: 3,
+      version: 4,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE vault(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             label TEXT,
             value TEXT,
-            category TEXT
+            category TEXT,
+            tags TEXT
           )
         ''');
         await db.execute('''
@@ -57,6 +58,9 @@ class LocalVaultRepository implements IVaultRepository {
               changed_at TEXT
             )
           ''');
+        }
+        if (oldVersion < 4) {
+          await db.execute("ALTER TABLE vault ADD COLUMN tags TEXT");
         }
       },
     );
@@ -117,14 +121,15 @@ class LocalVaultRepository implements IVaultRepository {
       final newDb = await openDatabase(
         dbFilePath,
         password: password,
-        version: 3,
+        version: 4,
         onCreate: (db, version) async {
           await db.execute('''
             CREATE TABLE vault(
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               label TEXT,
               value TEXT,
-              category TEXT
+              category TEXT,
+              tags TEXT
             )
           ''');
           await db.execute('''
@@ -143,6 +148,7 @@ class LocalVaultRepository implements IVaultRepository {
           'label': row['label'],
           'value': row['value'],
           'category': row['category'] ?? 'Passwords',
+          'tags': row['tags'] ?? '',
         });
       }
 
