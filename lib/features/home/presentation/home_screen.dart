@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/app_version.dart';
 import '../../../routes/app_routes.dart';
 import '../../schedule/presentation/schedule_screen.dart';
 import '../../schedule/presentation/schedule_controller.dart';
@@ -492,99 +493,118 @@ class _HomeScreenState extends State<HomeScreen> {
           color: AppColors.slate900.withOpacity(0.85),
           border: const Border(right: BorderSide(color: AppColors.slate700)),
         ),
-        child: ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              DrawerHeader(
-                decoration: const BoxDecoration(
-                  gradient: AppColors.primaryGradient,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      SettingsService.instance.sidebarName,
-                      style: AppTypography.headlineSmall.copyWith(color: Colors.white),
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  DrawerHeader(
+                    decoration: const BoxDecoration(
+                      gradient: AppColors.primaryGradient,
                     ),
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: _onSidebarNameTap,
-                      child: Text(
-                        DateFormat('hh:mm a').format(DateTime.now()),
-                        style: AppTypography.titleMedium.copyWith(color: AppColors.slate200),
-                      ),
-                    ),
-                    Text(
-                      DateFormat('EEEE, MMM d, yyyy').format(DateTime.now()),
-                      style: AppTypography.bodyMedium.copyWith(color: AppColors.slate300),
-                    ),
-                    Builder(
-                      builder: (context) {
-                        final ctrl = _scheduleKey.currentState?.controller;
-                        if (ctrl == null) return const SizedBox.shrink();
-                        
-                        // We use the same formatting key used in ScheduleController
-                        final todayKey = DateFormat('yyyy-MM-dd').format(DateTime.now());
-                        final w = ctrl.weatherMap[todayKey];
-                        if (w == null || (w['sunrise'] ?? '').isEmpty) return const SizedBox.shrink();
-                        
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Row(
-                            children: [
-                              const Text("🌅 ", style: TextStyle(fontSize: 14)),
-                              Text(w['sunrise']!, style: AppTypography.bodySmall.copyWith(color: AppColors.slate300)),
-                              const SizedBox(width: 12),
-                              const Text("🌇 ", style: TextStyle(fontSize: 14)),
-                              Text(w['sunset']!, style: AppTypography.bodySmall.copyWith(color: AppColors.slate300)),
-                            ],
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          SettingsService.instance.sidebarName,
+                          style: AppTypography.headlineSmall.copyWith(color: Colors.white),
+                        ),
+                        const SizedBox(height: 8),
+                        GestureDetector(
+                          onTap: _onSidebarNameTap,
+                          child: Text(
+                            DateFormat('hh:mm a').format(DateTime.now()),
+                            style: AppTypography.titleMedium.copyWith(color: AppColors.slate200),
                           ),
-                        );
-                      }
+                        ),
+                        Text(
+                          DateFormat('EEEE, MMM d, yyyy').format(DateTime.now()),
+                          style: AppTypography.bodyMedium.copyWith(color: AppColors.slate300),
+                        ),
+                        Builder(
+                          builder: (context) {
+                            final ctrl = _scheduleKey.currentState?.controller;
+                            if (ctrl == null) return const SizedBox.shrink();
+                            
+                            // We use the same formatting key used in ScheduleController
+                            final todayKey = DateFormat('yyyy-MM-dd').format(DateTime.now());
+                            final w = ctrl.weatherMap[todayKey];
+                            if (w == null || (w['sunrise'] ?? '').isEmpty) return const SizedBox.shrink();
+                            
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Row(
+                                children: [
+                                  const Text("🌅 ", style: TextStyle(fontSize: 14)),
+                                  Text(w['sunrise']!, style: AppTypography.bodySmall.copyWith(color: AppColors.slate300)),
+                                  const SizedBox(width: 12),
+                                  const Text("🌇 ", style: TextStyle(fontSize: 14)),
+                                  Text(w['sunset']!, style: AppTypography.bodySmall.copyWith(color: AppColors.slate300)),
+                                ],
+                              ),
+                            );
+                          }
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.list,
+                    title: "Expense Tracker",
+                    route: AppRoutes.expense,
+                    color: AppColors.govBlue,
+                  ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.lock,
+                    title: "Data Vault",
+                    route: AppRoutes.datavault,
+                    color: AppColors.govGreen,
+                  ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.menu_book,
+                    title: "Logbook",
+                    route: AppRoutes.logbook,
+                    color: const Color(0xFFF59E0B),
+                  ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.timer,
+                    title: "Cooldown",
+                    route: AppRoutes.cooldown,
+                    color: const Color(0xFF06B6D4),
+                  ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.import_export_sharp,
+                    title: "Import/Export",
+                    route: AppRoutes.importexport,
+                    color: AppColors.info,
+                  ),
+                  const _SidebarActiveTimer(),
+                ],
+              ),
+            ),
+            // ── Version footer ──
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16, top: 8),
+              child: Text(
+                '$appVersion',
+                textAlign: TextAlign.center,
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.slate500,
+                  fontSize: 11,
+                  letterSpacing: 0.5,
                 ),
               ),
-              _buildDrawerItem(
-                context,
-                icon: Icons.list,
-                title: "Expense Tracker",
-                route: AppRoutes.expense,
-                color: AppColors.govBlue,
-              ),
-              _buildDrawerItem(
-                context,
-                icon: Icons.lock,
-                title: "Data Vault",
-                route: AppRoutes.datavault,
-                color: AppColors.govGreen,
-              ),
-              _buildDrawerItem(
-                context,
-                icon: Icons.menu_book,
-                title: "Logbook",
-                route: AppRoutes.logbook,
-                color: const Color(0xFFF59E0B),
-              ),
-              _buildDrawerItem(
-                context,
-                icon: Icons.timer,
-                title: "Cooldown",
-                route: AppRoutes.cooldown,
-                color: const Color(0xFF06B6D4),
-              ),
-              _buildDrawerItem(
-                context,
-                icon: Icons.import_export_sharp,
-                title: "Import/Export",
-                route: AppRoutes.importexport,
-                color: AppColors.info,
-              ),
-              const _SidebarActiveTimer(),
-            ],
-          ),
+            ),
+          ],
         ),
+      ),
       ),
       ),
     );
@@ -777,4 +797,4 @@ class _SidebarActiveTimerState extends State<_SidebarActiveTimer> {
       ),
     );
   }
-}
+}

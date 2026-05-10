@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:archive/archive.dart';
 import '../domain/export_import_repository.dart';
 import '../../../core/services/vault_crypto_service.dart';
+import '../../../core/app_version.dart';
 
 class LocalExportImportRepository implements IExportImportRepository {
   final VaultCryptoService _crypto = VaultCryptoService.instance;
@@ -134,20 +135,31 @@ class LocalExportImportRepository implements IExportImportRepository {
         return false;
       }
 
-      // Open (or create) the encrypted vault DB
+      // Delete the existing DB file first to avoid version-downgrade errors.
+      // We're replacing all data anyway, so a clean slate is safest.
       final dbPath = await _getDbPath(dbName);
+      final existingFile = File(dbPath);
+      if (await existingFile.exists()) await existingFile.delete();
+      // Also clean up journal/WAL files
+      for (final suffix in ['-journal', '-wal', '-shm']) {
+        final f = File('$dbPath$suffix');
+        if (await f.exists()) await f.delete();
+      }
+
+      // Create a fresh encrypted vault DB at version 4 (matches LocalVaultRepository)
       final dbPassword = await _crypto.getOrCreateDbPassword();
       final db = await cipher.openDatabase(
         dbPath,
         password: dbPassword,
-        version: 3,
+        version: 4,
         onCreate: (db, version) async {
           await db.execute('''
             CREATE TABLE vault(
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               label TEXT,
               value TEXT,
-              category TEXT
+              category TEXT,
+              tags TEXT
             )
           ''');
           await db.execute('''
@@ -159,28 +171,7 @@ class LocalExportImportRepository implements IExportImportRepository {
             )
           ''');
         },
-        onUpgrade: (db, oldVersion, newVersion) async {
-          if (oldVersion < 2) {
-            await db.execute("ALTER TABLE vault ADD COLUMN category TEXT");
-          }
-          if (oldVersion < 3) {
-            await db.execute('''
-              CREATE TABLE IF NOT EXISTS vault_history(
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                vault_item_id INTEGER,
-                old_value TEXT,
-                changed_at TEXT
-              )
-            ''');
-          }
-        },
       );
-
-      // Clear existing data and insert imported rows
-      await db.delete('vault');
-      try {
-        await db.delete('vault_history');
-      } catch (_) {}
 
       // We need to track old→new ID mapping so history references remain correct
       final Map<int, int> idMapping = {};
@@ -191,6 +182,7 @@ class LocalExportImportRepository implements IExportImportRepository {
           'label': row['label'] ?? '',
           'value': row['value'] ?? '',
           'category': row['category'] ?? 'Passwords',
+          'tags': row['tags'] ?? '',
         });
         if (oldId != null) {
           idMapping[oldId] = newId;
@@ -269,7 +261,7 @@ class LocalExportImportRepository implements IExportImportRepository {
       if (zipBytes == null) return false;
 
       final tempDir = await getTemporaryDirectory();
-      final zipFile = File('${tempDir.path}/utility_full_backup.zip');
+      final zipFile = File('${tempDir.path}/utility_full_backup_$appVersion.zip');
       await zipFile.writeAsBytes(zipBytes, flush: true);
 
       await Share.shareXFiles(
