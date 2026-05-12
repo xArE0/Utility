@@ -1,4 +1,4 @@
-const int appRevision = 2;
+const int appRevision = 1;
 
 String get appVersion {
   final now = DateTime.now();

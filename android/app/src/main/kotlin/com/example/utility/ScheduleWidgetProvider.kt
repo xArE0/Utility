@@ -17,57 +17,67 @@ class ScheduleWidgetProvider : HomeWidgetProvider() {
         for (appWidgetId in appWidgetIds) {
             val views = RemoteViews(context.packageName, R.layout.utility_widget).apply {
                 val aqi = widgetData.getString("widget_aqi", "AQI: --")
-                
-                // Button 5m
-                val is5Tick = widgetData.getBoolean("btn_5m_tick", false)
-                setViewVisibility(R.id.btn_5m_text, if (is5Tick) android.view.View.INVISIBLE else android.view.View.VISIBLE)
-                setViewVisibility(R.id.btn_5m_icon, if (is5Tick) android.view.View.VISIBLE else android.view.View.INVISIBLE)
 
-                // Button 15m
-                val is15Tick = widgetData.getBoolean("btn_15m_tick", false)
-                setViewVisibility(R.id.btn_15m_text, if (is15Tick) android.view.View.INVISIBLE else android.view.View.VISIBLE)
-                setViewVisibility(R.id.btn_15m_icon, if (is15Tick) android.view.View.VISIBLE else android.view.View.INVISIBLE)
+                // Read configurable timer durations (defaults: 5, 15, 30)
+                val timer1 = widgetData.getInt("widget_timer1", 5)
+                val timer2 = widgetData.getInt("widget_timer2", 15)
+                val timer3 = widgetData.getInt("widget_timer3", 30)
 
-                // Button 30m
-                val is30Tick = widgetData.getBoolean("btn_30m_tick", false)
-                setViewVisibility(R.id.btn_30m_text, if (is30Tick) android.view.View.INVISIBLE else android.view.View.VISIBLE)
-                setViewVisibility(R.id.btn_30m_icon, if (is30Tick) android.view.View.VISIBLE else android.view.View.INVISIBLE)
+                // Set button labels dynamically
+                setTextViewText(R.id.btn_timer1_text, "${timer1}m")
+                setTextViewText(R.id.btn_timer2_text, "${timer2}m")
+                setTextViewText(R.id.btn_timer3_text, "${timer3}m")
+
+                // Button 1 tick state
+                val is1Tick = widgetData.getBoolean("btn_timer1_tick", false)
+                setViewVisibility(R.id.btn_timer1_text, if (is1Tick) android.view.View.INVISIBLE else android.view.View.VISIBLE)
+                setViewVisibility(R.id.btn_timer1_icon, if (is1Tick) android.view.View.VISIBLE else android.view.View.INVISIBLE)
+
+                // Button 2 tick state
+                val is2Tick = widgetData.getBoolean("btn_timer2_tick", false)
+                setViewVisibility(R.id.btn_timer2_text, if (is2Tick) android.view.View.INVISIBLE else android.view.View.VISIBLE)
+                setViewVisibility(R.id.btn_timer2_icon, if (is2Tick) android.view.View.VISIBLE else android.view.View.INVISIBLE)
+
+                // Button 3 tick state
+                val is3Tick = widgetData.getBoolean("btn_timer3_tick", false)
+                setViewVisibility(R.id.btn_timer3_text, if (is3Tick) android.view.View.INVISIBLE else android.view.View.VISIBLE)
+                setViewVisibility(R.id.btn_timer3_icon, if (is3Tick) android.view.View.VISIBLE else android.view.View.INVISIBLE)
 
                 setTextViewText(R.id.widget_aqi, aqi)
                 
-                // Timer Buttons Intents (target the roots to ensure clicks are caught, use unique request codes to prevent intent merging)
-                val intent5m = android.content.Intent(context, es.antonborri.home_widget.HomeWidgetBackgroundReceiver::class.java).apply {
-                    data = android.net.Uri.parse("utility://timer?mins=5")
+                // Timer Buttons Intents — use dynamic minute values in URIs
+                val intent1 = android.content.Intent(context, es.antonborri.home_widget.HomeWidgetBackgroundReceiver::class.java).apply {
+                    data = android.net.Uri.parse("utility://timer?mins=$timer1&slot=1")
                     action = "es.antonborri.home_widget.action.BACKGROUND"
                 }
-                val pending5m = android.app.PendingIntent.getBroadcast(
-                    context, 5, intent5m, 
+                val pending1 = android.app.PendingIntent.getBroadcast(
+                    context, 1001, intent1, 
                     android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
                 )
 
-                val intent15m = android.content.Intent(context, es.antonborri.home_widget.HomeWidgetBackgroundReceiver::class.java).apply {
-                    data = android.net.Uri.parse("utility://timer?mins=15")
+                val intent2 = android.content.Intent(context, es.antonborri.home_widget.HomeWidgetBackgroundReceiver::class.java).apply {
+                    data = android.net.Uri.parse("utility://timer?mins=$timer2&slot=2")
                     action = "es.antonborri.home_widget.action.BACKGROUND"
                 }
-                val pending15m = android.app.PendingIntent.getBroadcast(
-                    context, 15, intent15m, 
+                val pending2 = android.app.PendingIntent.getBroadcast(
+                    context, 1002, intent2, 
                     android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
                 )
 
-                val intent30m = android.content.Intent(context, es.antonborri.home_widget.HomeWidgetBackgroundReceiver::class.java).apply {
-                    data = android.net.Uri.parse("utility://timer?mins=30")
+                val intent3 = android.content.Intent(context, es.antonborri.home_widget.HomeWidgetBackgroundReceiver::class.java).apply {
+                    data = android.net.Uri.parse("utility://timer?mins=$timer3&slot=3")
                     action = "es.antonborri.home_widget.action.BACKGROUND"
                 }
-                val pending30m = android.app.PendingIntent.getBroadcast(
-                    context, 30, intent30m, 
+                val pending3 = android.app.PendingIntent.getBroadcast(
+                    context, 1003, intent3, 
                     android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
                 )
 
-                setOnClickPendingIntent(R.id.btn_5m_root, pending5m)
-                setOnClickPendingIntent(R.id.btn_15m_root, pending15m)
-                setOnClickPendingIntent(R.id.btn_30m_root, pending30m)
+                setOnClickPendingIntent(R.id.btn_timer1_root, pending1)
+                setOnClickPendingIntent(R.id.btn_timer2_root, pending2)
+                setOnClickPendingIntent(R.id.btn_timer3_root, pending3)
 
-                // Launch App when clicking the widget root or app icon
+                // Launch App when clicking the app icon
                 val launchIntent = android.content.Intent(context, MainActivity::class.java).apply {
                     flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
                 }

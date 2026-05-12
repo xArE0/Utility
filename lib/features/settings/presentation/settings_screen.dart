@@ -16,6 +16,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _scheduleNameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _vaultExportPasswordController = TextEditingController();
+  final _timer1Controller = TextEditingController();
+  final _timer2Controller = TextEditingController();
+  final _timer3Controller = TextEditingController();
 
   bool _obscureSecretPassword = true;
   bool _obscureVaultPassword = true;
@@ -28,6 +31,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _scheduleNameController.text = settings.scheduleName;
     _passwordController.text = settings.secretPassword;
     _vaultExportPasswordController.text = settings.vaultExportPassword;
+    _timer1Controller.text = settings.widgetTimer1.toString();
+    _timer2Controller.text = settings.widgetTimer2.toString();
+    _timer3Controller.text = settings.widgetTimer3.toString();
   }
 
   @override
@@ -36,6 +42,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _scheduleNameController.dispose();
     _passwordController.dispose();
     _vaultExportPasswordController.dispose();
+    _timer1Controller.dispose();
+    _timer2Controller.dispose();
+    _timer3Controller.dispose();
     super.dispose();
   }
 
@@ -121,6 +130,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
               ),
+              const SizedBox(height: 32),
+              _buildSectionTitle('Widget Timers', primaryText),
+              _buildCard(
+                cardBg,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Update the timers on the Home Screen Widget',
+                      style: AppTypography.bodySmall.copyWith(color: secondaryText),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildTimerField(
+                            controller: _timer1Controller,
+                            label: 'Timer 1',
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildTimerField(
+                            controller: _timer2Controller,
+                            label: 'Timer 2',
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildTimerField(
+                            controller: _timer3Controller,
+                            label: 'Timer 3',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -187,6 +235,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildTimerField({
+    required TextEditingController controller,
+    required String label,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      textAlign: TextAlign.center,
+      style: AppTypography.titleMedium.copyWith(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: AppTypography.bodySmall.copyWith(color: AppColors.slate400),
+        suffixText: 'min',
+        suffixStyle: AppTypography.bodySmall.copyWith(color: AppColors.slate500),
+        filled: true,
+        fillColor: AppColors.slate800.withOpacity(0.6),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      ),
+    );
+  }
+
   void _saveSettings() async {
     final sidebar = _sidebarNameController.text.trim();
     final schedule = _scheduleNameController.text.trim();
@@ -201,6 +274,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await SettingsService.instance.updateScheduleName(finalSchedule);
     await SettingsService.instance.updateSecretPassword(password);
     await SettingsService.instance.updateVaultExportPassword(vaultExportPw);
+
+    // Save widget timer durations
+    final t1 = int.tryParse(_timer1Controller.text.trim()) ?? 5;
+    final t2 = int.tryParse(_timer2Controller.text.trim()) ?? 15;
+    final t3 = int.tryParse(_timer3Controller.text.trim()) ?? 30;
+    await SettingsService.instance.updateWidgetTimers(t1, t2, t3);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

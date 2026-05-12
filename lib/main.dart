@@ -10,6 +10,7 @@ import 'core/services/settings_service.dart';
 Future<void> interactiveWidgetCallback(Uri? uri) async {
   if (uri?.host == 'timer') {
     final minsStr = uri?.queryParameters['mins'];
+    final slot = uri?.queryParameters['slot'] ?? '1';
     if (minsStr != null) {
       final mins = int.parse(minsStr);
       
@@ -21,8 +22,8 @@ Future<void> interactiveWidgetCallback(Uri? uri) async {
       await NotificationService().initialize();
       await NotificationService().scheduleQuickTimer(mins);
       
-      // Morph button to tick
-      final btnId = "btn_${mins}m_tick";
+      // Morph button to tick using slot-based ID (matches widget layout)
+      final btnId = "btn_timer${slot}_tick";
       await HomeWidget.saveWidgetData<bool>(btnId, true);
       await HomeWidget.updateWidget(name: 'ScheduleWidgetProvider', androidName: 'ScheduleWidgetProvider');
       

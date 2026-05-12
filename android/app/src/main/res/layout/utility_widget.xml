@@ -51,16 +51,16 @@
             android:layout_height="match_parent"
             android:background="#121212" />
 
-        <!-- Button 5m -->
+        <!-- Button Timer 1 -->
         <FrameLayout
-            android:id="@+id/btn_5m_root"
+            android:id="@+id/btn_timer1_root"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="match_parent"
             android:clickable="true"
             android:focusable="true">
             <TextView
-                android:id="@+id/btn_5m_text"
+                android:id="@+id/btn_timer1_text"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center"
@@ -69,7 +69,7 @@
                 android:textSize="14sp"
                 android:textStyle="bold" />
             <ImageView
-                android:id="@+id/btn_5m_icon"
+                android:id="@+id/btn_timer1_icon"
                 android:layout_width="18dp"
                 android:layout_height="18dp"
                 android:layout_gravity="center"
@@ -83,16 +83,16 @@
             android:layout_height="match_parent"
             android:background="#121212" />
 
-        <!-- Button 15m -->
+        <!-- Button Timer 2 -->
         <FrameLayout
-            android:id="@+id/btn_15m_root"
+            android:id="@+id/btn_timer2_root"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="match_parent"
             android:clickable="true"
             android:focusable="true">
             <TextView
-                android:id="@+id/btn_15m_text"
+                android:id="@+id/btn_timer2_text"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center"
@@ -101,7 +101,7 @@
                 android:textSize="14sp"
                 android:textStyle="bold" />
             <ImageView
-                android:id="@+id/btn_15m_icon"
+                android:id="@+id/btn_timer2_icon"
                 android:layout_width="18dp"
                 android:layout_height="18dp"
                 android:layout_gravity="center"
@@ -115,9 +115,9 @@
             android:layout_height="match_parent"
             android:background="#121212" />
 
-        <!-- Button 30m -->
+        <!-- Button Timer 3 -->
         <FrameLayout
-            android:id="@+id/btn_30m_root"
+            android:id="@+id/btn_timer3_root"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="match_parent"
@@ -125,7 +125,7 @@
             android:clickable="true"
             android:focusable="true">
             <TextView
-                android:id="@+id/btn_30m_text"
+                android:id="@+id/btn_timer3_text"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center"
@@ -134,7 +134,7 @@
                 android:textSize="14sp"
                 android:textStyle="bold" />
             <ImageView
-                android:id="@+id/btn_30m_icon"
+                android:id="@+id/btn_timer3_icon"
                 android:layout_width="18dp"
                 android:layout_height="18dp"
                 android:layout_gravity="center"

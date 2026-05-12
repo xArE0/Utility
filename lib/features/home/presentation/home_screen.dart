@@ -674,7 +674,11 @@ class _SidebarActiveTimerState extends State<_SidebarActiveTimer> {
     Map<int, int> active = {};
     final nowMs = DateTime.now().millisecondsSinceEpoch;
     
-    for (final durationMins in [5, 15, 30]) {
+    for (final durationMins in [
+      SettingsService.instance.widgetTimer1,
+      SettingsService.instance.widgetTimer2,
+      SettingsService.instance.widgetTimer3,
+    ]) {
       final startMs = prefs.getInt('active_timer_${durationMins}_start_ms');
       if (startMs != null) {
         final totalDurationMs = durationMins * 60 * 1000;
@@ -711,9 +715,18 @@ class _SidebarActiveTimerState extends State<_SidebarActiveTimer> {
     await NotificationService().cancelEventNotification(timerId);
 
     // 3. Reset Android Widget RemoteViews configuration manually
-    final btnId = "btn_${durationMins}m_tick";
-    await HomeWidget.saveWidgetData<bool>(btnId, false);
-    await HomeWidget.updateWidget(name: 'ScheduleWidgetProvider', androidName: 'ScheduleWidgetProvider');
+    // Map duration back to slot number for the tick ID
+    final timers = [
+      SettingsService.instance.widgetTimer1,
+      SettingsService.instance.widgetTimer2,
+      SettingsService.instance.widgetTimer3,
+    ];
+    final slotIndex = timers.indexOf(durationMins);
+    if (slotIndex >= 0) {
+      final btnId = "btn_timer${slotIndex + 1}_tick";
+      await HomeWidget.saveWidgetData<bool>(btnId, false);
+      await HomeWidget.updateWidget(name: 'ScheduleWidgetProvider', androidName: 'ScheduleWidgetProvider');
+    }
 
     // Force synchronization locally to trigger instantaneous UI deletion
     _checkTimers();
