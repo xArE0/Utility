@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/animated_background.dart';
+import '../../../core/widgets/app_toast.dart';
 import '../../../core/services/settings_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -282,9 +283,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await SettingsService.instance.updateWidgetTimers(t1, t2, t3);
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Settings saved successfully!')),
-      );
+      AppToast.show(context, 'Settings saved');
       Navigator.pop(context);
     }
   }

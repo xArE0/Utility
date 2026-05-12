@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../domain/export_import_repository.dart';
 import '../../../core/services/settings_service.dart';
+import '../../../core/widgets/app_toast.dart';
 
 class ExportImportController extends ChangeNotifier {
   final IExportImportRepository _repository;
@@ -66,18 +67,14 @@ class ExportImportController extends ChangeNotifier {
     final exists = await _repository.checkDatabaseExists(dbName);
     if (!exists) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Database file not found: $dbName')),
-        );
+        AppToast.show(context, 'Database file not found: $dbName', isError: true);
       }
       return;
     }
 
     final success = await _repository.exportDatabase(dbName);
     if (!success && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to export database: $dbName')),
-      );
+      AppToast.show(context, 'Failed to export: $dbName', isError: true);
     }
   }
 
@@ -85,13 +82,9 @@ class ExportImportController extends ChangeNotifier {
     final success = await _repository.importDatabase(dbName);
     if (context.mounted) {
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Database imported and overwritten: $dbName')),
-        );
+        AppToast.show(context, 'Database imported: $dbName');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to import database or cancelled: $dbName')),
-        );
+        AppToast.show(context, 'Failed to import: $dbName', isError: true);
       }
     }
   }
@@ -105,9 +98,7 @@ class ExportImportController extends ChangeNotifier {
     final exists = await _repository.checkDatabaseExists(dbName);
     if (!exists) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Data Vault not found. Add some entries first.')),
-        );
+        AppToast.show(context, 'Data Vault not found', isError: true);
       }
       return;
     }
@@ -124,9 +115,7 @@ class ExportImportController extends ChangeNotifier {
     if (context.mounted) {
       Navigator.of(context).pop();
       if (!success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to export Data Vault.')),
-        );
+        AppToast.show(context, 'Failed to export Data Vault', isError: true);
       }
     }
   }
@@ -161,14 +150,12 @@ class ExportImportController extends ChangeNotifier {
 
     if (context.mounted) {
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            success
-                ? 'Data Vault imported successfully! Restart the app to see changes.'
-                : 'Failed to import. Wrong password or corrupted file.',
-          ),
-        ),
+      AppToast.show(
+        context,
+        success
+            ? 'Data Vault imported! Restart to see changes.'
+            : 'Failed to import. Wrong password or corrupted file.',
+        isError: !success,
       );
     }
   }
@@ -193,9 +180,7 @@ class ExportImportController extends ChangeNotifier {
     if (context.mounted) {
       Navigator.of(context).pop();
       if (!success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to export all databases.')),
-        );
+        AppToast.show(context, 'Failed to export all databases', isError: true);
       }
     }
   }
@@ -256,14 +241,12 @@ class ExportImportController extends ChangeNotifier {
 
     if (context.mounted) {
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            success
-                ? 'All databases restored! Restart the app to see changes.'
-                : 'Failed to restore. Wrong vault password or corrupted backup.',
-          ),
-        ),
+      AppToast.show(
+        context,
+        success
+            ? 'All databases restored! Restart to see changes.'
+            : 'Failed to restore. Wrong password or corrupted backup.',
+        isError: !success,
       );
     }
   }

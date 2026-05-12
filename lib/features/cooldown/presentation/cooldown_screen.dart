@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/animated_background.dart';
+import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../domain/cooldown_entities.dart';
 import '../data/local_cooldown_repository.dart';
@@ -1083,16 +1084,7 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
   void _confirm() {
     final dt = _buildDateTime();
     if (dt.isBefore(DateTime.now())) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Please pick a future date/time',
-              style: AppTypography.bodyMedium),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
+      AppToast.show(context, 'Please pick a future date/time', isError: true);
       return;
     }
     Navigator.pop(context, dt);

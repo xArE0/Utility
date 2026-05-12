@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/animated_background.dart';
+import '../../../core/widgets/app_toast.dart';
 import 'expense_controller.dart';
 import '../domain/expense_entities.dart';
 import '../data/local_expense_repository.dart';
@@ -96,9 +97,7 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
   }
 
   void _showInputError() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('<Amount> <Note>  — amount can be an expression like -900/3')),
-    );
+    AppToast.show(context, '<Amount> <Note>  — e.g. -900/3 lunch', isError: true);
   }
 
   @override

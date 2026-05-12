@@ -7,6 +7,7 @@ import '../data/local_vault_repository.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/animated_background.dart';
+import '../../../core/widgets/app_toast.dart';
 import 'package:local_auth/local_auth.dart';
 
 class DataVaultPage extends StatefulWidget {
@@ -740,9 +741,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
             constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             onPressed: () {
               Clipboard.setData(ClipboardData(text: h.oldValue));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Copied to clipboard'), duration: Duration(seconds: 1)),
-              );
+              AppToast.show(context, 'Copied to clipboard');
             },
           ),
           IconButton(
