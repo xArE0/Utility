@@ -361,4 +361,56 @@ class NotificationService {
       debugPrint('Error scheduling quick timer: $e');
     }
   }
+
+  /// Schedule a one-shot habit reminder for today at the given time.
+  /// ID space: 200000 + habitId to avoid collisions.
+  Future<void> scheduleHabitReminder(int habitId, String habitName, String emoji, int hour, int minute) async {
+    try {
+      final now = DateTime.now();
+      var scheduledTime = DateTime(now.year, now.month, now.day, hour, minute);
+
+      // If the time has already passed today, don't schedule
+      if (scheduledTime.isBefore(now)) {
+        debugPrint('Habit reminder time already passed for today');
+        return;
+      }
+
+      final tzScheduledDate = tz.TZDateTime.from(scheduledTime, tz.local);
+      final notifId = 200000 + habitId;
+
+      final androidDetails = const AndroidNotificationDetails(
+        'habit_reminders',
+        'Habit Reminders',
+        channelDescription: 'Daily habit reminder notifications',
+        importance: Importance.max,
+        priority: Priority.max,
+        icon: '@mipmap/ic_launcher',
+        playSound: true,
+        enableVibration: true,
+      );
+
+      final details = NotificationDetails(android: androidDetails);
+
+      await _notifications.zonedSchedule(
+        notifId,
+        '$emoji $habitName',
+        'Time to do your habit!',
+        tzScheduledDate,
+        details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      );
+
+      debugPrint('✓ Habit reminder set for $habitName at $hour:$minute');
+    } catch (e) {
+      debugPrint('Error scheduling habit reminder: $e');
+    }
+  }
+
+  /// Cancel a habit reminder notification
+  Future<void> cancelHabitReminder(int habitId) async {
+    final notifId = 200000 + habitId;
+    await _notifications.cancel(notifId);
+    debugPrint('Cancelled habit reminder for habit $habitId');
+  }
 }

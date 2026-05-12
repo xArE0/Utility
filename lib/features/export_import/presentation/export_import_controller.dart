@@ -16,6 +16,7 @@ class ExportImportController extends ChangeNotifier {
     'expense_tracker.db',
     'cooldown.db',
     'logbook.db',
+    'routine.db',
   ];
 
   /// The vault database name.

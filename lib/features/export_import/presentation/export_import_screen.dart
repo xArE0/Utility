@@ -19,6 +19,7 @@ class _ExportImportsPageState extends State<ExportImportsPage> {
   final String dataVaultDbName = 'datavault.db';
   final String cooldownDbName = 'cooldown.db';
   final String logbookDbName = 'logbook.db';
+  final String routineDbName = 'routine.db';
 
   @override
   void initState() {
@@ -156,6 +157,16 @@ class _ExportImportsPageState extends State<ExportImportsPage> {
                         icon: Icons.menu_book,
                         color: Colors.purpleAccent,
                         dbName: logbookDbName,
+                        isEncrypted: false,
+                      ),
+                    ),
+                    SizedBox(
+                      width: cardWidth,
+                      child: _dbCard(
+                        name: 'Routine',
+                        icon: Icons.repeat_rounded,
+                        color: const Color(0xFF8B5CF6),
+                        dbName: routineDbName,
                         isEncrypted: false,
                       ),
                     ),
