@@ -499,6 +499,24 @@ class ScheduleController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> toggleEventDone(Event event) async {
+    final updatedEvent = Event(
+      id: event.id,
+      date: event.date,
+      task: event.task,
+      type: event.type,
+      remindMe: event.remindMe,
+      remindDaysBefore: event.remindDaysBefore,
+      remindTime: event.remindTime,
+      repeat: event.repeat,
+      repeatInterval: event.repeatInterval,
+      durationDays: event.durationDays,
+      done: !event.done,
+    );
+    await _repository.updateEvent(updatedEvent);
+    await preloadEvents();
+  }
+
   Future<bool> syncAllApiData() async {
     try {
       // 1. Sync Weather

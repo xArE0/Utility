@@ -518,13 +518,27 @@ class ScheduleScreenState extends State<ScheduleScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            event.task,
-            style: TextStyle(
-              color: fg,
-              fontWeight: FontWeight.bold,
+          if (event.type == 'todo')
+            GestureDetector(
+              onDoubleTap: () => _controller.toggleEventDone(event),
+              child: Text(
+                event.task,
+                style: TextStyle(
+                  color: event.done ? fg.withOpacity(0.5) : fg,
+                  fontWeight: FontWeight.bold,
+                  decoration: event.done ? TextDecoration.lineThrough : null,
+                  decorationColor: fg.withOpacity(0.5),
+                ),
+              ),
+            )
+          else
+            Text(
+              event.task,
+              style: TextStyle(
+                color: fg,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
           if (event.type != 'normal')
             Padding(
               padding: const EdgeInsets.only(top: 2),
@@ -1050,9 +1064,10 @@ class ScheduleScreenState extends State<ScheduleScreen> {
     final totalCells = startWeekday + daysInMonth;
     final rows = (totalCells / 7).ceil();
     final cells = rows * 7;
-    final dates = List<DateTime?>.generate(cells, (i) {
+    
+    // Fill all cells with actual dates, including prev/next month
+    final dates = List<DateTime>.generate(cells, (i) {
       final dayNum = i - startWeekday + 1;
-      if (dayNum < 1 || dayNum > daysInMonth) return null;
       return DateTime(_controller.selectedDate.year, _controller.selectedDate.month, dayNum);
     });
 
@@ -1090,18 +1105,18 @@ class ScheduleScreenState extends State<ScheduleScreen> {
             ],
           ),
         ),
+        // Day-of-week headers aligned with the grid below
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: const [
-              Text("Sun", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.redAccent)),
-              Text("Mon", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-              Text("Tue", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-              Text("Wed", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-              Text("Thu", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-              Text("Fri", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-              Text("Sat", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+              Expanded(child: Center(child: Text("Sun", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.redAccent)))),
+              Expanded(child: Center(child: Text("Mon", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)))),
+              Expanded(child: Center(child: Text("Tue", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)))),
+              Expanded(child: Center(child: Text("Wed", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)))),
+              Expanded(child: Center(child: Text("Thu", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)))),
+              Expanded(child: Center(child: Text("Fri", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)))),
+              Expanded(child: Center(child: Text("Sat", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)))),
             ],
           ),
         ),
@@ -1115,7 +1130,7 @@ class ScheduleScreenState extends State<ScheduleScreen> {
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 7, childAspectRatio: 0.75),
             itemBuilder: (context, i) {
               final date = dates[i];
-              if (date == null) return const SizedBox.shrink();
+              final isCurrentMonth = date.month == _controller.selectedDate.month && date.year == _controller.selectedDate.year;
               final key = ScheduleController.dateFormat.format(date);
               final isToday = key == todayKey;
               final events = _controller.eventsForDate(date);
@@ -1125,35 +1140,57 @@ class ScheduleScreenState extends State<ScheduleScreen> {
               final nepaliInfo = _controller.getNepaliDateInfo(date);
               nepaliDay = nepaliInfo['day'] ?? '';
 
+              // Opacity for other-month tiles
+              final double tileOpacity = isCurrentMonth ? 1.0 : 0.35;
+
               return GestureDetector(
-                onTap: () => _controller.selectedDate = date,
-                child: Container(
-                  margin: const EdgeInsets.all(3),
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: isSelected ? cs.primary.withOpacity(0.15) : (isToday ? cs.primary.withOpacity(0.08) : cs.surface.withOpacity(0.4)),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: isToday ? AppColors.govGreen : cs.outline.withOpacity(0.4), width: isSelected ? 1.2 : 0.8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(DateFormat('d').format(date), style: TextStyle(fontWeight: FontWeight.w700, color: isToday ? AppColors.govGreen : cs.onSurface, fontSize: 12)),
-                          if (isToday) ...[const SizedBox(width: 2), Icon(Icons.circle, size: 4, color: AppColors.govGreen)]
-                        ],
+                onTap: () {
+                  if (!isCurrentMonth) {
+                    // Navigate to that month when tapping an other-month date
+                    _controller.selectedDate = date;
+                  } else {
+                    _controller.selectedDate = date;
+                  }
+                },
+                child: Opacity(
+                  opacity: tileOpacity,
+                  child: Container(
+                    margin: const EdgeInsets.all(3),
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: isSelected && isCurrentMonth
+                          ? cs.primary.withOpacity(0.15)
+                          : (isToday
+                              ? cs.primary.withOpacity(0.08)
+                              : cs.surface.withOpacity(isCurrentMonth ? 0.4 : 0.15)),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isToday && isCurrentMonth
+                            ? AppColors.govGreen
+                            : cs.outline.withOpacity(isCurrentMonth ? 0.4 : 0.15),
+                        width: isSelected && isCurrentMonth ? 1.2 : 0.8,
                       ),
-                      if (nepaliDay.isNotEmpty) ...[
-                        const SizedBox(height: 1),
-                        Text(nepaliDay, style: TextStyle(fontSize: 9, color: cs.onSurface.withOpacity(0.5), fontWeight: FontWeight.w600)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(DateFormat('d').format(date), style: TextStyle(fontWeight: FontWeight.w700, color: isToday && isCurrentMonth ? AppColors.govGreen : cs.onSurface, fontSize: 12)),
+                            if (isToday && isCurrentMonth) ...[const SizedBox(width: 2), Icon(Icons.circle, size: 4, color: AppColors.govGreen)]
+                          ],
+                        ),
+                        if (nepaliDay.isNotEmpty) ...[
+                          const SizedBox(height: 1),
+                          Text(nepaliDay, style: TextStyle(fontSize: 9, color: cs.onSurface.withOpacity(0.5), fontWeight: FontWeight.w600)),
+                        ],
+                        const SizedBox(height: 3),
+                        if (events.isNotEmpty)
+                          Wrap(spacing: 2, runSpacing: 1, children: events.take(3).map((e) => Container(width: 5, height: 5, decoration: BoxDecoration(color: _eventColor(e), shape: BoxShape.circle))).toList()),
                       ],
-                      const SizedBox(height: 3),
-                      if (events.isNotEmpty)
-                        Wrap(spacing: 2, runSpacing: 1, children: events.take(3).map((e) => Container(width: 5, height: 5, decoration: BoxDecoration(color: _eventColor(e), shape: BoxShape.circle))).toList()),
-                    ],
+                    ),
                   ),
                 ),
               );

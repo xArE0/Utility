@@ -5,6 +5,27 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+static def getBuildDate() {
+    def date = new Date()
+    def sdf = new java.text.SimpleDateFormat("yy.MM.dd")
+    return sdf.format(date)
+}
+
+task generateAppVersion {
+    doLast {
+        def buildDate = getBuildDate()
+        def appVersionFile = new File("../../lib/core/app_version.dart")
+        def content = """const int appRevision = 1;
+const String buildDate = '$buildDate';
+
+String get appVersion => '\$buildDate.v\$appRevision';
+"""
+        appVersionFile.text = content
+        println("✓ Generated app_version.dart with build date: $buildDate")
+    }
+}
+
+
 android {
     namespace = "com.example.utility"
     compileSdk = flutter.compileSdkVersion
@@ -47,10 +68,20 @@ flutter {
     source = "../.."
 }
 
+// Run generateAppVersion before building
+tasks.whenTaskAdded { task ->
+    if (task.name == 'preBuild') {
+        task.dependsOn generateAppVersion
+    }
+}
+
 configurations.all {
     resolutionStrategy {
         force "androidx.core:core-ktx:1.13.1"
         force "androidx.core:core:1.13.1"
+        force "androidx.glance:glance-appwidget:1.1.1"
+        force "androidx.glance:glance:1.1.1"
+        force "androidx.compose.remote:remote-creation-android:1.0.0-alpha02"
     }
 }
 

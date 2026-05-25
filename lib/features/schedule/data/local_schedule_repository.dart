@@ -12,7 +12,7 @@ class LocalScheduleRepository implements IScheduleRepository {
     final dbPath = await getDatabasesPath();
     _db = await openDatabase(
       join(dbPath, 'schedule.db'),
-      version: 4,
+      version: 5,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE events(
@@ -25,7 +25,8 @@ class LocalScheduleRepository implements IScheduleRepository {
             remindTime TEXT,
             repeat TEXT DEFAULT 'none',
             repeatInterval INTEGER,
-            durationDays INTEGER
+            durationDays INTEGER,
+            done INTEGER DEFAULT 0
           )
         ''');
       },
@@ -41,6 +42,9 @@ class LocalScheduleRepository implements IScheduleRepository {
         }
         if (oldVersion < 4) {
           await db.execute('ALTER TABLE events ADD COLUMN durationDays INTEGER');
+        }
+        if (oldVersion < 5) {
+          await db.execute('ALTER TABLE events ADD COLUMN done INTEGER DEFAULT 0');
         }
       },
     );

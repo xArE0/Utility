@@ -9,6 +9,7 @@ class Event {
   final String? repeat;
   final int? repeatInterval;
   final int? durationDays;
+  final bool done;
 
   Event({
     this.id,
@@ -21,6 +22,7 @@ class Event {
     this.repeat = "none",
     this.repeatInterval,
     this.durationDays,
+    this.done = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -35,6 +37,7 @@ class Event {
       'repeat': repeat,
       'repeatInterval': repeatInterval,
       'durationDays': durationDays,
+      'done': done ? 1 : 0,
     };
   }
 
@@ -50,6 +53,7 @@ class Event {
       repeat: map['repeat'] ?? "none",
       repeatInterval: map['repeatInterval'],
       durationDays: map['durationDays'],
+      done: (map['done'] ?? 0) == 1,
     );
   }
 
