@@ -119,14 +119,48 @@ class DataVaultController extends ChangeNotifier {
     await loadItems();
   }
 
-  Future<void> addItem(String label, String value, String category, {String tags = ''}) async {
-    final item = VaultItem(label: label, value: value, category: category, tags: tags);
+   Future<void> addItem(
+    String label,
+    String value,
+    String category, {
+    String tags = '',
+    String username = '',
+    String website = '',
+    String note = '',
+  }) async {
+    final item = VaultItem(
+      label: label,
+      value: value,
+      category: category,
+      tags: tags,
+      username: username,
+      website: website,
+      note: note,
+    );
     await _repository.addItem(item);
     await loadItems();
   }
 
-  Future<void> updateItem(int id, String label, String value, String category, {String tags = ''}) async {
-    final item = VaultItem(id: id, label: label, value: value, category: category, tags: tags);
+  Future<void> updateItem(
+    int id,
+    String label,
+    String value,
+    String category, {
+    String tags = '',
+    String username = '',
+    String website = '',
+    String note = '',
+  }) async {
+    final item = VaultItem(
+      id: id,
+      label: label,
+      value: value,
+      category: category,
+      tags: tags,
+      username: username,
+      website: website,
+      note: note,
+    );
     await _repository.updateItem(item);
     // Refresh history cache for this item
     _historyCache.remove(id);

@@ -4,6 +4,9 @@ class VaultItem {
   final String value;
   final String category;
   final String tags; // comma-separated, e.g. "share,money,family"
+  final String username;
+  final String website;
+  final String note;
 
   VaultItem({
     this.id,
@@ -11,6 +14,9 @@ class VaultItem {
     required this.value,
     required this.category,
     this.tags = '',
+    this.username = '',
+    this.website = '',
+    this.note = '',
   });
 
   /// Parsed tag list for display/search
@@ -24,6 +30,9 @@ class VaultItem {
       'value': value,
       'category': category,
       'tags': tags,
+      'username': username,
+      'website': website,
+      'note': note,
     };
   }
 
@@ -34,6 +43,9 @@ class VaultItem {
       value: map['value'] ?? '',
       category: map['category'] ?? 'Passwords',
       tags: map['tags'] ?? '',
+      username: map['username'] ?? '',
+      website: map['website'] ?? '',
+      note: map['note'] ?? '',
     );
   }
 
@@ -43,6 +55,9 @@ class VaultItem {
     String? value,
     String? category,
     String? tags,
+    String? username,
+    String? website,
+    String? note,
   }) {
     return VaultItem(
       id: id ?? this.id,
@@ -50,6 +65,9 @@ class VaultItem {
       value: value ?? this.value,
       category: category ?? this.category,
       tags: tags ?? this.tags,
+      username: username ?? this.username,
+      website: website ?? this.website,
+      note: note ?? this.note,
     );
   }
 }

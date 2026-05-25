@@ -25,7 +25,7 @@ class LocalVaultRepository implements IVaultRepository {
     _db = await openDatabase(
       path,
       password: password,
-      version: 4,
+      version: 5,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE vault(
@@ -33,7 +33,10 @@ class LocalVaultRepository implements IVaultRepository {
             label TEXT,
             value TEXT,
             category TEXT,
-            tags TEXT
+            tags TEXT,
+            username TEXT,
+            website TEXT,
+            note TEXT
           )
         ''');
         await db.execute('''
@@ -61,6 +64,11 @@ class LocalVaultRepository implements IVaultRepository {
         }
         if (oldVersion < 4) {
           await db.execute("ALTER TABLE vault ADD COLUMN tags TEXT");
+        }
+        if (oldVersion < 5) {
+          await db.execute("ALTER TABLE vault ADD COLUMN username TEXT DEFAULT ''");
+          await db.execute("ALTER TABLE vault ADD COLUMN website TEXT DEFAULT ''");
+          await db.execute("ALTER TABLE vault ADD COLUMN note TEXT DEFAULT ''");
         }
       },
     );
@@ -121,7 +129,7 @@ class LocalVaultRepository implements IVaultRepository {
       final newDb = await openDatabase(
         dbFilePath,
         password: password,
-        version: 4,
+        version: 5,
         onCreate: (db, version) async {
           await db.execute('''
             CREATE TABLE vault(
@@ -129,7 +137,10 @@ class LocalVaultRepository implements IVaultRepository {
               label TEXT,
               value TEXT,
               category TEXT,
-              tags TEXT
+              tags TEXT,
+              username TEXT,
+              website TEXT,
+              note TEXT
             )
           ''');
           await db.execute('''

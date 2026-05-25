@@ -146,12 +146,12 @@ class LocalExportImportRepository implements IExportImportRepository {
         if (await f.exists()) await f.delete();
       }
 
-      // Create a fresh encrypted vault DB at version 4 (matches LocalVaultRepository)
+      // Create a fresh encrypted vault DB at version 5 (matches LocalVaultRepository)
       final dbPassword = await _crypto.getOrCreateDbPassword();
       final db = await cipher.openDatabase(
         dbPath,
         password: dbPassword,
-        version: 4,
+        version: 5,
         onCreate: (db, version) async {
           await db.execute('''
             CREATE TABLE vault(
@@ -159,7 +159,10 @@ class LocalExportImportRepository implements IExportImportRepository {
               label TEXT,
               value TEXT,
               category TEXT,
-              tags TEXT
+              tags TEXT,
+              username TEXT,
+              website TEXT,
+              note TEXT
             )
           ''');
           await db.execute('''
@@ -183,6 +186,9 @@ class LocalExportImportRepository implements IExportImportRepository {
           'value': row['value'] ?? '',
           'category': row['category'] ?? 'Passwords',
           'tags': row['tags'] ?? '',
+          'username': row['username'] ?? '',
+          'website': row['website'] ?? '',
+          'note': row['note'] ?? '',
         });
         if (oldId != null) {
           idMapping[oldId] = newId;
@@ -258,7 +264,6 @@ class LocalExportImportRepository implements IExportImportRepository {
 
       // 3. Encode as ZIP and share
       final zipBytes = ZipEncoder().encode(archive);
-      if (zipBytes == null) return false;
 
       final tempDir = await getTemporaryDirectory();
       final zipFile = File('${tempDir.path}/utility_full_backup_$appVersion.zip');
