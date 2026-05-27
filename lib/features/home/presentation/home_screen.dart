@@ -587,6 +587,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   _buildDrawerItem(
                     context,
+                    icon: Icons.quiz_outlined,
+                    title: "QuickCheck",
+                    route: AppRoutes.quickcheck,
+                    color: const Color(0xFFEC4899),
+                  ),
+                  _buildDrawerItem(
+                    context,
                     icon: Icons.import_export_sharp,
                     title: "Import/Export",
                     route: AppRoutes.importexport,

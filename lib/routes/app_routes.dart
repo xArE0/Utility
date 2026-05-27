@@ -7,6 +7,7 @@ import '../features/cooldown/presentation/cooldown_screen.dart';
 import '../features/logbook/presentation/logbook_screen.dart';
 import '../features/routine/presentation/routine_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
+import '../features/quickcheck/presentation/quickcheck_screen.dart';
 
 class AppRoutes {
   static const home = '/';
@@ -18,6 +19,7 @@ class AppRoutes {
   static const logbook = '/logbook';
   static const routine = '/routine';
   static const settings = '/settings';
+  static const quickcheck = '/quickcheck';
 
   static Map<String, WidgetBuilder> get all => {
     home: (_) => const HomeScreen(),
@@ -28,5 +30,6 @@ class AppRoutes {
     logbook: (_) => const LogbookScreen(),
     routine: (_) => const RoutineScreen(),
     settings: (_) => const SettingsScreen(),
+    quickcheck: (_) => const QuickCheckScreen(),
   };
 }
