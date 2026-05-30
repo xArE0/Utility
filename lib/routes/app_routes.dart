@@ -13,7 +13,6 @@ class AppRoutes {
   static const home = '/';
   static const expense = '/expense';
   static const importexport = '/importexport';
-  static const schedule = '/schedule';
   static const datavault = '/datavault';
   static const cooldown = '/cooldown';
   static const logbook = '/logbook';

@@ -23,6 +23,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   bool _obscureSecretPassword = true;
   bool _obscureVaultPassword = true;
+  String _selectedDefaultScreen = 'schedule';
 
   @override
   void initState() {
@@ -35,6 +36,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _timer1Controller.text = settings.widgetTimer1.toString();
     _timer2Controller.text = settings.widgetTimer2.toString();
     _timer3Controller.text = settings.widgetTimer3.toString();
+    _selectedDefaultScreen = settings.defaultScreen;
   }
 
   @override
@@ -170,6 +172,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
               ),
+              const SizedBox(height: 32),
+              _buildSectionTitle('App Behavior', primaryText),
+              _buildCard(
+                cardBg,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Choose which screen appears when you open the app',
+                      style: AppTypography.bodySmall.copyWith(color: secondaryText),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDefaultScreenPicker(cardBg),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -281,10 +299,73 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final t2 = int.tryParse(_timer2Controller.text.trim()) ?? 15;
     final t3 = int.tryParse(_timer3Controller.text.trim()) ?? 30;
     await SettingsService.instance.updateWidgetTimers(t1, t2, t3);
+    await SettingsService.instance.updateDefaultScreen(_selectedDefaultScreen);
 
     if (mounted) {
       AppToast.show(context, 'Settings saved');
       Navigator.pop(context);
     }
+  }
+
+  static const _screenOptions = [
+    {'key': 'schedule', 'label': 'Schedule', 'icon': Icons.calendar_today},
+    {'key': 'datavault', 'label': 'Data Vault', 'icon': Icons.lock},
+    {'key': 'expense', 'label': 'Expense Tracker', 'icon': Icons.list},
+    {'key': 'logbook', 'label': 'Logbook', 'icon': Icons.menu_book},
+    {'key': 'cooldown', 'label': 'Cooldown', 'icon': Icons.timer},
+    {'key': 'quickcheck', 'label': 'MCQ Practice', 'icon': Icons.assignment_outlined},
+    {'key': 'routine', 'label': 'Routine', 'icon': Icons.repeat_rounded},
+  ];
+
+  Widget _buildDefaultScreenPicker(Color cardBg) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: _screenOptions.map((opt) {
+        final key = opt['key'] as String;
+        final label = opt['label'] as String;
+        final icon = opt['icon'] as IconData;
+        final isSelected = _selectedDefaultScreen == key;
+
+        return GestureDetector(
+          onTap: () => setState(() => _selectedDefaultScreen = key),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? AppColors.govBlue.withOpacity(0.15)
+                  : AppColors.slate800.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected
+                    ? AppColors.govBlue.withOpacity(0.6)
+                    : AppColors.slate700.withOpacity(0.5),
+                width: isSelected ? 1.5 : 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 16, color: isSelected ? AppColors.govBlue : AppColors.slate400),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    color: isSelected ? AppColors.govBlue : AppColors.slate300,
+                  ),
+                ),
+                if (isSelected) ...[
+                  const SizedBox(width: 4),
+                  Icon(Icons.check_circle, size: 14, color: AppColors.govBlue),
+                ],
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
   }
 }

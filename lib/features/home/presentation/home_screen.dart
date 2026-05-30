@@ -39,6 +39,30 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _fetchDailyQuote();
     SettingsService.instance.addListener(_onSettingsChanged);
+    _autoNavigateToDefault();
+  }
+
+  /// If user chose a non-schedule default screen, auto-navigate there once on launch.
+  void _autoNavigateToDefault() {
+    final screen = SettingsService.instance.defaultScreen;
+    if (screen == 'schedule') return;
+
+    // Map setting keys to route names
+    final routeMap = {
+      'datavault': AppRoutes.datavault,
+      'expense': AppRoutes.expense,
+      'logbook': AppRoutes.logbook,
+      'cooldown': AppRoutes.cooldown,
+      'quickcheck': AppRoutes.quickcheck,
+      'routine': AppRoutes.routine,
+    };
+
+    final route = routeMap[screen];
+    if (route != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) Navigator.pushNamed(context, route);
+      });
+    }
   }
 
   void _onSettingsChanged() {
@@ -345,6 +369,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBackground(
@@ -550,6 +576,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                   ),
+
                   _buildDrawerItem(
                     context,
                     icon: Icons.list,

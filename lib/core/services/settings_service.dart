@@ -15,6 +15,7 @@ class SettingsService extends ChangeNotifier {
   int _widgetTimer1 = 5;
   int _widgetTimer2 = 15;
   int _widgetTimer3 = 30;
+  String _defaultScreen = 'schedule';
 
   String get sidebarName => _sidebarName;
   String get scheduleName => _scheduleName;
@@ -23,6 +24,7 @@ class SettingsService extends ChangeNotifier {
   int get widgetTimer1 => _widgetTimer1;
   int get widgetTimer2 => _widgetTimer2;
   int get widgetTimer3 => _widgetTimer3;
+  String get defaultScreen => _defaultScreen;
 
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
@@ -33,6 +35,7 @@ class SettingsService extends ChangeNotifier {
     _widgetTimer1 = _prefs.getInt('widgetTimer1') ?? 5;
     _widgetTimer2 = _prefs.getInt('widgetTimer2') ?? 15;
     _widgetTimer3 = _prefs.getInt('widgetTimer3') ?? 30;
+    _defaultScreen = _prefs.getString('defaultScreen') ?? 'schedule';
   }
 
   Future<void> updateSidebarName(String value) async {
@@ -82,6 +85,12 @@ class SettingsService extends ChangeNotifier {
       name: 'ScheduleWidgetProvider',
       androidName: 'ScheduleWidgetProvider',
     );
+    notifyListeners();
+  }
+
+  Future<void> updateDefaultScreen(String value) async {
+    _defaultScreen = value;
+    await _prefs.setString('defaultScreen', value);
     notifyListeners();
   }
 }
