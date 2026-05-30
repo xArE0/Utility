@@ -886,8 +886,40 @@ class _DataVaultPageState extends State<DataVaultPage> {
                       border: Border.all(color: border.withOpacity(0.5)),
                     );
 
-                    // Helper: builds a label-above-box widget
+                    // Helper: builds a label-above-box widget with auto-shrinking text.
+                    // Text shrinks from default (16) down to minFontSize (10) to fit on
+                    // one line. If it still overflows at the minimum size, it wraps to
+                    // the next line and the box grows in height.
                     Widget buildDetailChip(String label, String value, {VoidCallback? onCopy}) {
+                      const double maxFontSize = 16;
+                      const double minFontSize = 10;
+                      const double copyIconReserved = 15 + 8; // icon size + spacing
+                      const double horizontalPadding = 12 * 2; // container padding
+
+                      // Available width for text inside the container
+                      final double availableWidth = maxW - horizontalPadding -
+                          (onCopy != null ? copyIconReserved : 0);
+
+                      // Try progressively smaller font sizes
+                      double fittedSize = maxFontSize;
+                      bool fitsOnOneLine = false;
+                      for (double size = maxFontSize; size >= minFontSize; size -= 0.5) {
+                        final tp = TextPainter(
+                          text: TextSpan(
+                            text: value,
+                            style: contentStyle.copyWith(fontSize: size),
+                          ),
+                          maxLines: 1,
+                          textDirection: Directionality.of(context),
+                        )..layout(maxWidth: double.infinity);
+                        if (tp.width <= availableWidth) {
+                          fittedSize = size;
+                          fitsOnOneLine = true;
+                          break;
+                        }
+                        fittedSize = size;
+                      }
+
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
@@ -902,12 +934,16 @@ class _DataVaultPageState extends State<DataVaultPage> {
                             decoration: boxDecor,
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Flexible(
                                   child: Text(
                                     value,
-                                    style: contentStyle,
-                                    overflow: TextOverflow.ellipsis,
+                                    style: contentStyle.copyWith(fontSize: fittedSize),
+                                    softWrap: !fitsOnOneLine,
+                                    overflow: fitsOnOneLine
+                                        ? TextOverflow.clip
+                                        : TextOverflow.visible,
                                   ),
                                 ),
                                 if (onCopy != null) ...[

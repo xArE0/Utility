@@ -225,42 +225,45 @@ class QuickCheckController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Continue from the first unanswered question.
-  void continuePractice(int pageNumber) {
-    final key = _answerKeys.firstWhere((k) => k.pageNumber == pageNumber);
-    final attempts = _attemptsCache[pageNumber] ?? [];
+   /// Continue from the first unanswered question, but show all questions.
+   void continuePractice(int pageNumber) {
+     final key = _answerKeys.firstWhere((k) => k.pageNumber == pageNumber);
+     final attempts = _attemptsCache[pageNumber] ?? [];
 
-    // Find which questions have been attempted (latest per question)
-    final attemptedIndices = <int>{};
-    for (final a in attempts) {
-      attemptedIndices.add(a.questionIndex);
-    }
+     // Find which questions have been attempted (latest per question)
+     final attemptedIndices = <int>{};
+     for (final a in attempts) {
+       attemptedIndices.add(a.questionIndex);
+     }
 
-    // Build list of unanswered question indices
-    final unanswered = <int>[];
-    for (int i = 0; i < key.questionCount; i++) {
-      if (!attemptedIndices.contains(i)) {
-        unanswered.add(i);
-      }
-    }
+     // Build list of ALL question indices, find first unanswered
+     final allQuestions = List.generate(key.questionCount, (i) => i);
+     int startIndex = 0;
+     for (int i = 0; i < allQuestions.length; i++) {
+       if (!attemptedIndices.contains(i)) {
+         startIndex = i;
+         break;
+       }
+     }
 
-    // If everything is answered, just restart all
-    if (unanswered.isEmpty) {
-      startPractice(pageNumber);
-      return;
-    }
+     // If everything is answered, just restart all
+     if (attemptedIndices.length == key.questionCount) {
+       startPractice(pageNumber);
+       return;
+     }
 
-    _activeSession = PracticeSession(
-      pageNumber: pageNumber,
-      sessionName: key.displayName,
-      questionIndices: unanswered,
-      answers: key.answers,
-      isContinueMode: true,
-    );
-    _sessionCorrect = 0;
-    _sessionWrong = 0;
-    notifyListeners();
-  }
+     _activeSession = PracticeSession(
+       pageNumber: pageNumber,
+       sessionName: key.displayName,
+       questionIndices: allQuestions,
+       answers: key.answers,
+       isContinueMode: true,
+       currentIndex: startIndex,
+     );
+     _sessionCorrect = 0;
+     _sessionWrong = 0;
+     notifyListeners();
+   }
 
   void startRetryMistakes(int pageNumber) {
     final key = _answerKeys.firstWhere((k) => k.pageNumber == pageNumber);
@@ -342,13 +345,15 @@ class QuickCheckController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void jumpToQuestionIndex(int index) {
-    if (_activeSession == null) return;
-    if (index >= 0 && index < _activeSession!.questionIndices.length) {
-      _activeSession!.currentIndex = index;
-      notifyListeners();
-    }
-  }
+   void jumpToQuestionIndex(int questionIndex) {
+     if (_activeSession == null) return;
+     // Find the position of this questionIndex in questionIndices
+     final position = _activeSession!.questionIndices.indexOf(questionIndex);
+     if (position >= 0 && position < _activeSession!.questionIndices.length) {
+       _activeSession!.currentIndex = position;
+       notifyListeners();
+     }
+   }
 
   AttemptRecord? getAttemptForQuestion(int pageNumber, int questionIndex) {
     final attempts = _attemptsCache[pageNumber] ?? [];
@@ -379,6 +384,19 @@ class QuickCheckController extends ChangeNotifier {
       }
     }
     return latestByQuestion.values.where((a) => !a.isCorrect).length;
+  }
+
+  int getCorrectCountForPage(int pageNumber) {
+    final attempts = _attemptsCache[pageNumber] ?? [];
+    final latestByQuestion = <int, AttemptRecord>{};
+    for (final a in attempts) {
+      final existing = latestByQuestion[a.questionIndex];
+      if (existing == null ||
+          a.attemptedAt.compareTo(existing.attemptedAt) > 0) {
+        latestByQuestion[a.questionIndex] = a;
+      }
+    }
+    return latestByQuestion.values.where((a) => a.isCorrect).length;
   }
 
   /// Returns the index of the first unanswered question (0-based), or -1 if all answered.

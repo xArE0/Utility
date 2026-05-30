@@ -353,7 +353,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: AppColors.slate900.withOpacity(0.5),
-          title: Text("QuickCheck", style: AppTypography.titleLarge),
+          title: Text("MCQ Practice", style: AppTypography.titleLarge),
           actions: [
             if (pages.isNotEmpty)
               PopupMenuButton<String>(
@@ -414,19 +414,65 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.quiz_outlined, size: 72, color: AppColors.slate600),
-            const SizedBox(height: 20),
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.govBlue.withOpacity(0.2),
+                    AppColors.govGreen.withOpacity(0.2),
+                  ],
+                ),
+                border: Border.all(
+                  color: AppColors.govBlue.withOpacity(0.3),
+                  width: 2,
+                ),
+              ),
+              child: Icon(
+                Icons.assignment_outlined,
+                size: 56,
+                color: AppColors.govBlue,
+              ),
+            ),
+            const SizedBox(height: 28),
             Text(
-              "No Answer Keys Yet",
-              style: AppTypography.headlineSmall
-                  .copyWith(color: AppColors.slate400),
+              "Ready to Practice?",
+              style: AppTypography.headlineMedium.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
             ),
             const SizedBox(height: 12),
             Text(
-              "Tap + Add Keys to feed your first answer key.\nType answers as ABCDE... per page.",
+              "Add answer keys to start practicing MCQs.\nType answers as ABCDE... per page.",
               textAlign: TextAlign.center,
-              style: AppTypography.bodyMedium
-                  .copyWith(color: AppColors.slate500),
+              style: AppTypography.bodyMedium.copyWith(
+                color: AppColors.slate400,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 28),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.govBlue.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.govBlue.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                "Tap the + button to add your first key",
+                style: AppTypography.bodyMedium.copyWith(
+                  color: AppColors.govBlue,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         ),
@@ -440,40 +486,90 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
     final perfected = _ctrl.perfectedPages;
     final accuracy = _ctrl.overallAccuracy;
 
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      decoration: BoxDecoration(
-        color: AppColors.slate800.withOpacity(0.7),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.slate700.withOpacity(0.6)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _statChip("Pages", "$completed/$total",
-              AppColors.govBlue),
-          _statChip("Accuracy", "${(accuracy * 100).toStringAsFixed(0)}%",
-              accuracy >= 0.8 ? AppColors.govGreen : AppColors.govGold),
-          _statChip("Perfected", "$perfected",
-              const Color(0xFFEAB308)),
+          Expanded(
+            child: _statCard(
+              "📊",
+              "$completed",
+              "/$total",
+              AppColors.govBlue,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _statCard(
+              "🎯",
+              "${(accuracy * 100).toStringAsFixed(0)}",
+              "%",
+              accuracy >= 0.8 ? AppColors.govGreen : AppColors.govGold,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _statCard(
+              "⭐",
+              "$perfected",
+              "",
+              const Color(0xFFEAB308),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _statChip(String label, String value, Color color) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(value,
-            style: AppTypography.titleLarge.copyWith(
-                color: color, fontWeight: FontWeight.w700)),
-        const SizedBox(height: 2),
-        Text(label,
-            style:
-                AppTypography.micro.copyWith(color: AppColors.slate400)),
-      ],
+  Widget _statCard(String emoji, String value, String suffix, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color.withOpacity(0.15),
+            color.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            emoji,
+            style: const TextStyle(fontSize: 24),
+          ),
+          const SizedBox(height: 6),
+          RichText(
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text: value,
+                  style: AppTypography.titleLarge.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                if (suffix.isNotEmpty)
+                  TextSpan(
+                    text: suffix,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: color.withOpacity(0.7),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -481,10 +577,10 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        childAspectRatio: 1.1,
+        crossAxisCount: 2,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 0.85,
       ),
       itemCount: pages.length,
       itemBuilder: (context, i) => _buildPageCard(pages[i]),
@@ -501,7 +597,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
         break;
       case PageStatus.inProgress:
         statusColor = AppColors.govGold;
-        statusIcon = Icons.timelapse;
+        statusIcon = Icons.show_chart;
         break;
       case PageStatus.completed:
         statusColor = AppColors.govGreen;
@@ -513,58 +609,161 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
         break;
     }
 
+    final progressValue = page.attemptedCount / page.totalQuestions;
+
     return GestureDetector(
       onTap: () => _showPageActions(page),
       onLongPress: () => _showPageDeleteDialog(page),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
-          color: AppColors.slate800.withOpacity(0.8),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: statusColor.withOpacity(0.4),
-            width: 1.2,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.slate800.withOpacity(0.9),
+              AppColors.slate800.withOpacity(0.7),
+            ],
           ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(statusIcon, color: statusColor, size: 20),
-            const SizedBox(height: 4),
-            Text(
-              page.answerKey.displayName,
-              style: AppTypography.titleSmall.copyWith(
-                  color: Colors.white, fontWeight: FontWeight.w600),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 4),
-            // Stats row: total / correct / wrong
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  "${page.totalQuestions}",
-                  style: AppTypography.micro.copyWith(color: AppColors.slate400, fontSize: 10),
-                ),
-                if (page.attemptedCount > 0) ...[
-                  const SizedBox(width: 4),
-                  Text(
-                    "${page.correctCount}✓",
-                    style: AppTypography.micro.copyWith(color: AppColors.govGreen, fontSize: 10),
-                  ),
-                ],
-                if (page.wrongCount > 0) ...[
-                  const SizedBox(width: 4),
-                  Text(
-                    "${page.wrongCount}✗",
-                    style: AppTypography.micro.copyWith(color: AppColors.error, fontSize: 10),
-                  ),
-                ],
-              ],
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: statusColor.withOpacity(0.5),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: statusColor.withOpacity(0.2),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
           ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            children: [
+              // Background gradient accent
+              Positioned(
+                top: -40,
+                right: -40,
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+               Padding(
+                 padding: const EdgeInsets.all(16),
+                 child: Column(
+                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                   crossAxisAlignment: CrossAxisAlignment.start,
+                   children: [
+                     // Header: Title and questions count
+                     Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                         Text(
+                           page.answerKey.displayName,
+                           style: AppTypography.headlineSmall.copyWith(
+                             color: Colors.white,
+                             fontWeight: FontWeight.w700,
+                           ),
+                           softWrap: true,
+                           maxLines: 4,
+                         ),
+                         const SizedBox(height: 3),
+                         Text(
+                           "${page.totalQuestions} questions",
+                           style: AppTypography.bodySmall.copyWith(
+                             color: AppColors.slate400,
+                           ),
+                         ),
+                       ],
+                     ),
+                     // Progress bar
+                     Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                         ClipRRect(
+                           borderRadius: BorderRadius.circular(6),
+                           child: LinearProgressIndicator(
+                             value: progressValue,
+                             minHeight: 5,
+                             backgroundColor: AppColors.slate700,
+                             valueColor: AlwaysStoppedAnimation<Color>(
+                               page.status == PageStatus.perfected
+                                   ? const Color(0xFFEAB308)
+                                   : page.status == PageStatus.completed
+                                       ? AppColors.govGreen
+                                       : page.status == PageStatus.inProgress
+                                           ? AppColors.govGold
+                                           : AppColors.slate600,
+                             ),
+                           ),
+                         ),
+                         const SizedBox(height: 6),
+                         // Stats row
+                         Row(
+                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            RichText(
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: "${page.correctCount}",
+                                    style: AppTypography.labelLarge.copyWith(
+                                      color: AppColors.govGreen,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                   TextSpan(
+                                     text: " ✓",
+                                     style: AppTypography.bodySmall.copyWith(
+                                       color: AppColors.govGreen,
+                                     ),
+                                   ),
+                                 ],
+                               ),
+                             ),
+                             RichText(
+                               text: TextSpan(
+                                 children: [
+                                   TextSpan(
+                                     text: "${page.wrongCount}",
+                                     style: AppTypography.labelLarge.copyWith(
+                                       color: AppColors.error,
+                                       fontWeight: FontWeight.w700,
+                                     ),
+                                   ),
+                                   TextSpan(
+                                     text: " ✗",
+                                     style: AppTypography.bodySmall.copyWith(
+                                       color: AppColors.error,
+                                     ),
+                                   ),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              "${(page.accuracy * 100).toStringAsFixed(0)}%",
+                              style: AppTypography.labelLarge.copyWith(
+                                color: page.accuracy >= 0.8
+                                    ? AppColors.govGreen
+                                    : AppColors.govGold,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -600,19 +799,20 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
-              Text(
-                page.answerKey.displayName,
-                style: AppTypography.headlineSmall,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                "${page.answerKey.questionCount} questions  •  ${page.correctCount}✓ ${wrongCount}✗",
-                style: AppTypography.bodySmall
-                    .copyWith(color: AppColors.slate400, letterSpacing: 1.5),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+               const SizedBox(height: 20),
+               Text(
+                 page.answerKey.displayName,
+                 style: AppTypography.headlineSmall,
+                 softWrap: true,
+                 maxLines: 4,
+               ),
+               const SizedBox(height: 4),
+               Text(
+                 "${page.answerKey.questionCount} questions  •  ${page.correctCount}✓ ${wrongCount}✗",
+                 style: AppTypography.bodySmall
+                     .copyWith(color: AppColors.slate400, letterSpacing: 1.5),
+                 softWrap: true,
+               ),
               const SizedBox(height: 24),
               // Continue button (only if in-progress)
               if (canContinue) ...[
@@ -846,27 +1046,27 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                 ),
               ),
               const SizedBox(width: 16),
-              // Score
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.slate800,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text("${_ctrl.sessionCorrect}✓",
-                        style: AppTypography.titleSmall
-                            .copyWith(color: AppColors.govGreen, fontWeight: FontWeight.bold)),
-                    const SizedBox(width: 8),
-                    Text("${_ctrl.sessionWrong}✗",
-                        style: AppTypography.titleSmall
-                            .copyWith(color: AppColors.error, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-              ),
+               // Score - show all-time right/wrong for this page, not just session
+               Container(
+                 padding:
+                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                 decoration: BoxDecoration(
+                   color: AppColors.slate800,
+                   borderRadius: BorderRadius.circular(10),
+                 ),
+                 child: Row(
+                   mainAxisSize: MainAxisSize.min,
+                   children: [
+                     Text("${_ctrl.getCorrectCountForPage(session.pageNumber)}✓",
+                         style: AppTypography.titleSmall
+                             .copyWith(color: AppColors.govGreen, fontWeight: FontWeight.bold)),
+                     const SizedBox(width: 8),
+                     Text("${_ctrl.getWrongCountForPage(session.pageNumber)}✗",
+                         style: AppTypography.titleSmall
+                             .copyWith(color: AppColors.error, fontWeight: FontWeight.bold)),
+                   ],
+                 ),
+               ),
             ],
           ),
         ),
@@ -923,23 +1123,23 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                         ],
                       ),
                     ),
-                  ),
-                  // Show correct answer on wrong
-                  if (_feedbackCorrect == false) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      "Correct: ${session.correctAnswer}",
-                      style: AppTypography.titleMedium.copyWith(
-                        color: AppColors.govGreen,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ),
+                   ),
+                   // Show correct answer on both correct and wrong
+                   if (_feedbackCorrect != null) ...[
+                     const SizedBox(height: 12),
+                     Text(
+                       "Answer: ${session.correctAnswer}",
+                       style: AppTypography.titleMedium.copyWith(
+                         color: AppColors.govGreen,
+                         fontWeight: FontWeight.w700,
+                       ),
+                     ),
+                   ],
+                 ],
+               ),
+             ),
+           ),
+         ),
 
         // ── Swipe Pad ──
         Expanded(
@@ -968,6 +1168,23 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
+            // Create a GlobalKey for the current question button for auto-scroll
+            final currentQuestionKey = GlobalKey();
+            
+            // Schedule scroll to current question after the first frame
+            Future.delayed(const Duration(milliseconds: 100), () {
+              try {
+                Scrollable.ensureVisible(
+                  currentQuestionKey.currentContext!,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  alignment: 0.5, // Center the button on screen
+                );
+              } catch (e) {
+                // Ignore if context no longer available
+              }
+            });
+            
             return SafeArea(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
@@ -999,16 +1216,16 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                       ],
                     ),
                     const SizedBox(height: 20),
-                    Flexible(
-                      child: SingleChildScrollView(
-                        child: Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
-                          children: List.generate(session.questionIndices.length, (i) {
-                            final qIndex = session.questionIndices[i];
-                            final qNum = qIndex + 1;
-                            final isCurrent = i == session.currentIndex;
-                            
+                     Flexible(
+                       child: SingleChildScrollView(
+                         child: Wrap(
+                           spacing: 10,
+                           runSpacing: 10,
+                           children: List.generate(session.questionIndices.length, (i) {
+                             final qIndex = session.questionIndices[i];
+                             final qNum = qIndex + 1;
+                             final isCurrent = qIndex == session.currentQuestionIndex;
+
                             // Check attempt status
                             final attempt = _ctrl.getAttemptForQuestion(session.pageNumber, qIndex);
                             Color bgColor = AppColors.slate800;
@@ -1033,16 +1250,17 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                               textColor = Colors.white;
                             }
                             
-                            return GestureDetector(
-                              onTap: () {
-                                Navigator.pop(context);
-                                setState(() {
-                                  _feedbackAnswer = null;
-                                  _feedbackCorrect = null;
-                                  _feedbackTimer?.cancel();
-                                  _ctrl.jumpToQuestionIndex(i);
-                                });
-                              },
+                             return GestureDetector(
+                               key: isCurrent ? currentQuestionKey : null,
+                               onTap: () {
+                                 Navigator.pop(context);
+                                 setState(() {
+                                   _feedbackAnswer = null;
+                                   _feedbackCorrect = null;
+                                   _feedbackTimer?.cancel();
+                                   _ctrl.jumpToQuestionIndex(qIndex);
+                                 });
+                               },
                               child: Container(
                                 width: 48,
                                 height: 48,
@@ -1068,7 +1286,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                           }),
                         ),
                       ),
-                    ),
+                     ),
                     const SizedBox(height: 12),
                   ],
                 ),

@@ -580,17 +580,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   _buildDrawerItem(
                     context,
+                    icon: Icons.assignment_outlined,
+                    title: "MCQ Practice",
+                    route: AppRoutes.quickcheck,
+                    color: const Color(0xFFEC4899),
+                  ),
+                  _buildDrawerItem(
+                    context,
                     icon: Icons.repeat_rounded,
                     title: "Routine",
                     route: AppRoutes.routine,
                     color: const Color(0xFF8B5CF6),
-                  ),
-                  _buildDrawerItem(
-                    context,
-                    icon: Icons.quiz_outlined,
-                    title: "QuickCheck",
-                    route: AppRoutes.quickcheck,
-                    color: const Color(0xFFEC4899),
                   ),
                   _buildDrawerItem(
                     context,

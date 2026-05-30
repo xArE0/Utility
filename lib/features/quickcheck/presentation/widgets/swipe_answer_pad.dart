@@ -25,6 +25,8 @@ class SwipeAnswerPad extends StatefulWidget {
 class _SwipeAnswerPadState extends State<SwipeAnswerPad>
     with TickerProviderStateMixin {
   String? _activeDirection;
+  Offset? _panStartPosition;
+  Offset? _panLastPosition;
 
   late final AnimationController _feedbackController;
   late final Animation<double> _feedbackGlow;
@@ -62,8 +64,15 @@ class _SwipeAnswerPadState extends State<SwipeAnswerPad>
 
   void _onPanUpdate(DragUpdateDetails details) {
     if (!widget.enabled) return;
-    final dx = details.delta.dx;
-    final dy = details.delta.dy;
+    
+    // Initialize start position on first update
+    _panStartPosition ??= details.globalPosition - details.delta;
+    _panLastPosition = details.globalPosition;
+    
+    // Calculate accumulated delta from start
+    final accumulatedDelta = _panLastPosition! - _panStartPosition!;
+    final dx = accumulatedDelta.dx;
+    final dy = accumulatedDelta.dy;
 
     String? direction;
     if (dx.abs() > dy.abs()) {
@@ -77,30 +86,47 @@ class _SwipeAnswerPadState extends State<SwipeAnswerPad>
     }
   }
 
-  void _onPanEnd(DragEndDetails details) {
-    if (!widget.enabled) return;
-    final velocity = details.velocity.pixelsPerSecond;
-    final dx = velocity.dx;
-    final dy = velocity.dy;
+   void _onPanEnd(DragEndDetails details) {
+     if (!widget.enabled) return;
+     
+     setState(() => _activeDirection = null);
+     
+     // Use accumulated delta from start to end
+     if (_panStartPosition == null || _panLastPosition == null) {
+       _panStartPosition = null;
+       _panLastPosition = null;
+       return;
+     }
+     
+     final accumulatedDelta = _panLastPosition! - _panStartPosition!;
+     final dx = accumulatedDelta.dx;
+     final dy = accumulatedDelta.dy;
+     
+     // Require minimum distance (not velocity) for swipes
+     if (dx.abs() < 30 && dy.abs() < 30) {
+       _panStartPosition = null;
+       _panLastPosition = null;
+       return;
+     }
 
-    setState(() => _activeDirection = null);
-
-    // Need minimum velocity
-    if (dx.abs() < 200 && dy.abs() < 200) return;
-
-    String answer;
-    if (dy.abs() > dx.abs()) {
-      // Vertical dominant
-      answer = dy < 0 ? 'A' : 'C'; // up=A, down=C
-    } else {
-      // Horizontal dominant
-      answer = dx > 0 ? 'B' : 'D'; // right=B, left=D
-    }
-    widget.onAnswer(answer);
-  }
+     String answer;
+     if (dy.abs() > dx.abs()) {
+       // Vertical dominant
+       answer = dy < 0 ? 'A' : 'C'; // up=A, down=C
+     } else {
+       // Horizontal dominant
+       answer = dx > 0 ? 'B' : 'D'; // right=B, left=D
+     }
+     
+     _panStartPosition = null;
+     _panLastPosition = null;
+     widget.onAnswer(answer);
+   }
 
   void _onPanCancel() {
     setState(() => _activeDirection = null);
+    _panStartPosition = null;
+    _panLastPosition = null;
   }
 
   void _onTap() {
