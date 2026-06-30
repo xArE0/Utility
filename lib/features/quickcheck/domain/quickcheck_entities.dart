@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 enum PageStatus { notStarted, inProgress, completed, perfected }
 
 class AnswerKey {
@@ -5,27 +7,61 @@ class AnswerKey {
   final int pageNumber;
   final String name; // user-given session name
   final String answers; // e.g. 'ABCDE' for 5 questions, each char is A-E
+  final Map<int, String> flaggedAnswers; // map of 0-based question index -> corrected answer (A-E)
 
   int get questionCount => answers.length;
 
   /// Display label: use name if set, fallback to "p<pageNumber>"
   String get displayName => name.isNotEmpty ? name : 'p$pageNumber';
 
-  AnswerKey({this.id, required this.pageNumber, this.name = '', required this.answers});
+  AnswerKey({
+    this.id,
+    required this.pageNumber,
+    this.name = '',
+    required this.answers,
+    Map<int, String>? flaggedAnswers,
+  }) : flaggedAnswers = flaggedAnswers ?? const {};
+
+  String getEffectiveAnswer(int index) {
+    if (index >= 0 && index < answers.length) {
+      if (flaggedAnswers.containsKey(index)) {
+        return flaggedAnswers[index]!;
+      }
+      return answers[index];
+    }
+    return '';
+  }
 
   Map<String, dynamic> toMap() => {
     if (id != null) 'id': id,
     'pageNumber': pageNumber,
     'name': name,
     'answers': answers.toUpperCase(),
+    'flaggedAnswers': jsonEncode(flaggedAnswers.map((k, v) => MapEntry(k.toString(), v))),
   };
 
-  factory AnswerKey.fromMap(Map<String, dynamic> m) => AnswerKey(
-    id: m['id'] as int?,
-    pageNumber: m['pageNumber'] as int,
-    name: (m['name'] as String?) ?? '',
-    answers: m['answers'] as String,
-  );
+  factory AnswerKey.fromMap(Map<String, dynamic> m) {
+    Map<int, String> flagged = {};
+    final rawFlagged = m['flaggedAnswers'] as String?;
+    if (rawFlagged != null && rawFlagged.isNotEmpty) {
+      try {
+        final Map<String, dynamic> decoded = jsonDecode(rawFlagged);
+        decoded.forEach((key, value) {
+          final intKey = int.tryParse(key);
+          if (intKey != null) {
+            flagged[intKey] = value.toString();
+          }
+        });
+      } catch (_) {}
+    }
+    return AnswerKey(
+      id: m['id'] as int?,
+      pageNumber: m['pageNumber'] as int,
+      name: (m['name'] as String?) ?? '',
+      answers: m['answers'] as String,
+      flaggedAnswers: flagged,
+    );
+  }
 }
 
 class AttemptRecord {

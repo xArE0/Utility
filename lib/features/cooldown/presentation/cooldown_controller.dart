@@ -7,12 +7,14 @@ class CooldownController extends ChangeNotifier {
   final ICooldownRepository _repository;
   
   List<CooldownItem> _items = [];
+  List<CooldownCategory> _categories = [];
   Timer? _ticker;
   bool _loading = true;
 
   final Set<int> _justBecameAvailable = {};
 
   List<CooldownItem> get items => _items;
+  List<CooldownCategory> get allCategories => _categories;
   bool get loading => _loading;
   Set<int> get justBecameAvailable => _justBecameAvailable;
 
@@ -39,9 +41,23 @@ class CooldownController extends ChangeNotifier {
     return _items.where((i) => i.category == category).toList();
   }
 
+  List<CooldownItem> itemsForCategoryId(int? categoryId) {
+    return _items.where((i) => i.categoryId == categoryId).toList();
+  }
+
+  CooldownCategory? categoryForItem(CooldownItem item) {
+    if (item.categoryId == null) return null;
+    try {
+      return _categories.firstWhere((c) => c.id == item.categoryId);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> init() async {
     await _repository.init();
     await loadItems();
+    await loadCategories();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       _checkTransitions();
       notifyListeners();
@@ -59,6 +75,11 @@ class CooldownController extends ChangeNotifier {
     final items = await _repository.getAllItems();
     _items = items;
     _loading = false;
+    notifyListeners();
+  }
+
+  Future<void> loadCategories() async {
+    _categories = await _repository.getAllCategories();
     notifyListeners();
   }
 
@@ -97,5 +118,28 @@ class CooldownController extends ChangeNotifier {
 
   Future<void> clearCooldown(CooldownItem item) async {
     await updateItem(item.copyWith(clearCooldown: true));
+  }
+
+  Future<void> startCategoryCooldown(CooldownItem item) async {
+    final cat = categoryForItem(item);
+    if (cat == null) return;
+    final cooldownEnd = DateTime.now().add(cat.cooldownDuration);
+    await startCooldown(item, cooldownEnd);
+  }
+
+  Future<void> addCategory(CooldownCategory cat) async {
+    await _repository.addCategory(cat);
+    await loadCategories();
+  }
+
+  Future<void> updateCategoryData(CooldownCategory cat) async {
+    await _repository.updateCategory(cat);
+    await loadCategories();
+  }
+
+  Future<void> deleteCategory(int id) async {
+    await _repository.deleteCategory(id);
+    await loadCategories();
+    await loadItems();
   }
 }

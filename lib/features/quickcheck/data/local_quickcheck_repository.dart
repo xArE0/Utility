@@ -12,14 +12,15 @@ class LocalQuickCheckRepository implements IQuickCheckRepository {
     final dbPath = await getDatabasesPath();
     _db = await openDatabase(
       join(dbPath, 'quickcheck.db'),
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE qc_answer_keys(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             pageNumber INTEGER UNIQUE,
             name TEXT DEFAULT '',
-            answers TEXT
+            answers TEXT,
+            flaggedAnswers TEXT DEFAULT '{}'
           )
         ''');
         await db.execute('''
@@ -37,6 +38,9 @@ class LocalQuickCheckRepository implements IQuickCheckRepository {
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
           await db.execute("ALTER TABLE qc_answer_keys ADD COLUMN name TEXT DEFAULT ''");
+        }
+        if (oldVersion < 3) {
+          await db.execute("ALTER TABLE qc_answer_keys ADD COLUMN flaggedAnswers TEXT DEFAULT '{}'");
         }
       },
     );

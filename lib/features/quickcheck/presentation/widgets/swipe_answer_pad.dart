@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 
@@ -73,12 +74,15 @@ class _SwipeAnswerPadState extends State<SwipeAnswerPad>
     final accumulatedDelta = _panLastPosition! - _panStartPosition!;
     final dx = accumulatedDelta.dx;
     final dy = accumulatedDelta.dy;
+    final distance = accumulatedDelta.distance;
 
     String? direction;
-    if (dx.abs() > dy.abs()) {
-      direction = dx > 0 ? 'B' : 'D';
-    } else if (dy.abs() > dx.abs()) {
-      direction = dy < 0 ? 'A' : 'C';
+    if (distance >= 50.0) {
+      if (dx.abs() > dy.abs()) {
+        direction = dx > 0 ? 'B' : 'D';
+      } else if (dy.abs() > dx.abs()) {
+        direction = dy < 0 ? 'A' : 'C';
+      }
     }
 
     if (direction != _activeDirection) {
@@ -101,9 +105,10 @@ class _SwipeAnswerPadState extends State<SwipeAnswerPad>
      final accumulatedDelta = _panLastPosition! - _panStartPosition!;
      final dx = accumulatedDelta.dx;
      final dy = accumulatedDelta.dy;
+     final distance = accumulatedDelta.distance;
      
-     // Require minimum distance (not velocity) for swipes
-     if (dx.abs() < 30 && dy.abs() < 30) {
+     // Require minimum distance (not velocity) for swipes (deadzone boundary)
+     if (distance < 50.0) {
        _panStartPosition = null;
        _panLastPosition = null;
        return;
@@ -405,7 +410,7 @@ class _CompassPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     // Determine line lengths (from center outward, leaving gap near center)
-    const innerGap = 32.0;
+    const innerGap = 56.0;
     final maxHorizontal = size.width / 2 - 60;
     final maxVertical = size.height / 2 - 80;
 
@@ -437,6 +442,19 @@ class _CompassPainter extends CustomPainter {
       center + Offset(-maxHorizontal, 0),
       paint,
     );
+
+    // Dotted deadzone circle (radius 50.0)
+    final dottedPaint = Paint()
+      ..color = AppColors.slate600.withOpacity(0.4)
+      ..style = PaintingStyle.fill;
+    const double radius = 50.0;
+    const int dotCount = 40;
+    for (int i = 0; i < dotCount; i++) {
+      final double angle = (i * 2 * math.pi) / dotCount;
+      final double x = center.dx + radius * math.cos(angle);
+      final double y = center.dy + radius * math.sin(angle);
+      canvas.drawCircle(Offset(x, y), 1.0, dottedPaint);
+    }
 
     // Center circle
     final circlePaint = Paint()

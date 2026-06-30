@@ -30,13 +30,20 @@ class PracticeSession {
   final String sessionName; // display name for the session
   final List<int> questionIndices; // indices into the AnswerKey.answers string
   final String answers; // full answer string from AnswerKey
+  final Map<int, String> flaggedAnswers; // 0-based question index -> corrected answer override
   final bool isRetryMode;
   final bool isContinueMode;
   int currentIndex; // pointer into questionIndices
 
   int get currentQuestionIndex => questionIndices[currentIndex];
   int get currentQuestionNumber => currentQuestionIndex + 1; // 1-based for display
-  String get correctAnswer => answers[currentQuestionIndex];
+  String get correctAnswer {
+    final qIndex = currentQuestionIndex;
+    if (flaggedAnswers.containsKey(qIndex)) {
+      return flaggedAnswers[qIndex]!;
+    }
+    return answers[qIndex];
+  }
   int get totalQuestions => questionIndices.length;
   int get questionsRemaining => totalQuestions - currentIndex;
   bool get isFinished => currentIndex >= totalQuestions;
@@ -47,10 +54,11 @@ class PracticeSession {
     required this.sessionName,
     required this.questionIndices,
     required this.answers,
+    Map<int, String>? flaggedAnswers,
     this.isRetryMode = false,
     this.isContinueMode = false,
     this.currentIndex = 0,
-  });
+  }) : flaggedAnswers = flaggedAnswers ?? const {};
 }
 
 class QuickCheckController extends ChangeNotifier {
@@ -201,6 +209,95 @@ class QuickCheckController extends ChangeNotifier {
     await _reload();
   }
 
+  Future<void> flagQuestion(int pageNumber, int questionIndex, String correctedAnswer) async {
+    final oldKey = _answerKeys.firstWhere((k) => k.pageNumber == pageNumber);
+    final oldEffectiveAnswer = oldKey.getEffectiveAnswer(questionIndex);
+    
+    final newFlagged = Map<int, String>.from(oldKey.flaggedAnswers);
+    newFlagged[questionIndex] = correctedAnswer.toUpperCase();
+    
+    final newKey = AnswerKey(
+      id: oldKey.id,
+      pageNumber: oldKey.pageNumber,
+      name: oldKey.name,
+      answers: oldKey.answers,
+      flaggedAnswers: newFlagged,
+    );
+
+    final newEffectiveAnswer = newKey.getEffectiveAnswer(questionIndex);
+    if (oldEffectiveAnswer != newEffectiveAnswer) {
+      await _repo.clearAttemptForQuestion(pageNumber, questionIndex);
+      _attemptsCache[pageNumber]?.removeWhere((a) => a.questionIndex == questionIndex);
+    }
+    
+    await _repo.upsertAnswerKey(newKey);
+    await _reload();
+  }
+
+  Future<void> unflagQuestion(int pageNumber, int questionIndex) async {
+    final oldKey = _answerKeys.firstWhere((k) => k.pageNumber == pageNumber);
+    final oldEffectiveAnswer = oldKey.getEffectiveAnswer(questionIndex);
+    
+    final newFlagged = Map<int, String>.from(oldKey.flaggedAnswers);
+    newFlagged.remove(questionIndex);
+    
+    final newKey = AnswerKey(
+      id: oldKey.id,
+      pageNumber: oldKey.pageNumber,
+      name: oldKey.name,
+      answers: oldKey.answers,
+      flaggedAnswers: newFlagged,
+    );
+
+    final newEffectiveAnswer = newKey.getEffectiveAnswer(questionIndex);
+    if (oldEffectiveAnswer != newEffectiveAnswer) {
+      await _repo.clearAttemptForQuestion(pageNumber, questionIndex);
+      _attemptsCache[pageNumber]?.removeWhere((a) => a.questionIndex == questionIndex);
+    }
+    
+    await _repo.upsertAnswerKey(newKey);
+    await _reload();
+  }
+
+  Future<void> updateAnswerKey(int pageNumber, {String? newAnswers, String? newName}) async {
+    final oldKey = _answerKeys.firstWhere((k) => k.pageNumber == pageNumber);
+    final finalAnswers = newAnswers ?? oldKey.answers;
+    final finalName = newName ?? oldKey.name;
+    
+    final newFlagged = <int, String>{};
+    oldKey.flaggedAnswers.forEach((idx, val) {
+      if (idx < finalAnswers.length) {
+        newFlagged[idx] = val;
+      }
+    });
+
+    final newKey = AnswerKey(
+      id: oldKey.id,
+      pageNumber: oldKey.pageNumber,
+      name: finalName,
+      answers: finalAnswers,
+      flaggedAnswers: newFlagged,
+    );
+
+    final maxLen = oldKey.answers.length > finalAnswers.length ? oldKey.answers.length : finalAnswers.length;
+    for (int i = 0; i < maxLen; i++) {
+      if (i >= finalAnswers.length) {
+        await _repo.clearAttemptForQuestion(pageNumber, i);
+        _attemptsCache[pageNumber]?.removeWhere((a) => a.questionIndex == i);
+      } else {
+        final oldEff = oldKey.getEffectiveAnswer(i);
+        final newEff = newKey.getEffectiveAnswer(i);
+        if (oldEff != newEff) {
+          await _repo.clearAttemptForQuestion(pageNumber, i);
+          _attemptsCache[pageNumber]?.removeWhere((a) => a.questionIndex == i);
+        }
+      }
+    }
+
+    await _repo.upsertAnswerKey(newKey);
+    await _reload();
+  }
+
   Future<void> deleteAllData() async {
     await _repo.deleteAllAnswerKeys();
     await _repo.clearAllAttempts();
@@ -219,6 +316,7 @@ class QuickCheckController extends ChangeNotifier {
       sessionName: key.displayName,
       questionIndices: indices,
       answers: key.answers,
+      flaggedAnswers: Map<int, String>.from(key.flaggedAnswers),
     );
     _sessionCorrect = 0;
     _sessionWrong = 0;
@@ -257,6 +355,7 @@ class QuickCheckController extends ChangeNotifier {
        sessionName: key.displayName,
        questionIndices: allQuestions,
        answers: key.answers,
+       flaggedAnswers: Map<int, String>.from(key.flaggedAnswers),
        isContinueMode: true,
        currentIndex: startIndex,
      );
@@ -292,6 +391,7 @@ class QuickCheckController extends ChangeNotifier {
       sessionName: key.displayName,
       questionIndices: wrongIndices,
       answers: key.answers,
+      flaggedAnswers: Map<int, String>.from(key.flaggedAnswers),
       isRetryMode: true,
     );
     _sessionCorrect = 0;

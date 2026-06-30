@@ -125,7 +125,9 @@ class VaultCryptoService {
     final encrypted = await encryptBytes(plainBytes, userPassword);
 
     final tempDir = await getTemporaryDirectory();
-    final outFile = File('${tempDir.path}/datavault_backup.vault');
+    final now = DateTime.now();
+    final dateStr = '${now.year}_${now.month.toString().padLeft(2, '0')}_${now.day.toString().padLeft(2, '0')}';
+    final outFile = File('${tempDir.path}/datavault_backup_$dateStr.vault');
     await outFile.writeAsBytes(encrypted, flush: true);
     return outFile;
   }

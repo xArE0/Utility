@@ -674,12 +674,28 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                            maxLines: 4,
                          ),
                          const SizedBox(height: 3),
-                         Text(
-                           "${page.totalQuestions} questions",
-                           style: AppTypography.bodySmall.copyWith(
-                             color: AppColors.slate400,
-                           ),
-                         ),
+                          Row(
+                            children: [
+                              Text(
+                                "${page.totalQuestions} questions",
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: AppColors.slate400,
+                                ),
+                              ),
+                              if (page.answerKey.flaggedAnswers.isNotEmpty) ...[
+                                const SizedBox(width: 8),
+                                Icon(Icons.flag, color: AppColors.govGold, size: 14),
+                                const SizedBox(width: 2),
+                                Text(
+                                  "${page.answerKey.flaggedAnswers.length}",
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: AppColors.govGold,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                        ],
                      ),
                      // Progress bar
@@ -850,6 +866,34 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                 ),
               ],
               const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _actionButton(
+                      icon: Icons.edit_rounded,
+                      label: "Edit",
+                      color: AppColors.govBlue,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _showEditAnswerKeySheet(page.answerKey);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _actionButton(
+                      icon: Icons.copy_rounded,
+                      label: "Copy",
+                      color: AppColors.slate500,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _showCopyAnswerKeySheet(page.answerKey);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
               _actionButton(
                 icon: Icons.restart_alt_rounded,
                 label: "Reset Progress",
@@ -861,6 +905,307 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  void _showEditAnswerKeySheet(AnswerKey key) {
+    final nameCtrl = TextEditingController(text: key.name);
+    final answersCtrl = TextEditingController(text: key.answers);
+    String? errorText;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Container(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.slate800.withOpacity(0.98),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24)),
+                border: const Border(
+                  top: BorderSide(color: AppColors.slate600, width: 0.5),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppColors.slate500,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text("Edit Answer Key — Page ${key.pageNumber}",
+                        style: AppTypography.headlineSmall),
+                    const SizedBox(height: 6),
+                    Text(
+                      "Update name or answer sequence. Changing answers will reset progress for only the modified questions.",
+                      style: AppTypography.bodySmall
+                          .copyWith(color: AppColors.slate400),
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: nameCtrl,
+                      style: AppTypography.bodyLarge,
+                      decoration: InputDecoration(
+                        labelText: "Session Name",
+                        hintText: "e.g. Physics Ch3",
+                        hintStyle: AppTypography.bodySmall
+                            .copyWith(color: AppColors.slate600),
+                        labelStyle: AppTypography.bodySmall
+                            .copyWith(color: AppColors.slate400),
+                        filled: true,
+                        fillColor: AppColors.slate700.withOpacity(0.5),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(
+                              color: AppColors.govBlue, width: 1.5),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: answersCtrl,
+                      textCapitalization: TextCapitalization.characters,
+                      style: AppTypography.bodyLarge.copyWith(
+                        letterSpacing: 2.0,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: "Answers (A-E only)",
+                        hintText: "e.g. ABCDEBAC",
+                        hintStyle: AppTypography.bodyMedium
+                            .copyWith(color: AppColors.slate600),
+                        labelStyle: AppTypography.bodyMedium
+                            .copyWith(color: AppColors.slate400),
+                        filled: true,
+                        fillColor: AppColors.slate700.withOpacity(0.5),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(
+                              color: AppColors.govBlue, width: 1.5),
+                        ),
+                        errorText: errorText,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final cleanedAnswers = answersCtrl.text
+                              .toUpperCase()
+                              .replaceAll(RegExp(r'[^A-E]'), '');
+
+                          if (cleanedAnswers.isEmpty) {
+                            setSheetState(() =>
+                                errorText = 'Enter at least one answer');
+                            return;
+                          }
+
+                          _ctrl.updateAnswerKey(
+                            key.pageNumber,
+                            newName: nameCtrl.text.trim(),
+                            newAnswers: cleanedAnswers,
+                          ).then((_) {
+                            Navigator.pop(ctx);
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.govBlue,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: Text("Save Changes",
+                            style: AppTypography.labelLarge
+                                .copyWith(color: Colors.white)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showCopyAnswerKeySheet(AnswerKey key) {
+    final pageCtrl = TextEditingController();
+    final nameCtrl = TextEditingController(text: key.name.isNotEmpty ? "${key.name} (Copy)" : "");
+    String? errorText;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Container(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.slate800.withOpacity(0.98),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24)),
+                border: const Border(
+                  top: BorderSide(color: AppColors.slate600, width: 0.5),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppColors.slate500,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text("Copy to New Page",
+                        style: AppTypography.headlineSmall),
+                    const SizedBox(height: 6),
+                    Text(
+                      "Copy answer sequence '${key.answers}' to a new page.",
+                      style: AppTypography.bodySmall
+                          .copyWith(color: AppColors.slate400),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 100,
+                          child: TextField(
+                            controller: pageCtrl,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                            style: AppTypography.bodyLarge,
+                            decoration: InputDecoration(
+                              labelText: "Page #",
+                              labelStyle: AppTypography.bodySmall
+                                  .copyWith(color: AppColors.slate400),
+                              filled: true,
+                              fillColor: AppColors.slate700.withOpacity(0.5),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(
+                                    color: AppColors.govBlue, width: 1.5),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: nameCtrl,
+                            style: AppTypography.bodyLarge,
+                            decoration: InputDecoration(
+                              labelText: "Session Name",
+                              labelStyle: AppTypography.bodySmall
+                                  .copyWith(color: AppColors.slate400),
+                              filled: true,
+                              fillColor: AppColors.slate700.withOpacity(0.5),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(
+                                    color: AppColors.govBlue, width: 1.5),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (errorText != null) ...[
+                      const SizedBox(height: 8),
+                      Text(errorText!, style: AppTypography.bodySmall.copyWith(color: AppColors.error)),
+                    ],
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final targetPage = int.tryParse(pageCtrl.text);
+                          if (targetPage == null || targetPage <= 0) {
+                            setSheetState(() => errorText = 'Enter a valid page number');
+                            return;
+                          }
+                          final exists = _ctrl.answerKeys.any((k) => k.pageNumber == targetPage);
+                          if (exists) {
+                            setSheetState(() => errorText = 'Page $targetPage already has an answer key');
+                            return;
+                          }
+
+                          _ctrl.addAnswerKeys(
+                            targetPage,
+                            [key.answers],
+                            names: [nameCtrl.text.trim()],
+                          ).then((_) {
+                            Navigator.pop(ctx);
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.govBlue,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: Text("Create Copy",
+                            style: AppTypography.labelLarge
+                                .copyWith(color: Colors.white)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -1077,23 +1422,43 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
           child: Center(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 250),
-              child: Column(
+              child: Builder(
                 key: ValueKey(session.currentIndex),
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    "Q$questionNum",
-                    style: AppTypography.displayLarge.copyWith(
-                      color: _feedbackCorrect == true
-                          ? AppColors.govGreen
-                          : _feedbackCorrect == false
-                              ? AppColors.error
-                              : Colors.white,
-                      fontSize: 72,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
+                builder: (context) {
+                  final isFlagged = session.flaggedAnswers.containsKey(session.currentQuestionIndex);
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(width: 48), // balance flag icon
+                          Text(
+                            "Q$questionNum",
+                            style: AppTypography.displayLarge.copyWith(
+                              color: _feedbackCorrect == true
+                                  ? AppColors.govGreen
+                                  : _feedbackCorrect == false
+                                      ? AppColors.error
+                                      : isFlagged
+                                          ? AppColors.govGold
+                                          : Colors.white,
+                              fontSize: 72,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: Icon(
+                              isFlagged ? Icons.flag : Icons.flag_outlined,
+                              color: isFlagged ? AppColors.govGold : AppColors.slate400,
+                              size: 32,
+                            ),
+                            onPressed: () => _showFlagQuestionDialog(session, session.currentQuestionIndex),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
                   GestureDetector(
                     onTap: () => _showJumpToQuestionSheet(session),
                     behavior: HitTestBehavior.opaque,
@@ -1136,10 +1501,12 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                      ),
                    ],
                  ],
-               ),
-             ),
+               );
+             },
            ),
          ),
+       ),
+     ),
 
         // ── Swipe Pad ──
         Expanded(
@@ -1225,6 +1592,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                              final qIndex = session.questionIndices[i];
                              final qNum = qIndex + 1;
                              final isCurrent = qIndex == session.currentQuestionIndex;
+                             final isFlagged = session.flaggedAnswers.containsKey(qIndex);
 
                             // Check attempt status
                             final attempt = _ctrl.getAttemptForQuestion(session.pageNumber, qIndex);
@@ -1272,14 +1640,28 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                                   ),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: Center(
-                                  child: Text(
-                                    "$qNum",
-                                    style: AppTypography.titleSmall.copyWith(
-                                      color: textColor,
-                                      fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                                child: Stack(
+                                  children: [
+                                    Center(
+                                      child: Text(
+                                        "$qNum",
+                                        style: AppTypography.titleSmall.copyWith(
+                                          color: textColor,
+                                          fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                    if (isFlagged)
+                                      const Positioned(
+                                        top: 3,
+                                        right: 3,
+                                        child: Icon(
+                                          Icons.flag,
+                                          color: AppColors.govGold,
+                                          size: 10,
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ),
                             );
@@ -1291,6 +1673,119 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                   ],
                 ),
               ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showFlagQuestionDialog(PracticeSession session, int qIndex) {
+    final isFlagged = session.flaggedAnswers.containsKey(qIndex);
+    final currentCorrect = session.flaggedAnswers[qIndex] ?? '';
+    final bookAnswer = session.answers[qIndex];
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        String? selectedLetter = currentCorrect.isNotEmpty ? currentCorrect : null;
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: AppColors.slate800,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              title: Text("Flag Q${qIndex + 1}", style: AppTypography.titleLarge),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Book's answer key: $bookAnswer",
+                    style: AppTypography.bodyMedium.copyWith(color: AppColors.slate300),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    "Select the correct answer to override the wrong book answer:",
+                    style: AppTypography.bodySmall.copyWith(color: AppColors.slate400),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: ['A', 'B', 'C', 'D', 'E'].map((letter) {
+                      if (letter == 'E' && !session.answers.contains('E') && currentCorrect != 'E') {
+                        return const SizedBox.shrink();
+                      }
+                      final isSelected = selectedLetter == letter;
+                      return GestureDetector(
+                        onTap: () {
+                          setDialogState(() {
+                            selectedLetter = letter;
+                          });
+                        },
+                        child: Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppColors.govBlue : AppColors.slate700,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isSelected ? Colors.white : Colors.transparent,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              letter,
+                              style: AppTypography.titleMedium.copyWith(
+                                color: isSelected ? Colors.white : AppColors.slate300,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+              actions: [
+                if (isFlagged)
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _ctrl.unflagQuestion(session.pageNumber, qIndex).then((_) {
+                        setState(() {
+                          session.flaggedAnswers.remove(qIndex);
+                        });
+                      });
+                    },
+                    child: Text("Unflag",
+                        style: AppTypography.labelLarge
+                            .copyWith(color: AppColors.error)),
+                  ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text("Cancel",
+                      style: AppTypography.labelLarge
+                          .copyWith(color: AppColors.slate400)),
+                ),
+                TextButton(
+                  onPressed: selectedLetter == null
+                      ? null
+                      : () {
+                          Navigator.pop(ctx);
+                          _ctrl.flagQuestion(session.pageNumber, qIndex, selectedLetter!).then((_) {
+                            setState(() {
+                              session.flaggedAnswers[qIndex] = selectedLetter!;
+                            });
+                          });
+                        },
+                  child: Text("Save",
+                      style: AppTypography.labelLarge.copyWith(
+                        color: selectedLetter == null ? AppColors.slate600 : AppColors.govBlue,
+                      )),
+                ),
+              ],
             );
           },
         );

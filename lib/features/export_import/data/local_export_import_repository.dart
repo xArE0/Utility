@@ -30,7 +30,14 @@ class LocalExportImportRepository implements IExportImportRepository {
     try {
       final dbPath = await _getDbPath(dbName);
       if (await File(dbPath).exists()) {
-        await Share.shareXFiles([XFile(dbPath)], text: 'Database backup: $dbName');
+        final tempDir = await getTemporaryDirectory();
+        final now = DateTime.now();
+        final dateStr = '${now.year}_${now.month.toString().padLeft(2, '0')}_${now.day.toString().padLeft(2, '0')}';
+        final baseName = dbName.replaceAll('.db', '');
+        final tempFile = File('${tempDir.path}/${baseName}_backup_$dateStr.db');
+        await File(dbPath).copy(tempFile.path);
+
+        await Share.shareXFiles([XFile(tempFile.path)], text: 'Database backup: $dbName');
         return true;
       }
       return false;
@@ -266,7 +273,9 @@ class LocalExportImportRepository implements IExportImportRepository {
       final zipBytes = ZipEncoder().encode(archive);
 
       final tempDir = await getTemporaryDirectory();
-      final zipFile = File('${tempDir.path}/utility_full_backup_$appVersion.zip');
+      final now = DateTime.now();
+      final dateStr = '${now.year}_${now.month.toString().padLeft(2, '0')}_${now.day.toString().padLeft(2, '0')}';
+      final zipFile = File('${tempDir.path}/utility_full_backup_$dateStr.zip');
       await zipFile.writeAsBytes(zipBytes, flush: true);
 
       await Share.shareXFiles(
