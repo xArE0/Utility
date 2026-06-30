@@ -38,6 +38,13 @@ const _categoryIcons = [
   Icons.local_fire_department_outlined,
 ];
 
+IconData _getCategoryIcon(int codePoint) {
+  return _categoryIcons.firstWhere(
+    (ic) => ic.codePoint == codePoint,
+    orElse: () => Icons.folder_outlined,
+  );
+}
+
 class CooldownScreen extends StatefulWidget {
   const CooldownScreen({super.key});
 
@@ -70,17 +77,19 @@ class _CooldownScreenState extends State<CooldownScreen>
     super.dispose();
   }
 
-  Future<void> _startCooldown(CooldownItem item) async {
+  Future<void> _startCooldown(CooldownItem item, {bool forceManual = false}) async {
     final cat = _controller.categoryForItem(item);
-    if (cat != null) {
-      // Has a category — auto-start with category duration
+    if (cat != null && !forceManual) {
+      // Has a category and not forcing manual — auto-start with category duration
       await _controller.startCategoryCooldown(item);
       if (mounted) {
         AppToast.show(context, '${item.name} → ${cat.readableDuration} cooldown',
             icon: Icons.timer);
       }
     } else {
-      // No category — show manual picker
+      // No category or forcing manual — show manual picker
+      await Future.delayed(Duration.zero);
+      if (!mounted) return;
       final result = await _showCooldownPicker(context, item.name);
       if (result != null) {
         await _controller.startCooldown(item, result);
@@ -191,7 +200,7 @@ class _CooldownScreenState extends State<CooldownScreen>
 
   Widget _buildCategoryGroupHeader(CooldownCategory cat) {
     final accent = _accentColors[cat.colorIndex % _accentColors.length];
-    final icon = IconData(cat.iconCodePoint, fontFamily: 'MaterialIcons');
+    final icon = _getCategoryIcon(cat.iconCodePoint);
     final itemsInCat = _controller.items
         .where((i) => i.categoryId == cat.id)
         .toList();
@@ -548,10 +557,16 @@ class _CooldownScreenState extends State<CooldownScreen>
                   icon: Icon(Icons.more_vert,
                       color: AppColors.slate400, size: 20),
                   color: AppColors.slate800,
-                  onSelected: (v) {
+                  onSelected: (v) async {
                     if (v == 'ready') _controller.clearCooldown(item);
-                    if (v == 'edit') _showEditSheet(context, item);
-                    if (v == 'delete') _confirmDelete(item);
+                    if (v == 'edit') {
+                      await Future.delayed(const Duration(milliseconds: 250));
+                      _showEditSheet(context, item);
+                    }
+                    if (v == 'delete') {
+                      await Future.delayed(const Duration(milliseconds: 250));
+                      _confirmDelete(item);
+                    }
                   },
                   itemBuilder: (_) => [
                     _popupItem('ready', Icons.check_circle, 'Mark Ready',
@@ -572,7 +587,7 @@ class _CooldownScreenState extends State<CooldownScreen>
 
   Widget _buildCategoryBadge(CooldownCategory cat) {
     final accent = _accentColors[cat.colorIndex % _accentColors.length];
-    final icon = IconData(cat.iconCodePoint, fontFamily: 'MaterialIcons');
+    final icon = _getCategoryIcon(cat.iconCodePoint);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
@@ -730,10 +745,19 @@ class _CooldownScreenState extends State<CooldownScreen>
                     icon: Icon(Icons.more_vert,
                         color: AppColors.slate400, size: 20),
                     color: AppColors.slate800,
-                    onSelected: (v) {
-                      if (v == 'cooldown') _startCooldown(item);
-                      if (v == 'edit') _showEditSheet(context, item);
-                      if (v == 'delete') _confirmDelete(item);
+                    onSelected: (v) async {
+                      if (v == 'cooldown') {
+                        await Future.delayed(const Duration(milliseconds: 250));
+                        _startCooldown(item, forceManual: true);
+                      }
+                      if (v == 'edit') {
+                        await Future.delayed(const Duration(milliseconds: 250));
+                        _showEditSheet(context, item);
+                      }
+                      if (v == 'delete') {
+                        await Future.delayed(const Duration(milliseconds: 250));
+                        _confirmDelete(item);
+                      }
                     },
                     itemBuilder: (_) => [
                       _popupItem('cooldown', Icons.timer,
@@ -1014,7 +1038,7 @@ class _CategoryManagerSheetState extends State<_CategoryManagerSheet> {
 
   Widget _buildCategoryTile(CooldownCategory cat) {
     final accent = _accentColors[cat.colorIndex % _accentColors.length];
-    final icon = IconData(cat.iconCodePoint, fontFamily: 'MaterialIcons');
+    final icon = _getCategoryIcon(cat.iconCodePoint);
     final itemCount = widget.controller.items
         .where((i) => i.categoryId == cat.id)
         .length;
@@ -1595,7 +1619,7 @@ class _AddEditSheetState extends State<_AddEditSheet> {
                       // Category chips
                       ...widget.categories.map((cat) {
                         final accent = _accentColors[cat.colorIndex % _accentColors.length];
-                        final icon = IconData(cat.iconCodePoint, fontFamily: 'MaterialIcons');
+                        final icon = _getCategoryIcon(cat.iconCodePoint);
                         return _buildCategoryChip(cat.id, cat.name, icon, accent);
                       }),
                     ],
