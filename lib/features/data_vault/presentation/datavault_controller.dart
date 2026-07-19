@@ -127,6 +127,7 @@ class DataVaultController extends ChangeNotifier {
     String username = '',
     String website = '',
     String note = '',
+    List<VaultCustomField> customFields = const [],
   }) async {
     final item = VaultItem(
       label: label,
@@ -136,6 +137,7 @@ class DataVaultController extends ChangeNotifier {
       username: username,
       website: website,
       note: note,
+      customFields: customFields,
     );
     await _repository.addItem(item);
     await loadItems();
@@ -150,6 +152,7 @@ class DataVaultController extends ChangeNotifier {
     String username = '',
     String website = '',
     String note = '',
+    List<VaultCustomField> customFields = const [],
   }) async {
     final item = VaultItem(
       id: id,
@@ -160,6 +163,7 @@ class DataVaultController extends ChangeNotifier {
       username: username,
       website: website,
       note: note,
+      customFields: customFields,
     );
     await _repository.updateItem(item);
     // Refresh history cache for this item

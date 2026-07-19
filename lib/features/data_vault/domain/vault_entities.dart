@@ -7,6 +7,7 @@ class VaultItem {
   final String username;
   final String website;
   final String note;
+  final List<VaultCustomField> customFields;
 
   VaultItem({
     this.id,
@@ -17,6 +18,7 @@ class VaultItem {
     this.username = '',
     this.website = '',
     this.note = '',
+    this.customFields = const [],
   });
 
   /// Parsed tag list for display/search
@@ -58,6 +60,7 @@ class VaultItem {
     String? username,
     String? website,
     String? note,
+    List<VaultCustomField>? customFields,
   }) {
     return VaultItem(
       id: id ?? this.id,
@@ -68,6 +71,40 @@ class VaultItem {
       username: username ?? this.username,
       website: website ?? this.website,
       note: note ?? this.note,
+      customFields: customFields ?? this.customFields,
+    );
+  }
+}
+
+/// A user-defined name/value pair attached to a [VaultItem], e.g. "ID Number".
+class VaultCustomField {
+  final int? id;
+  final int? vaultItemId;
+  final String name;
+  final String value;
+
+  VaultCustomField({
+    this.id,
+    this.vaultItemId,
+    required this.name,
+    required this.value,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'vault_item_id': vaultItemId,
+      'field_name': name,
+      'field_value': value,
+    };
+  }
+
+  factory VaultCustomField.fromMap(Map<String, dynamic> map) {
+    return VaultCustomField(
+      id: map['id'],
+      vaultItemId: map['vault_item_id'],
+      name: map['field_name'] ?? '',
+      value: map['field_value'] ?? '',
     );
   }
 }

@@ -84,12 +84,21 @@ class LocalExportImportRepository implements IExportImportRepository {
       } catch (_) {
         // Table might not exist in older DBs — that's fine
       }
+
+      // Also export vault_custom_fields
+      List<Map<String, dynamic>> customFieldRows = [];
+      try {
+        customFieldRows = await db.query('vault_custom_fields');
+      } catch (_) {
+        // Table might not exist in older DBs — that's fine
+      }
       await db.close();
 
       // Serialize both tables into a structured JSON
       final exportData = {
         'vault': vaultRows,
         'vault_history': historyRows,
+        'vault_custom_fields': customFieldRows,
       };
       final jsonData = jsonEncode(exportData);
 
@@ -130,6 +139,7 @@ class LocalExportImportRepository implements IExportImportRepository {
 
       List<dynamic> vaultRows;
       List<dynamic> historyRows = [];
+      List<dynamic> customFieldRows = [];
 
       // Support both old format (plain list) and new format (map)
       if (decoded is List) {
@@ -138,6 +148,7 @@ class LocalExportImportRepository implements IExportImportRepository {
       } else if (decoded is Map) {
         vaultRows = (decoded['vault'] as List?) ?? [];
         historyRows = (decoded['vault_history'] as List?) ?? [];
+        customFieldRows = (decoded['vault_custom_fields'] as List?) ?? [];
       } else {
         return false;
       }
@@ -153,12 +164,12 @@ class LocalExportImportRepository implements IExportImportRepository {
         if (await f.exists()) await f.delete();
       }
 
-      // Create a fresh encrypted vault DB at version 5 (matches LocalVaultRepository)
+      // Create a fresh encrypted vault DB at version 6 (matches LocalVaultRepository)
       final dbPassword = await _crypto.getOrCreateDbPassword();
       final db = await cipher.openDatabase(
         dbPath,
         password: dbPassword,
-        version: 5,
+        version: 6,
         onCreate: (db, version) async {
           await db.execute('''
             CREATE TABLE vault(
@@ -180,10 +191,18 @@ class LocalExportImportRepository implements IExportImportRepository {
               changed_at TEXT
             )
           ''');
+          await db.execute('''
+            CREATE TABLE vault_custom_fields(
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              vault_item_id INTEGER,
+              field_name TEXT,
+              field_value TEXT
+            )
+          ''');
         },
       );
 
-      // We need to track old→new ID mapping so history references remain correct
+      // We need to track old→new ID mapping so history/custom-field references remain correct
       final Map<int, int> idMapping = {};
 
       for (final row in vaultRows) {
@@ -211,6 +230,18 @@ class LocalExportImportRepository implements IExportImportRepository {
           'vault_item_id': newVaultItemId,
           'old_value': row['old_value'] ?? '',
           'changed_at': row['changed_at'] ?? '',
+        });
+      }
+
+      // Restore custom fields with corrected vault_item_id references
+      for (final row in customFieldRows) {
+        final oldVaultItemId = row['vault_item_id'] as int?;
+        final newVaultItemId =
+            oldVaultItemId != null ? (idMapping[oldVaultItemId] ?? oldVaultItemId) : 0;
+        await db.insert('vault_custom_fields', {
+          'vault_item_id': newVaultItemId,
+          'field_name': row['field_name'] ?? '',
+          'field_value': row['field_value'] ?? '',
         });
       }
 
@@ -252,11 +283,17 @@ class LocalExportImportRepository implements IExportImportRepository {
         try {
           historyRows = await db.query('vault_history');
         } catch (_) {}
+
+        List<Map<String, dynamic>> customFieldRows = [];
+        try {
+          customFieldRows = await db.query('vault_custom_fields');
+        } catch (_) {}
         await db.close();
 
         final exportData = {
           'vault': vaultRows,
           'vault_history': historyRows,
+          'vault_custom_fields': customFieldRows,
         };
         final jsonData = jsonEncode(exportData);
 

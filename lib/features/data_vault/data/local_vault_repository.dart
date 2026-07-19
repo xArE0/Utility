@@ -25,7 +25,7 @@ class LocalVaultRepository implements IVaultRepository {
     _db = await openDatabase(
       path,
       password: password,
-      version: 5,
+      version: 6,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE vault(
@@ -45,6 +45,14 @@ class LocalVaultRepository implements IVaultRepository {
             vault_item_id INTEGER,
             old_value TEXT,
             changed_at TEXT
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE vault_custom_fields(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            vault_item_id INTEGER,
+            field_name TEXT,
+            field_value TEXT
           )
         ''');
       },
@@ -69,6 +77,16 @@ class LocalVaultRepository implements IVaultRepository {
           await db.execute("ALTER TABLE vault ADD COLUMN username TEXT DEFAULT ''");
           await db.execute("ALTER TABLE vault ADD COLUMN website TEXT DEFAULT ''");
           await db.execute("ALTER TABLE vault ADD COLUMN note TEXT DEFAULT ''");
+        }
+        if (oldVersion < 6) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS vault_custom_fields(
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              vault_item_id INTEGER,
+              field_name TEXT,
+              field_value TEXT
+            )
+          ''');
         }
       },
     );
@@ -129,7 +147,7 @@ class LocalVaultRepository implements IVaultRepository {
       final newDb = await openDatabase(
         dbFilePath,
         password: password,
-        version: 5,
+        version: 6,
         onCreate: (db, version) async {
           await db.execute('''
             CREATE TABLE vault(
@@ -149,6 +167,14 @@ class LocalVaultRepository implements IVaultRepository {
               vault_item_id INTEGER,
               old_value TEXT,
               changed_at TEXT
+            )
+          ''');
+          await db.execute('''
+            CREATE TABLE vault_custom_fields(
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              vault_item_id INTEGER,
+              field_name TEXT,
+              field_value TEXT
             )
           ''');
         },
@@ -184,20 +210,45 @@ class LocalVaultRepository implements IVaultRepository {
   Future<List<VaultItem>> getAllItems() async {
     if (_db == null) await init();
     final List<Map<String, dynamic>> maps = await _db!.query('vault');
-    return maps.map((m) => VaultItem.fromMap(m)).toList();
+    final List<Map<String, dynamic>> customFieldMaps = await _db!.query('vault_custom_fields', orderBy: 'id ASC');
+
+    final Map<int, List<VaultCustomField>> fieldsByItemId = {};
+    for (final m in customFieldMaps) {
+      final field = VaultCustomField.fromMap(m);
+      if (field.vaultItemId == null) continue;
+      fieldsByItemId.putIfAbsent(field.vaultItemId!, () => []).add(field);
+    }
+
+    return maps.map((m) {
+      final item = VaultItem.fromMap(m);
+      return item.copyWith(customFields: fieldsByItemId[item.id] ?? []);
+    }).toList();
+  }
+
+  Future<void> _saveCustomFields(int vaultItemId, List<VaultCustomField> fields) async {
+    for (final field in fields) {
+      if (field.name.trim().isEmpty) continue;
+      await _db!.insert('vault_custom_fields', {
+        'vault_item_id': vaultItemId,
+        'field_name': field.name.trim(),
+        'field_value': field.value,
+      });
+    }
   }
 
   @override
   Future<void> addItem(VaultItem item) async {
     if (_db == null) await init();
-    await _db!.insert('vault', item.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    final newId = await _db!.insert('vault', item.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    await _saveCustomFields(newId, item.customFields);
   }
 
   @override
   Future<void> deleteItem(int id) async {
     if (_db == null) await init();
-    // Also delete associated history
+    // Also delete associated history and custom fields
     await _db!.delete('vault_history', where: 'vault_item_id = ?', whereArgs: [id]);
+    await _db!.delete('vault_custom_fields', where: 'vault_item_id = ?', whereArgs: [id]);
     await _db!.delete('vault', where: 'id = ?', whereArgs: [id]);
   }
 
@@ -224,6 +275,10 @@ class LocalVaultRepository implements IVaultRepository {
       where: 'id = ?',
       whereArgs: [item.id],
     );
+
+    // Replace custom fields wholesale with the current set
+    await _db!.delete('vault_custom_fields', where: 'vault_item_id = ?', whereArgs: [item.id]);
+    await _saveCustomFields(item.id!, item.customFields);
   }
 
   @override

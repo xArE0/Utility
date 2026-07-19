@@ -130,6 +130,10 @@ class _DataVaultPageState extends State<DataVaultPage> {
     final tagsController = TextEditingController(
       text: isEditing ? item.tagList.map((t) => '#$t').join(' ') : '',
     );
+    final customFieldControllers = <_CustomFieldControllers>[
+      if (isEditing)
+        for (final f in item.customFields) _CustomFieldControllers(name: f.name, value: f.value),
+    ];
     String selectedCategory = isEditing ? item.category : _controller.categories[0];
 
     if (!_controller.categories.contains(selectedCategory)) {
@@ -396,7 +400,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'PASSWORD',
+                                    'PASSWORD / SECRET',
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
@@ -409,7 +413,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
                                     controller: valueController,
                                     style: TextStyle(fontSize: 16, color: primaryText),
                                     decoration: InputDecoration(
-                                      hintText: 'Password...',
+                                      hintText: 'Optional secret...',
                                       hintStyle: TextStyle(color: hintColor),
                                       prefixIcon: Icon(Icons.lock_outline, color: secondaryText, size: 20),
                                       filled: true,
@@ -550,7 +554,117 @@ class _DataVaultPageState extends State<DataVaultPage> {
                           ),
                         ),
 
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 24),
+
+                        // ── Custom fields ──
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'CUSTOM FIELDS',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: secondaryText,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            TextButton.icon(
+                              onPressed: () {
+                                setSheetState(() {
+                                  customFieldControllers.add(_CustomFieldControllers());
+                                });
+                              },
+                              icon: Icon(Icons.add, size: 16, color: cs.primary),
+                              label: Text(
+                                'Add field',
+                                style: TextStyle(fontSize: 13, color: cs.primary, fontWeight: FontWeight.w600),
+                              ),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ...customFieldControllers.asMap().entries.map((entry) {
+                          final rowIndex = entry.key;
+                          final controllers = entry.value;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  flex: 2,
+                                  child: TextField(
+                                    controller: controllers.nameController,
+                                    textCapitalization: TextCapitalization.words,
+                                    style: TextStyle(fontSize: 15, color: primaryText),
+                                    decoration: InputDecoration(
+                                      hintText: 'Field name',
+                                      hintStyle: TextStyle(color: hintColor),
+                                      filled: true,
+                                      fillColor: fieldFill,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                        borderSide: BorderSide(color: fieldBorder),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                        borderSide: BorderSide(color: cs.primary, width: 1.5),
+                                      ),
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  flex: 3,
+                                  child: TextField(
+                                    controller: controllers.valueController,
+                                    style: TextStyle(fontSize: 15, color: primaryText),
+                                    decoration: InputDecoration(
+                                      hintText: 'Value',
+                                      hintStyle: TextStyle(color: hintColor),
+                                      filled: true,
+                                      fillColor: fieldFill,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                        borderSide: BorderSide(color: fieldBorder),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                        borderSide: BorderSide(color: cs.primary, width: 1.5),
+                                      ),
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  onPressed: () {
+                                    setSheetState(() {
+                                      customFieldControllers.removeAt(rowIndex);
+                                    });
+                                  },
+                                  icon: Icon(Icons.remove_circle_outline, color: Colors.redAccent.withOpacity(0.85), size: 20),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+
+                        const SizedBox(height: 16),
 
                         // ── Save button ──
                         SizedBox(
@@ -558,8 +672,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
                           height: 52,
                           child: ElevatedButton(
                             onPressed: () async {
-                              if (labelController.text.isNotEmpty &&
-                                  valueController.text.isNotEmpty) {
+                              if (labelController.text.trim().isNotEmpty) {
                                 // Parse tags: split by # and whitespace, trim, deduplicate
                                 final rawTags = tagsController.text
                                     .split(RegExp(r'[#\s]+'))
@@ -567,6 +680,13 @@ class _DataVaultPageState extends State<DataVaultPage> {
                                     .where((t) => t.isNotEmpty)
                                     .toSet()
                                     .join(',');
+                                final customFields = customFieldControllers
+                                    .where((c) => c.nameController.text.trim().isNotEmpty)
+                                    .map((c) => VaultCustomField(
+                                          name: c.nameController.text.trim(),
+                                          value: c.valueController.text.trim(),
+                                        ))
+                                    .toList();
                                 if (isEditing) {
                                   await _controller.updateItem(
                                     item.id!,
@@ -577,6 +697,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
                                     username: usernameController.text.trim(),
                                     website: websiteController.text.trim(),
                                     note: noteController.text.trim(),
+                                    customFields: customFields,
                                   );
                                 } else {
                                   await _controller.addItem(
@@ -587,6 +708,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
                                     username: usernameController.text.trim(),
                                     website: websiteController.text.trim(),
                                     note: noteController.text.trim(),
+                                    customFields: customFields,
                                   );
                                 }
                                 if (mounted) Navigator.pop(context);
@@ -787,16 +909,17 @@ class _DataVaultPageState extends State<DataVaultPage> {
                         const SizedBox(height: 6),
 
                         // Bottom Row: Copy Value Button (aligned with label text)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 42),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: _CopyValueButton(
-                              isCopied: isCopied,
-                              onPressed: () => _copyToClipboard(item.value, id),
+                        if (item.value.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 42),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: _CopyValueButton(
+                                isCopied: isCopied,
+                                onPressed: () => _copyToClipboard(item.value, id),
+                              ),
                             ),
                           ),
-                        ),
                       ],
                     ),
                   ),
@@ -965,26 +1088,36 @@ class _DataVaultPageState extends State<DataVaultPage> {
                         ? buildDetailChip('Username', item.username, onCopy: () => _copyToClipboard(item.username, id))
                         : null;
 
-                    final passwordChip = buildDetailChip('Password', item.value, onCopy: () => _copyToClipboard(item.value, id));
+                    final passwordChip = item.value.isNotEmpty 
+                        ? buildDetailChip('Password', item.value, onCopy: () => _copyToClipboard(item.value, id))
+                        : null;
 
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Username & Password row
-                        Wrap(
-                          spacing: 10,
-                          runSpacing: 12,
-                          children: [
-                            if (usernameChip != null)
-                              IntrinsicWidth(child: usernameChip),
-                            IntrinsicWidth(child: passwordChip),
-                          ],
-                        ),
+                        if (usernameChip != null || passwordChip != null)
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 12,
+                            children: [
+                              if (usernameChip != null)
+                                IntrinsicWidth(child: usernameChip),
+                              if (passwordChip != null)
+                                IntrinsicWidth(child: passwordChip),
+                            ],
+                          ),
 
                         // Website
                         if (item.website.isNotEmpty) ...[
                           const SizedBox(height: 12),
                           buildDetailChip('Website', item.website, onCopy: () => _copyToClipboard(item.website, id)),
+                        ],
+
+                        // Custom fields
+                        for (final field in item.customFields) ...[
+                          const SizedBox(height: 12),
+                          buildDetailChip(field.name, field.value, onCopy: () => _copyToClipboard(field.value, id)),
                         ],
 
                         // Note
@@ -1347,6 +1480,17 @@ class _CopyValueButton extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Holds the name/value text controllers for one custom-field row in the
+/// add/edit sheet.
+class _CustomFieldControllers {
+  final TextEditingController nameController;
+  final TextEditingController valueController;
+
+  _CustomFieldControllers({String name = '', String value = ''})
+      : nameController = TextEditingController(text: name),
+        valueController = TextEditingController(text: value);
 }
 
 class _ActionChip extends StatelessWidget {
