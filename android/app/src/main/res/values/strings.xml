@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="accessibility_service_description">Utility Autoclicker allows you to set up automatic taps at a specified interval. When enabled, a floating dot will appear that you can position and tap to start/stop auto-clicking.</string>
+    <string name="accessibility_service_label">Utility Auto Clicker</string>
+    <string name="accessibility_service_description">Utility Auto Clicker taps the screen for you at a set interval. It shows a small ring you can drag over any button, plus a tiny bubble and a notification to start and stop. It only performs taps; it does not read your screen.</string>
 </resources>

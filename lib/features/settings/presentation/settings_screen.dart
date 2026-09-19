@@ -315,6 +315,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     {'key': 'cooldown', 'label': 'Cooldown', 'icon': Icons.timer},
     {'key': 'quickcheck', 'label': 'MCQ Practice', 'icon': Icons.assignment_outlined},
     {'key': 'routine', 'label': 'Routine', 'icon': Icons.repeat_rounded},
+    {'key': 'autoclicker', 'label': 'Auto Clicker', 'icon': Icons.ads_click},
   ];
 
   Widget _buildDefaultScreenPicker(Color cardBg) {

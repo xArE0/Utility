@@ -55,6 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'cooldown': AppRoutes.cooldown,
       'quickcheck': AppRoutes.quickcheck,
       'routine': AppRoutes.routine,
+      'autoclicker': AppRoutes.autoclicker,
     };
 
     final route = routeMap[screen];
@@ -618,6 +619,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: "Routine",
                     route: AppRoutes.routine,
                     color: const Color(0xFF8B5CF6),
+                  ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.ads_click,
+                    title: "Auto Clicker",
+                    route: AppRoutes.autoclicker,
+                    color: const Color(0xFFF97316),
                   ),
                   _buildDrawerItem(
                     context,

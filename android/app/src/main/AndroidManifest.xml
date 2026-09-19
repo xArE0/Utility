@@ -69,6 +69,22 @@
             </intent-filter>
         </receiver>
 
+        <!-- Auto Clicker: taps are injected by this accessibility service. It is deliberately NOT a
+             foreground service (startForeground without a foregroundServiceType crashes on API 34+). -->
+        <service
+            android:name=".ClickAccessibilityService"
+            android:exported="true"
+            android:label="@string/accessibility_service_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+        <receiver android:name=".AutoClickActionReceiver" android:exported="false" />
+
     </application>
     <!-- Notification & Network permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
