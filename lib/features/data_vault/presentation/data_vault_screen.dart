@@ -909,8 +909,15 @@ class _DataVaultPageState extends State<DataVaultPage> {
                         const SizedBox(height: 6),
 
                         // Bottom Row: Copy Value Button (aligned with label text)
-                        if (item.value.isNotEmpty)
-                          Padding(
+                        // Kept in the layout (just invisible) when there's no password so the
+                        // header row height stays consistent and doesn't leave a dead gap
+                        // above the Edit/Delete/Details column on the right.
+                        Visibility(
+                          visible: item.value.isNotEmpty,
+                          maintainSize: true,
+                          maintainAnimation: true,
+                          maintainState: true,
+                          child: Padding(
                             padding: const EdgeInsets.only(left: 42),
                             child: Align(
                               alignment: Alignment.centerLeft,
@@ -920,6 +927,7 @@ class _DataVaultPageState extends State<DataVaultPage> {
                               ),
                             ),
                           ),
+                        ),
                       ],
                     ),
                   ),
