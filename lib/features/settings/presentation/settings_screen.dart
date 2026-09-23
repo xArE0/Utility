@@ -25,6 +25,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _obscureVaultPassword = true;
   String _selectedDefaultScreen = 'schedule';
 
+  /// Local copy of hidden sidebar keys — mutated by toggles, flushed on Save.
+  late Set<String> _hiddenItems;
+
   @override
   void initState() {
     super.initState();
@@ -37,6 +40,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _timer2Controller.text = settings.widgetTimer2.toString();
     _timer3Controller.text = settings.widgetTimer3.toString();
     _selectedDefaultScreen = settings.defaultScreen;
+    _hiddenItems = Set.from(settings.sidebarHiddenItems);
   }
 
   @override
@@ -57,7 +61,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final primaryText = isDark ? AppColors.slate50 : AppColors.slate900;
     final secondaryText = isDark ? AppColors.slate300 : Colors.grey[600]!;
-    final cardBg = isDark ? AppColors.slate900.withOpacity(0.55) : Colors.grey[100]!;
+    final cardBg =
+        isDark ? AppColors.slate900.withValues(alpha: 0.55) : Colors.grey[100]!;
 
     return AnimatedBackground(
       child: Scaffold(
@@ -142,7 +147,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     Text(
                       'Update the timers on the Home Screen Widget',
-                      style: AppTypography.bodySmall.copyWith(color: secondaryText),
+                      style: AppTypography.bodySmall
+                          .copyWith(color: secondaryText),
                     ),
                     const SizedBox(height: 12),
                     Row(
@@ -173,21 +179,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               const SizedBox(height: 32),
+              // ── Merged App Behavior card ──────────────────────────────────
               _buildSectionTitle('App Behavior', primaryText),
               _buildCard(
                 cardBg,
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // — Default screen —
                     Text(
-                      'Choose which screen appears when you open the app',
-                      style: AppTypography.bodySmall.copyWith(color: secondaryText),
+                      'Launch screen',
+                      style: AppTypography.labelLarge
+                          .copyWith(color: secondaryText),
                     ),
-                    const SizedBox(height: 12),
-                    _buildDefaultScreenPicker(cardBg),
+                    const SizedBox(height: 10),
+                    _buildDefaultScreenPicker(),
+                    const SizedBox(height: 24),
+                    Divider(color: AppColors.slate700.withValues(alpha: 0.5)),
+                    const SizedBox(height: 16),
+                    // — Sidebar visibility —
+                    Row(
+                      children: [
+                        const Icon(Icons.view_sidebar_outlined,
+                            size: 16, color: AppColors.govBlue),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Sidebar items',
+                          style: AppTypography.labelLarge
+                              .copyWith(color: secondaryText),
+                        ),
+                        const Spacer(),
+                        Text(
+                          '${_screenOptions.length - _hiddenItems.length} visible',
+                          style: AppTypography.bodySmall.copyWith(
+                            color: AppColors.slate500,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    _buildSidebarVisibilityGrid(),
                   ],
                 ),
               ),
+              // FAB clearance
+              const SizedBox(height: 80),
             ],
           ),
         ),
@@ -215,7 +252,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.slate700.withOpacity(0.5)),
+        border: Border.all(color: AppColors.slate700.withValues(alpha: 0.5)),
       ),
       child: child,
     );
@@ -249,7 +286,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             : null,
         border: const OutlineInputBorder(borderSide: BorderSide.none),
         filled: false,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
     );
   }
@@ -267,14 +305,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         labelText: label,
         labelStyle: AppTypography.bodySmall.copyWith(color: AppColors.slate400),
         suffixText: 'min',
-        suffixStyle: AppTypography.bodySmall.copyWith(color: AppColors.slate500),
+        suffixStyle:
+            AppTypography.bodySmall.copyWith(color: AppColors.slate500),
         filled: true,
-        fillColor: AppColors.slate800.withOpacity(0.6),
+        fillColor: AppColors.slate800.withValues(alpha: 0.6),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       ),
     );
   }
@@ -300,6 +340,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final t3 = int.tryParse(_timer3Controller.text.trim()) ?? 30;
     await SettingsService.instance.updateWidgetTimers(t1, t2, t3);
     await SettingsService.instance.updateDefaultScreen(_selectedDefaultScreen);
+    await SettingsService.instance.updateSidebarHiddenItems(_hiddenItems);
 
     if (mounted) {
       AppToast.show(context, 'Settings saved');
@@ -307,18 +348,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  // ── Screen / sidebar options ─────────────────────────────────────────────
+
   static const _screenOptions = [
     {'key': 'schedule', 'label': 'Schedule', 'icon': Icons.calendar_today},
     {'key': 'datavault', 'label': 'Data Vault', 'icon': Icons.lock},
     {'key': 'expense', 'label': 'Expense Tracker', 'icon': Icons.list},
     {'key': 'logbook', 'label': 'Logbook', 'icon': Icons.menu_book},
     {'key': 'cooldown', 'label': 'Cooldown', 'icon': Icons.timer},
-    {'key': 'quickcheck', 'label': 'MCQ Practice', 'icon': Icons.assignment_outlined},
+    {
+      'key': 'quickcheck',
+      'label': 'MCQ Practice',
+      'icon': Icons.assignment_outlined
+    },
     {'key': 'routine', 'label': 'Routine', 'icon': Icons.repeat_rounded},
     {'key': 'autoclicker', 'label': 'Auto Clicker', 'icon': Icons.ads_click},
+    {
+      'key': 'importexport',
+      'label': 'Import/Export',
+      'icon': Icons.import_export_sharp
+    },
   ];
 
-  Widget _buildDefaultScreenPicker(Color cardBg) {
+  // ── Default screen picker ────────────────────────────────────────────────
+
+  Widget _buildDefaultScreenPicker() {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -335,20 +389,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: isSelected
-                  ? AppColors.govBlue.withOpacity(0.15)
-                  : AppColors.slate800.withOpacity(0.4),
+                  ? AppColors.govBlue.withValues(alpha: 0.15)
+                  : AppColors.slate800.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected
-                    ? AppColors.govBlue.withOpacity(0.6)
-                    : AppColors.slate700.withOpacity(0.5),
+                    ? AppColors.govBlue.withValues(alpha: 0.6)
+                    : AppColors.slate700.withValues(alpha: 0.5),
                 width: isSelected ? 1.5 : 1,
               ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: 16, color: isSelected ? AppColors.govBlue : AppColors.slate400),
+                Icon(icon,
+                    size: 16,
+                    color: isSelected ? AppColors.govBlue : AppColors.slate400),
                 const SizedBox(width: 6),
                 Text(
                   label,
@@ -362,6 +418,76 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(width: 4),
                   Icon(Icons.check_circle, size: 14, color: AppColors.govBlue),
                 ],
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // ── Sidebar visibility grid ──────────────────────────────────────────────
+
+  Widget _buildSidebarVisibilityGrid() {
+    // Skip 'schedule' — it's the home screen root, always shown.
+    final sidebarItems =
+        _screenOptions.where((o) => o['key'] != 'schedule').toList();
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: sidebarItems.map((opt) {
+        final key = opt['key'] as String;
+        final label = opt['label'] as String;
+        final icon = opt['icon'] as IconData;
+        final isVisible = !_hiddenItems.contains(key);
+
+        return GestureDetector(
+          onTap: () => setState(() {
+            if (isVisible) {
+              _hiddenItems.add(key);
+            } else {
+              _hiddenItems.remove(key);
+            }
+          }),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: isVisible
+                  ? AppColors.govGreen.withValues(alpha: 0.12)
+                  : AppColors.slate800.withValues(alpha: 0.35),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isVisible
+                    ? AppColors.govGreen.withValues(alpha: 0.55)
+                    : AppColors.slate700.withValues(alpha: 0.35),
+                width: isVisible ? 1.5 : 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 180),
+                  child: Icon(
+                    isVisible ? icon : Icons.visibility_off_outlined,
+                    key: ValueKey(isVisible),
+                    size: 16,
+                    color: isVisible ? AppColors.govGreen : AppColors.slate600,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isVisible ? FontWeight.w500 : FontWeight.w400,
+                    color: isVisible ? AppColors.slate200 : AppColors.slate600,
+                    decoration: isVisible ? null : TextDecoration.lineThrough,
+                    decorationColor: AppColors.slate600,
+                  ),
+                ),
               ],
             ),
           ),

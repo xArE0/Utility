@@ -107,23 +107,23 @@ class _ToastWidgetState extends State<_ToastWidget>
               scale: _scaleAnimation,
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 40),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 decoration: BoxDecoration(
-                  color: AppColors.slate900.withOpacity(0.92),
+                  color: AppColors.slate900.withValues(alpha: 0.92),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: widget.accentColor.withOpacity(0.3),
+                    color: widget.accentColor.withValues(alpha: 0.3),
                     width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: widget.accentColor.withOpacity(0.15),
+                      color: widget.accentColor.withValues(alpha: 0.15),
                       blurRadius: 24,
                       spreadRadius: 2,
                     ),
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.4),
+                      color: Colors.black.withValues(alpha: 0.4),
                       blurRadius: 16,
                     ),
                   ],
@@ -131,8 +131,7 @@ class _ToastWidgetState extends State<_ToastWidget>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(widget.icon,
-                        color: widget.accentColor, size: 22),
+                    Icon(widget.icon, color: widget.accentColor, size: 22),
                     const SizedBox(width: 12),
                     Flexible(
                       child: Text(

@@ -62,19 +62,18 @@ class _LogbookScreenState extends State<LogbookScreen> {
     final titleCtrl = TextEditingController(text: existing?.title ?? '');
     final noteCtrl = TextEditingController(text: existing?.note ?? '');
     final categoryCtrl = TextEditingController(text: existing?.category ?? '');
-    DateTime selectedDate = existing != null
-        ? DateTime.parse(existing.startDate)
-        : DateTime.now();
-    Color selectedColor = existing != null
-        ? _parseColor(existing.colorHex)
-        : _accentColors[0];
+    DateTime selectedDate =
+        existing != null ? DateTime.parse(existing.startDate) : DateTime.now();
+    Color selectedColor =
+        existing != null ? _parseColor(existing.colorHex) : _accentColors[0];
 
     await showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
           backgroundColor: AppColors.slate800,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Text(
             existing != null ? 'Edit Entry' : 'New Entry',
             style: AppTypography.titleLarge,
@@ -150,18 +149,21 @@ class _LogbookScreenState extends State<LogbookScreen> {
                   },
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
                     decoration: BoxDecoration(
                       border: Border.all(color: AppColors.slate600),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.calendar_today, color: AppColors.govGreen, size: 18),
+                        const Icon(Icons.calendar_today,
+                            color: AppColors.govGreen, size: 18),
                         const SizedBox(width: 12),
                         Text(
                           DateFormat('MMM dd, yyyy').format(selectedDate),
-                          style: const TextStyle(color: Colors.white, fontSize: 15),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 15),
                         ),
                       ],
                     ),
@@ -171,23 +173,26 @@ class _LogbookScreenState extends State<LogbookScreen> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: _accentColors.map((c) => GestureDetector(
-                    onTap: () => setDialogState(() => selectedColor = c),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: c,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: selectedColor == c
-                              ? Colors.white
-                              : Colors.transparent,
-                          width: 2.5,
-                        ),
-                      ),
-                    ),
-                  )).toList(),
+                  children: _accentColors
+                      .map((c) => GestureDetector(
+                            onTap: () =>
+                                setDialogState(() => selectedColor = c),
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: c,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: selectedColor == c
+                                      ? Colors.white
+                                      : Colors.transparent,
+                                  width: 2.5,
+                                ),
+                              ),
+                            ),
+                          ))
+                      .toList(),
                 ),
               ],
             ),
@@ -195,19 +200,25 @@ class _LogbookScreenState extends State<LogbookScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: Text('Cancel', style: TextStyle(color: AppColors.slate400)),
+              child:
+                  Text('Cancel', style: TextStyle(color: AppColors.slate400)),
             ),
             FilledButton(
               onPressed: () {
                 if (titleCtrl.text.trim().isEmpty) return;
-                final colorHex = '#${selectedColor.value.toRadixString(16).substring(2).toUpperCase()}';
+                final colorHex =
+                    '#${selectedColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
                 final entry = LogEntry(
                   id: existing?.id,
                   title: titleCtrl.text.trim(),
                   startDate: DateFormat('yyyy-MM-dd').format(selectedDate),
-                  note: noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim(),
+                  note: noteCtrl.text.trim().isEmpty
+                      ? null
+                      : noteCtrl.text.trim(),
                   colorHex: colorHex,
-                  category: categoryCtrl.text.trim().isEmpty ? null : categoryCtrl.text.trim(),
+                  category: categoryCtrl.text.trim().isEmpty
+                      ? null
+                      : categoryCtrl.text.trim(),
                 );
                 if (existing != null) {
                   _controller.updateEntry(entry);
@@ -218,7 +229,8 @@ class _LogbookScreenState extends State<LogbookScreen> {
               },
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.govGreen,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
               child: Text(existing != null ? 'Save' : 'Add'),
             ),
@@ -243,7 +255,8 @@ class _LogbookScreenState extends State<LogbookScreen> {
           children: [
             Text(
               'Reset counter for "${entry.title}" to today?',
-              style: AppTypography.bodyMedium.copyWith(color: AppColors.slate300),
+              style:
+                  AppTypography.bodyMedium.copyWith(color: AppColors.slate300),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -273,7 +286,8 @@ class _LogbookScreenState extends State<LogbookScreen> {
             onPressed: () {
               _controller.checkpoint(
                 entry,
-                note: noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim(),
+                note:
+                    noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim(),
               );
               Navigator.pop(ctx);
             },
@@ -281,7 +295,8 @@ class _LogbookScreenState extends State<LogbookScreen> {
             label: const Text('Checkpoint'),
             style: FilledButton.styleFrom(
               backgroundColor: _parseColor(entry.colorHex),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
           ),
         ],
@@ -309,7 +324,8 @@ class _LogbookScreenState extends State<LogbookScreen> {
     } else if (totalDays < 365) {
       final months = totalDays ~/ 30;
       final remDays = totalDays % 30;
-      totalIntervalText = remDays == 0 ? '${months}mo' : '${months}mo ${remDays}d';
+      totalIntervalText =
+          remDays == 0 ? '${months}mo' : '${months}mo ${remDays}d';
     } else {
       final years = totalDays ~/ 365;
       final remDays = totalDays % 365;
@@ -405,18 +421,23 @@ class _LogbookScreenState extends State<LogbookScreen> {
                             color: AppColors.slate400,
                           ),
                         ),
-                        if (entry.category != null && entry.category!.isNotEmpty)
+                        if (entry.category != null &&
+                            entry.category!.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: accent.withOpacity(0.15),
+                                color: accent.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 entry.category!,
-                                style: TextStyle(color: accent, fontSize: 10, fontWeight: FontWeight.w600),
+                                style: TextStyle(
+                                    color: accent,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600),
                               ),
                             ),
                           ),
@@ -436,27 +457,33 @@ class _LogbookScreenState extends State<LogbookScreen> {
                         context: context,
                         builder: (ctx) => AlertDialog(
                           backgroundColor: AppColors.slate800,
-                          title: Text('Delete "${entry.title}"?', style: AppTypography.titleLarge),
-                          content: Text('This will remove the entry and all its checkpoints.',
-                              style: AppTypography.bodyMedium.copyWith(color: AppColors.slate300)),
+                          title: Text('Delete "${entry.title}"?',
+                              style: AppTypography.titleLarge),
+                          content: Text(
+                              'This will remove the entry and all its checkpoints.',
+                              style: AppTypography.bodyMedium
+                                  .copyWith(color: AppColors.slate300)),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(ctx),
-                              child: Text('Cancel', style: TextStyle(color: AppColors.slate400)),
+                              child: Text('Cancel',
+                                  style: TextStyle(color: AppColors.slate400)),
                             ),
                             TextButton(
                               onPressed: () {
                                 Navigator.pop(ctx);
                                 _controller.deleteEntry(entry.id!);
                               },
-                              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                              child: const Text('Delete',
+                                  style: TextStyle(color: Colors.red)),
                             ),
                           ],
                         ),
                       );
                     },
                     tooltip: 'Delete',
-                    icon: Icon(Icons.delete_outline, color: AppColors.slate500, size: 20),
+                    icon: Icon(Icons.delete_outline,
+                        color: AppColors.slate500, size: 20),
                   ),
                   const SizedBox(width: 4),
                 ],
@@ -465,7 +492,8 @@ class _LogbookScreenState extends State<LogbookScreen> {
           ),
           // Expanded timeline detail
           if (isExpanded) ...[
-            Divider(color: AppColors.slate700.withOpacity(0.5), height: 1),
+            Divider(
+                color: AppColors.slate700.withValues(alpha: 0.5), height: 1),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: Column(
@@ -493,28 +521,35 @@ class _LogbookScreenState extends State<LogbookScreen> {
                           ? entry.checkpoints[i + 1].date
                           : entry.startDate;
                       final prevDate = DateTime.parse(prevDateStr);
-                      final diffDays = DateTime(cpDate.year, cpDate.month, cpDate.day)
-                          .difference(DateTime(prevDate.year, prevDate.month, prevDate.day))
-                          .inDays;
-                      
+                      final diffDays =
+                          DateTime(cpDate.year, cpDate.month, cpDate.day)
+                              .difference(DateTime(
+                                  prevDate.year, prevDate.month, prevDate.day))
+                              .inDays;
+
                       String intervalText;
                       if (diffDays == 0) {
                         intervalText = '0 days';
                       } else if (diffDays < 7) {
-                        intervalText = diffDays == 1 ? '1 day' : '$diffDays days';
+                        intervalText =
+                            diffDays == 1 ? '1 day' : '$diffDays days';
                       } else if (diffDays < 30) {
                         final weeks = diffDays ~/ 7;
                         final days = diffDays % 7;
-                        intervalText = days == 0 ? '${weeks}w' : '${weeks}w ${days}d';
+                        intervalText =
+                            days == 0 ? '${weeks}w' : '${weeks}w ${days}d';
                       } else if (diffDays < 365) {
                         final months = diffDays ~/ 30;
                         final remDays = diffDays % 30;
-                        intervalText = remDays == 0 ? '${months}mo' : '${months}mo ${remDays}d';
+                        intervalText = remDays == 0
+                            ? '${months}mo'
+                            : '${months}mo ${remDays}d';
                       } else {
                         final years = diffDays ~/ 365;
                         final remDays = diffDays % 365;
                         final months = remDays ~/ 30;
-                        intervalText = months == 0 ? '${years}y' : '${years}y ${months}mo';
+                        intervalText =
+                            months == 0 ? '${years}y' : '${years}y ${months}mo';
                       }
 
                       return Padding(
@@ -534,14 +569,16 @@ class _LogbookScreenState extends State<LogbookScreen> {
                             const SizedBox(width: 10),
                             Text(
                               DateFormat('MMM dd, yyyy').format(cpDate),
-                              style: AppTypography.bodySmall.copyWith(color: AppColors.slate300),
+                              style: AppTypography.bodySmall
+                                  .copyWith(color: AppColors.slate300),
                             ),
                             const SizedBox(width: 8),
                             Container(
                               margin: const EdgeInsets.only(top: 1),
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 5, vertical: 1),
                               decoration: BoxDecoration(
-                                color: accent.withOpacity(0.15),
+                                color: accent.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
@@ -587,8 +624,10 @@ class _LogbookScreenState extends State<LogbookScreen> {
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          DateFormat('MMM dd, yyyy').format(DateTime.parse(entry.startDate)),
-                          style: AppTypography.bodySmall.copyWith(color: AppColors.slate500),
+                          DateFormat('MMM dd, yyyy')
+                              .format(DateTime.parse(entry.startDate)),
+                          style: AppTypography.bodySmall
+                              .copyWith(color: AppColors.slate500),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -621,7 +660,7 @@ class _LogbookScreenState extends State<LogbookScreen> {
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: Text('Logbook', style: AppTypography.titleLarge),
-          backgroundColor: AppColors.slate900.withOpacity(0.85),
+          backgroundColor: AppColors.slate900.withValues(alpha: 0.85),
         ),
         body: !_controller.initialized
             ? const Center(child: CircularProgressIndicator())
@@ -630,16 +669,19 @@ class _LogbookScreenState extends State<LogbookScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.menu_book_outlined, size: 64, color: AppColors.slate600),
+                        Icon(Icons.menu_book_outlined,
+                            size: 64, color: AppColors.slate600),
                         const SizedBox(height: 16),
                         Text(
                           'No entries yet',
-                          style: AppTypography.titleMedium.copyWith(color: AppColors.slate500),
+                          style: AppTypography.titleMedium
+                              .copyWith(color: AppColors.slate500),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Tap + to start tracking',
-                          style: AppTypography.bodySmall.copyWith(color: AppColors.slate600),
+                          style: AppTypography.bodySmall
+                              .copyWith(color: AppColors.slate600),
                         ),
                       ],
                     ),

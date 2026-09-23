@@ -36,6 +36,8 @@ class SettingsService extends ChangeNotifier {
     _widgetTimer2 = _prefs.getInt('widgetTimer2') ?? 15;
     _widgetTimer3 = _prefs.getInt('widgetTimer3') ?? 30;
     _defaultScreen = _prefs.getString('defaultScreen') ?? 'schedule';
+    final raw = _prefs.getString('sidebarHiddenItems') ?? '';
+    _sidebarHiddenItems = raw.isEmpty ? {} : raw.split(',').toSet();
   }
 
   Future<void> updateSidebarName(String value) async {
@@ -91,6 +93,21 @@ class SettingsService extends ChangeNotifier {
   Future<void> updateDefaultScreen(String value) async {
     _defaultScreen = value;
     await _prefs.setString('defaultScreen', value);
+    notifyListeners();
+  }
+
+  // ── Sidebar visibility ───────────────────────────────────────────────────
+
+  /// Keys of sidebar items the user has hidden. All items are visible by default.
+  Set<String> _sidebarHiddenItems = {};
+
+  Set<String> get sidebarHiddenItems => Set.unmodifiable(_sidebarHiddenItems);
+
+  bool isSidebarItemVisible(String key) => !_sidebarHiddenItems.contains(key);
+
+  Future<void> updateSidebarHiddenItems(Set<String> hidden) async {
+    _sidebarHiddenItems = Set.from(hidden);
+    await _prefs.setString('sidebarHiddenItems', hidden.join(','));
     notifyListeners();
   }
 }

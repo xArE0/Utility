@@ -9,7 +9,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:archive/archive.dart';
 import '../domain/export_import_repository.dart';
 import '../../../core/services/vault_crypto_service.dart';
-import '../../../core/app_version.dart';
 
 class LocalExportImportRepository implements IExportImportRepository {
   final VaultCryptoService _crypto = VaultCryptoService.instance;
@@ -32,12 +31,14 @@ class LocalExportImportRepository implements IExportImportRepository {
       if (await File(dbPath).exists()) {
         final tempDir = await getTemporaryDirectory();
         final now = DateTime.now();
-        final dateStr = '${now.year}_${now.month.toString().padLeft(2, '0')}_${now.day.toString().padLeft(2, '0')}';
+        final dateStr =
+            '${now.year}_${now.month.toString().padLeft(2, '0')}_${now.day.toString().padLeft(2, '0')}';
         final baseName = dbName.replaceAll('.db', '');
         final tempFile = File('${tempDir.path}/${baseName}_backup_$dateStr.db');
         await File(dbPath).copy(tempFile.path);
 
-        await Share.shareXFiles([XFile(tempFile.path)], text: 'Database backup: $dbName');
+        await Share.shareXFiles([XFile(tempFile.path)],
+            text: 'Database backup: $dbName');
         return true;
       }
       return false;
@@ -103,7 +104,8 @@ class LocalExportImportRepository implements IExportImportRepository {
       final jsonData = jsonEncode(exportData);
 
       // AES-GCM encrypt with the user's export password
-      final encryptedFile = await _crypto.encryptVaultExport(jsonData, password);
+      final encryptedFile =
+          await _crypto.encryptVaultExport(jsonData, password);
 
       await Share.shareXFiles(
         [XFile(encryptedFile.path)],
@@ -224,8 +226,9 @@ class LocalExportImportRepository implements IExportImportRepository {
       // Restore history with corrected vault_item_id references
       for (final row in historyRows) {
         final oldVaultItemId = row['vault_item_id'] as int?;
-        final newVaultItemId =
-            oldVaultItemId != null ? (idMapping[oldVaultItemId] ?? oldVaultItemId) : 0;
+        final newVaultItemId = oldVaultItemId != null
+            ? (idMapping[oldVaultItemId] ?? oldVaultItemId)
+            : 0;
         await db.insert('vault_history', {
           'vault_item_id': newVaultItemId,
           'old_value': row['old_value'] ?? '',
@@ -236,8 +239,9 @@ class LocalExportImportRepository implements IExportImportRepository {
       // Restore custom fields with corrected vault_item_id references
       for (final row in customFieldRows) {
         final oldVaultItemId = row['vault_item_id'] as int?;
-        final newVaultItemId =
-            oldVaultItemId != null ? (idMapping[oldVaultItemId] ?? oldVaultItemId) : 0;
+        final newVaultItemId = oldVaultItemId != null
+            ? (idMapping[oldVaultItemId] ?? oldVaultItemId)
+            : 0;
         await db.insert('vault_custom_fields', {
           'vault_item_id': newVaultItemId,
           'field_name': row['field_name'] ?? '',
@@ -257,8 +261,8 @@ class LocalExportImportRepository implements IExportImportRepository {
   // ─────────────────────────────────────────────
 
   @override
-  Future<bool> exportAllDatabases(
-      List<String> plainDbNames, String vaultDbName, String vaultPassword) async {
+  Future<bool> exportAllDatabases(List<String> plainDbNames, String vaultDbName,
+      String vaultPassword) async {
     try {
       final archive = Archive();
 
@@ -299,11 +303,11 @@ class LocalExportImportRepository implements IExportImportRepository {
 
         // Encrypt the vault JSON
         final plainBytes = utf8.encode(jsonData);
-        final encryptedBytes =
-            await _crypto.encryptBytes(Uint8List.fromList(plainBytes), vaultPassword);
+        final encryptedBytes = await _crypto.encryptBytes(
+            Uint8List.fromList(plainBytes), vaultPassword);
 
-        archive.addFile(
-            ArchiveFile('datavault_backup.vault', encryptedBytes.length, encryptedBytes));
+        archive.addFile(ArchiveFile(
+            'datavault_backup.vault', encryptedBytes.length, encryptedBytes));
       }
 
       // 3. Encode as ZIP and share
@@ -311,7 +315,8 @@ class LocalExportImportRepository implements IExportImportRepository {
 
       final tempDir = await getTemporaryDirectory();
       final now = DateTime.now();
-      final dateStr = '${now.year}_${now.month.toString().padLeft(2, '0')}_${now.day.toString().padLeft(2, '0')}';
+      final dateStr =
+          '${now.year}_${now.month.toString().padLeft(2, '0')}_${now.day.toString().padLeft(2, '0')}';
       final zipFile = File('${tempDir.path}/utility_full_backup_$dateStr.zip');
       await zipFile.writeAsBytes(zipBytes, flush: true);
 
@@ -326,8 +331,8 @@ class LocalExportImportRepository implements IExportImportRepository {
   }
 
   @override
-  Future<bool> importAllDatabases(
-      List<String> plainDbNames, String vaultDbName, String vaultPassword) async {
+  Future<bool> importAllDatabases(List<String> plainDbNames, String vaultDbName,
+      String vaultPassword) async {
     try {
       final result = await FilePicker.platform.pickFiles(type: FileType.any);
       if (result == null || result.files.single.path == null) return false;
@@ -342,7 +347,8 @@ class LocalExportImportRepository implements IExportImportRepository {
         if (archiveFile != null) {
           final dbPath = await _getDbPath(dbName);
           final outFile = File(dbPath);
-          await outFile.writeAsBytes(archiveFile.content as List<int>, flush: true);
+          await outFile.writeAsBytes(archiveFile.content as List<int>,
+              flush: true);
         }
       }
 
@@ -352,12 +358,11 @@ class LocalExportImportRepository implements IExportImportRepository {
         // Write the encrypted vault to a temp file, then use the shared import logic
         final tempDir = await getTemporaryDirectory();
         final tempVaultFile = File('${tempDir.path}/temp_import.vault');
-        await tempVaultFile.writeAsBytes(
-            vaultArchiveFile.content as List<int>,
+        await tempVaultFile.writeAsBytes(vaultArchiveFile.content as List<int>,
             flush: true);
 
-        final vaultImported =
-            await _importVaultFromFile(tempVaultFile, vaultDbName, vaultPassword);
+        final vaultImported = await _importVaultFromFile(
+            tempVaultFile, vaultDbName, vaultPassword);
         // Clean up temp file
         if (await tempVaultFile.exists()) await tempVaultFile.delete();
 
@@ -382,8 +387,11 @@ class LocalExportImportRepository implements IExportImportRepository {
   }
 
   @override
-  Future<bool> importAllDatabasesFromPath(String filePath,
-      List<String> plainDbNames, String vaultDbName, String vaultPassword) async {
+  Future<bool> importAllDatabasesFromPath(
+      String filePath,
+      List<String> plainDbNames,
+      String vaultDbName,
+      String vaultPassword) async {
     try {
       final pickedFile = File(filePath);
       final bytes = await pickedFile.readAsBytes();
@@ -395,7 +403,8 @@ class LocalExportImportRepository implements IExportImportRepository {
         if (archiveFile != null) {
           final dbPath = await _getDbPath(dbName);
           final outFile = File(dbPath);
-          await outFile.writeAsBytes(archiveFile.content as List<int>, flush: true);
+          await outFile.writeAsBytes(archiveFile.content as List<int>,
+              flush: true);
         }
       }
 
@@ -404,12 +413,11 @@ class LocalExportImportRepository implements IExportImportRepository {
       if (vaultArchiveFile != null) {
         final tempDir = await getTemporaryDirectory();
         final tempVaultFile = File('${tempDir.path}/temp_import.vault');
-        await tempVaultFile.writeAsBytes(
-            vaultArchiveFile.content as List<int>,
+        await tempVaultFile.writeAsBytes(vaultArchiveFile.content as List<int>,
             flush: true);
 
-        final vaultImported =
-            await _importVaultFromFile(tempVaultFile, vaultDbName, vaultPassword);
+        final vaultImported = await _importVaultFromFile(
+            tempVaultFile, vaultDbName, vaultPassword);
         if (await tempVaultFile.exists()) await tempVaultFile.delete();
 
         if (!vaultImported) return false;

@@ -43,8 +43,6 @@ class ScheduleScreenState extends State<ScheduleScreen> {
     }
   }
 
-
-
   @override
   void dispose() {
     _controller.removeListener(_onControllerNotify);
@@ -68,7 +66,9 @@ class ScheduleScreenState extends State<ScheduleScreen> {
           },
           icon: Icon(Icons.view_agenda,
               size: 22,
-              color: _controller.viewMode == ScheduleView.timeline ? active : inactive),
+              color: _controller.viewMode == ScheduleView.timeline
+                  ? active
+                  : inactive),
         ),
         IconButton(
           constraints: const BoxConstraints(maxWidth: 40, maxHeight: 40),
@@ -77,7 +77,9 @@ class ScheduleScreenState extends State<ScheduleScreen> {
           onPressed: () => _controller.viewMode = ScheduleView.week,
           icon: Icon(Icons.calendar_view_week,
               size: 22,
-              color: _controller.viewMode == ScheduleView.week ? active : inactive),
+              color: _controller.viewMode == ScheduleView.week
+                  ? active
+                  : inactive),
         ),
         IconButton(
           constraints: const BoxConstraints(maxWidth: 40, maxHeight: 40),
@@ -86,7 +88,9 @@ class ScheduleScreenState extends State<ScheduleScreen> {
           onPressed: () => _controller.viewMode = ScheduleView.month,
           icon: Icon(Icons.calendar_month,
               size: 22,
-              color: _controller.viewMode == ScheduleView.month ? active : inactive),
+              color: _controller.viewMode == ScheduleView.month
+                  ? active
+                  : inactive),
         ),
       ],
     );
@@ -111,17 +115,20 @@ class ScheduleScreenState extends State<ScheduleScreen> {
         builder: (context, setDialogState) {
           final theme = Theme.of(context);
           final cs = theme.colorScheme;
-          final inputFill = cs.surface.withOpacity(0.08);
+          final inputFill = cs.surface.withValues(alpha: 0.08);
           final border = OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: cs.primary.withOpacity(0.4), width: 1),
+            borderSide:
+                BorderSide(color: cs.primary.withValues(alpha: 0.4), width: 1),
           );
 
           return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            backgroundColor: cs.surface.withOpacity(0.95),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            backgroundColor: cs.surface.withValues(alpha: 0.95),
             title: const Text("Add Schedule"),
-            insetPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+            insetPadding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
             contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             content: SizedBox(
               width: 500,
@@ -130,9 +137,11 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     ListTile(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
                       tileColor: inputFill,
-                      title: Text("Date: ${DateFormat('EEE, MMM d, yyyy').format(chosenDate)}"),
+                      title: Text(
+                          "Date: ${DateFormat('EEE, MMM d, yyyy').format(chosenDate)}"),
                       trailing: Icon(Icons.calendar_today, color: cs.primary),
                       onTap: () async {
                         final picked = await showDatePicker(
@@ -141,62 +150,109 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                           firstDate: DateTime(2000),
                           lastDate: DateTime(2100),
                         );
-                        if (picked != null) setDialogState(() => chosenDate = picked);
+                        if (picked != null)
+                          setDialogState(() => chosenDate = picked);
                       },
                     ),
                     const SizedBox(height: 8),
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.only(bottom: 4),
-                      child: Text("Event Type", style: TextStyle(color: theme.hintColor, fontSize: 13, fontWeight: FontWeight.w500)),
+                      child: Text("Event Type",
+                          style: TextStyle(
+                              color: theme.hintColor,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500)),
                     ),
                     Wrap(
                       spacing: 6,
                       runSpacing: 6,
                       children: [
-                        'normal', 'reminder', 'birthday', 'exam', 'homework', 'festival', 'event', 'todo'
+                        'normal',
+                        'reminder',
+                        'birthday',
+                        'exam',
+                        'homework',
+                        'festival',
+                        'event',
+                        'todo'
                       ].map((type) {
                         final isSelected = selectedType == type;
                         Color baseColor;
                         IconData icon;
                         switch (type) {
-                          case 'birthday': baseColor = const Color(0xFFE91E63); icon = Icons.cake; break;
-                          case 'reminder': baseColor = const Color(0xFF14B8A6); icon = Icons.notifications_active; break;
-                          case 'exam': baseColor = const Color(0xFF2563EB); icon = Icons.school; break;
-                          case 'homework': baseColor = const Color(0xFF8B5CF6); icon = Icons.assignment; break;
-                          case 'festival': baseColor = Colors.deepOrange; icon = Icons.celebration; break;
-                          case 'event': baseColor = const Color(0xFFFFA000); icon = Icons.event; break;
-                          case 'todo': baseColor = const Color(0xFF06B6D4); icon = Icons.checklist; break;
-                          case 'normal': default: baseColor = const Color(0xFF10B981); icon = Icons.task_alt; break;
+                          case 'birthday':
+                            baseColor = const Color(0xFFE91E63);
+                            icon = Icons.cake;
+                            break;
+                          case 'reminder':
+                            baseColor = const Color(0xFF14B8A6);
+                            icon = Icons.notifications_active;
+                            break;
+                          case 'exam':
+                            baseColor = const Color(0xFF2563EB);
+                            icon = Icons.school;
+                            break;
+                          case 'homework':
+                            baseColor = const Color(0xFF8B5CF6);
+                            icon = Icons.assignment;
+                            break;
+                          case 'festival':
+                            baseColor = Colors.deepOrange;
+                            icon = Icons.celebration;
+                            break;
+                          case 'event':
+                            baseColor = const Color(0xFFFFA000);
+                            icon = Icons.event;
+                            break;
+                          case 'todo':
+                            baseColor = const Color(0xFF06B6D4);
+                            icon = Icons.checklist;
+                            break;
+                          case 'normal':
+                          default:
+                            baseColor = const Color(0xFF10B981);
+                            icon = Icons.task_alt;
+                            break;
                         }
-                        final labelText = type == 'todo' ? 'ToDo' : (type[0].toUpperCase() + type.substring(1));
-                        
+                        final labelText = type == 'todo'
+                            ? 'ToDo'
+                            : (type[0].toUpperCase() + type.substring(1));
+
                         return ActionChip(
-                          backgroundColor: isSelected ? baseColor.withOpacity(0.15) : inputFill,
+                          backgroundColor: isSelected
+                              ? baseColor.withValues(alpha: 0.15)
+                              : inputFill,
                           side: BorderSide(
-                            color: isSelected ? baseColor : cs.primary.withOpacity(0.15),
+                            color: isSelected
+                                ? baseColor
+                                : cs.primary.withValues(alpha: 0.15),
                             width: isSelected ? 1.5 : 1,
                           ),
-                          avatar: Icon(isSelected ? Icons.check : icon, size: 16, color: isSelected ? baseColor : theme.hintColor),
-                          label: Text(
-                            labelText,
-                            style: TextStyle(
-                              color: isSelected ? baseColor : theme.hintColor,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            )
-                          ),
+                          avatar: Icon(isSelected ? Icons.check : icon,
+                              size: 16,
+                              color: isSelected ? baseColor : theme.hintColor),
+                          label: Text(labelText,
+                              style: TextStyle(
+                                color: isSelected ? baseColor : theme.hintColor,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              )),
                           onPressed: () {
                             setDialogState(() {
                               selectedType = type;
                               if (type == 'birthday') {
                                 remindMe = true;
                                 remindDaysBefore = 1;
-                                remindTime = const TimeOfDay(hour: 6, minute: 0);
+                                remindTime =
+                                    const TimeOfDay(hour: 6, minute: 0);
                                 repeat = 'yearly';
                               } else if (type == 'reminder') {
                                 remindMe = true;
                                 remindDaysBefore = 0;
-                                remindTime = const TimeOfDay(hour: 6, minute: 0);
+                                remindTime =
+                                    const TimeOfDay(hour: 6, minute: 0);
                                 repeat = 'none';
                               } else {
                                 // normal, exam, homework, festival, event, todo -> reset to defaults
@@ -226,7 +282,8 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                     ),
                     const SizedBox(height: 8),
                     SwitchListTile(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
                       tileColor: inputFill,
                       title: const Text("Remind Me"),
                       value: remindMe,
@@ -250,20 +307,25 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                                 border: border,
                                 enabledBorder: border,
                                 focusedBorder: border.copyWith(
-                                  borderSide: BorderSide(color: cs.primary, width: 1.2),
+                                  borderSide:
+                                      BorderSide(color: cs.primary, width: 1.2),
                                 ),
                               ),
                               onChanged: (v) {
                                 final num = int.tryParse(v) ?? 0;
-                                setDialogState(() => remindDaysBefore = num.clamp(0, 365));
+                                setDialogState(
+                                    () => remindDaysBefore = num.clamp(0, 365));
                               },
                             ),
                           ),
                           const Spacer(),
                           const Text("At: "),
                           Text(
-                            remindTime == null ? "Select Time" : remindTime!.format(context),
-                            style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600),
+                            remindTime == null
+                                ? "Select Time"
+                                : remindTime!.format(context),
+                            style: TextStyle(
+                                color: cs.primary, fontWeight: FontWeight.w600),
                           ),
                           IconButton(
                             icon: Icon(Icons.access_time, color: cs.primary),
@@ -272,7 +334,8 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                                 context: context,
                                 initialTime: TimeOfDay.now(),
                               );
-                              if (t != null) setDialogState(() => remindTime = t);
+                              if (t != null)
+                                setDialogState(() => remindTime = t);
                             },
                           ),
                         ],
@@ -280,67 +343,90 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                     ],
                     const SizedBox(height: 8),
                     Container(
-                      width: double.infinity,
-                      alignment: Alignment.centerLeft,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Repeat", style: TextStyle(color: theme.hintColor, fontSize: 13, fontWeight: FontWeight.w500)),
-                          const SizedBox(height: 4),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 6,
-                            children: ["none", "daily", "weekly", "monthly", "yearly", "custom"].map((r) {
-                              final isSelected = repeat == r;
-                              final labelText = r == "custom" ? "Custom..." : (r[0].toUpperCase() + r.substring(1));
-                              return ChoiceChip(
-                                label: Text(labelText, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-                                selected: isSelected,
-                                selectedColor: cs.primary.withOpacity(0.15),
-                                checkmarkColor: cs.primary,
-                                backgroundColor: inputFill,
-                                side: BorderSide(color: isSelected ? cs.primary : cs.primary.withOpacity(0.15), width: isSelected ? 1.5 : 1),
-                                onSelected: (b) {
-                                  if (b) setDialogState(() => repeat = r);
-                                },
-                              );
-                            }).toList(),
-                          ),
-                          if (repeat == "custom") ...[
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                const Text("Every:"),
-                                const SizedBox(width: 8),
-                                SizedBox(
-                                  width: 60,
-                                  child: TextFormField(
-                                    initialValue: "$repeatInterval",
-                                    keyboardType: TextInputType.number,
-                                    decoration: InputDecoration(
-                                      isDense: true,
-                                      filled: true,
-                                      fillColor: inputFill,
-                                      border: border,
-                                      enabledBorder: border,
-                                      focusedBorder: border.copyWith(
-                                        borderSide: BorderSide(color: cs.primary, width: 1.2),
+                        width: double.infinity,
+                        alignment: Alignment.centerLeft,
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("Repeat",
+                                  style: TextStyle(
+                                      color: theme.hintColor,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500)),
+                              const SizedBox(height: 4),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: [
+                                  "none",
+                                  "daily",
+                                  "weekly",
+                                  "monthly",
+                                  "yearly",
+                                  "custom"
+                                ].map((r) {
+                                  final isSelected = repeat == r;
+                                  final labelText = r == "custom"
+                                      ? "Custom..."
+                                      : (r[0].toUpperCase() + r.substring(1));
+                                  return ChoiceChip(
+                                    label: Text(labelText,
+                                        style: TextStyle(
+                                            fontWeight: isSelected
+                                                ? FontWeight.bold
+                                                : FontWeight.normal)),
+                                    selected: isSelected,
+                                    selectedColor:
+                                        cs.primary.withValues(alpha: 0.15),
+                                    checkmarkColor: cs.primary,
+                                    backgroundColor: inputFill,
+                                    side: BorderSide(
+                                        color: isSelected
+                                            ? cs.primary
+                                            : cs.primary
+                                                .withValues(alpha: 0.15),
+                                        width: isSelected ? 1.5 : 1),
+                                    onSelected: (b) {
+                                      if (b) setDialogState(() => repeat = r);
+                                    },
+                                  );
+                                }).toList(),
+                              ),
+                              if (repeat == "custom") ...[
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    const Text("Every:"),
+                                    const SizedBox(width: 8),
+                                    SizedBox(
+                                      width: 60,
+                                      child: TextFormField(
+                                        initialValue: "$repeatInterval",
+                                        keyboardType: TextInputType.number,
+                                        decoration: InputDecoration(
+                                          isDense: true,
+                                          filled: true,
+                                          fillColor: inputFill,
+                                          border: border,
+                                          enabledBorder: border,
+                                          focusedBorder: border.copyWith(
+                                            borderSide: BorderSide(
+                                                color: cs.primary, width: 1.2),
+                                          ),
+                                        ),
+                                        onChanged: (v) {
+                                          final num = int.tryParse(v) ?? 1;
+                                          setDialogState(() => repeatInterval =
+                                              num.clamp(1, 999));
+                                        },
                                       ),
                                     ),
-                                    onChanged: (v) {
-                                      final num = int.tryParse(v) ?? 1;
-                                      setDialogState(() => repeatInterval = num.clamp(1, 999));
-                                    },
-                                  ),
+                                    const SizedBox(width: 8),
+                                    const Text("days"),
+                                  ],
                                 ),
-                                const SizedBox(width: 8),
-                                const Text("days"),
                               ],
-                            ),
-                          ],
-                        ]
-                      )
-                    ),
+                            ])),
                     const SizedBox(height: 12),
                     Container(
                       width: double.infinity,
@@ -362,12 +448,14 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                                 border: border,
                                 enabledBorder: border,
                                 focusedBorder: border.copyWith(
-                                  borderSide: BorderSide(color: cs.primary, width: 1.2),
+                                  borderSide:
+                                      BorderSide(color: cs.primary, width: 1.2),
                                 ),
                               ),
                               onChanged: (v) {
                                 final num = int.tryParse(v) ?? 1;
-                                setDialogState(() => durationDays = num.clamp(1, 365));
+                                setDialogState(
+                                    () => durationDays = num.clamp(1, 365));
                               },
                             ),
                           ),
@@ -392,7 +480,9 @@ class ScheduleScreenState extends State<ScheduleScreen> {
             ),
             actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+              TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Cancel")),
               ElevatedButton(
                 onPressed: () async {
                   final task = taskController.text.trim();
@@ -400,7 +490,7 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                     if (remindMe) {
                       await NotificationService().requestPermission();
                     }
-                    
+
                     final newEvent = Event(
                       date: ScheduleController.dateFormat.format(chosenDate),
                       task: task,
@@ -411,10 +501,11 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                           ? remindTime!.format(context)
                           : null,
                       repeat: repeat,
-                      repeatInterval: repeat == "custom" ? repeatInterval : null,
+                      repeatInterval:
+                          repeat == "custom" ? repeatInterval : null,
                       durationDays: durationDays > 1 ? durationDays : null,
                     );
-                    
+
                     await _controller.addEvent(newEvent, context);
                     if (mounted) Navigator.pop(context);
                   }
@@ -499,10 +590,11 @@ class ScheduleScreenState extends State<ScheduleScreen> {
     final bool isDark = theme.brightness == Brightness.dark;
     final base = _eventColor(event);
     final Color bg = isDark
-        ? Color.alphaBlend(Colors.black.withOpacity(0.35), base).withOpacity(0.92)
-        : base.withOpacity(0.92);
+        ? Color.alphaBlend(Colors.black.withValues(alpha: 0.35), base)
+            .withValues(alpha: 0.92)
+        : base.withValues(alpha: 0.92);
     final Color fg = bg.computeLuminance() > 0.55 ? Colors.black : Colors.white;
-    final Color subtleFg = fg.withOpacity(0.88);
+    final Color subtleFg = fg.withValues(alpha: 0.88);
 
     final container = Container(
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
@@ -511,7 +603,7 @@ class ScheduleScreenState extends State<ScheduleScreen> {
         color: bg,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: (isDark ? Colors.white : Colors.black).withOpacity(0.08),
+          color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
           width: 1,
         ),
       ),
@@ -524,10 +616,10 @@ class ScheduleScreenState extends State<ScheduleScreen> {
               child: Text(
                 event.task,
                 style: TextStyle(
-                  color: event.done ? fg.withOpacity(0.5) : fg,
+                  color: event.done ? fg.withValues(alpha: 0.5) : fg,
                   fontWeight: FontWeight.bold,
                   decoration: event.done ? TextDecoration.lineThrough : null,
-                  decorationColor: fg.withOpacity(0.5),
+                  decorationColor: fg.withValues(alpha: 0.5),
                 ),
               ),
             )
@@ -572,7 +664,8 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                   Text(
                     event.repeat == "custom"
                         ? "Every ${event.repeatInterval ?? 1} days"
-                        : (event.repeat![0].toUpperCase() + event.repeat!.substring(1)),
+                        : (event.repeat![0].toUpperCase() +
+                            event.repeat!.substring(1)),
                     style: TextStyle(color: subtleFg, fontSize: 11),
                   ),
                 ],
@@ -612,7 +705,7 @@ class ScheduleScreenState extends State<ScheduleScreen> {
         child: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: bg.withOpacity(0.95),
+            color: bg.withValues(alpha: 0.95),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
@@ -655,7 +748,10 @@ class ScheduleScreenState extends State<ScheduleScreen> {
       ),
     );
 
-    bool canMove = event.type == 'normal' || event.type == 'homework' || event.type == 'reminder' || event.type == 'todo';
+    bool canMove = event.type == 'normal' ||
+        event.type == 'homework' ||
+        event.type == 'reminder' ||
+        event.type == 'todo';
 
     return Draggable<Map<String, dynamic>>(
       data: {
@@ -668,7 +764,7 @@ class ScheduleScreenState extends State<ScheduleScreen> {
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: bg.withOpacity(0.35),
+          color: bg.withValues(alpha: 0.35),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Opacity(opacity: 0.0, child: container),
@@ -688,9 +784,12 @@ class ScheduleScreenState extends State<ScheduleScreen> {
     final cs = theme.colorScheme;
     final bool isDark = theme.brightness == Brightness.dark;
 
-    final Color headerSurface = (isDark ? AppColors.slate900 : Colors.white).withOpacity(0.55);
-    final Color bodySurface = (isDark ? AppColors.slate900 : Colors.white).withOpacity(0.35);
-    final Color secondaryText = isDark ? AppColors.slate400 : AppColors.slate600;
+    final Color headerSurface =
+        (isDark ? AppColors.slate900 : Colors.white).withValues(alpha: 0.55);
+    final Color bodySurface =
+        (isDark ? AppColors.slate900 : Colors.white).withValues(alpha: 0.35);
+    final Color secondaryText =
+        isDark ? AppColors.slate400 : AppColors.slate600;
 
     _controller.clearOldCache();
 
@@ -708,7 +807,8 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                       onNotification: (notification) {
                         if (notification is ScrollUpdateNotification) {
                           final offset = notification.metrics.pixels;
-                          final index = (offset / _controller.itemExtent).round();
+                          final index =
+                              (offset / _controller.itemExtent).round();
                           final newDate = _controller.dateFromIndex(index);
                           _controller.selectedDate = newDate;
                         }
@@ -722,31 +822,41 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                         addRepaintBoundaries: true,
                         itemBuilder: (context, index) {
                           final date = _controller.dateFromIndex(index);
-                          final key = ScheduleController.dateFormat.format(date);
+                          final key =
+                              ScheduleController.dateFormat.format(date);
                           final isToday = key == todayKey;
                           final events = _controller.eventsForDate(date);
-                          final nepaliInfo = _controller.getNepaliDateInfo(date);
+                          final nepaliInfo =
+                              _controller.getNepaliDateInfo(date);
                           final nepaliMonth = nepaliInfo['month'] ?? '';
                           final nepaliDay = nepaliInfo['day'] ?? '';
-                          final dateOnly = DateTime(date.year, date.month, date.day);
+                          final dateOnly =
+                              DateTime(date.year, date.month, date.day);
                           final dayDiff = dateOnly.difference(today).inDays;
                           String diffText;
-                          if (dayDiff == 0) diffText = "Today";
-                          else if (dayDiff == -1) diffText = "Yesterday";
-                          else if (dayDiff == 1) diffText = "Tomorrow";
-                          else if (dayDiff < 0) diffText = "${-dayDiff} days ago";
-                          else diffText = "in $dayDiff days";
+                          if (dayDiff == 0) {
+                            diffText = "Today";
+                          } else if (dayDiff == -1)
+                            diffText = "Yesterday";
+                          else if (dayDiff == 1)
+                            diffText = "Tomorrow";
+                          else if (dayDiff < 0)
+                            diffText = "${-dayDiff} days ago";
+                          else
+                            diffText = "in $dayDiff days";
 
-                          final weatherEmoji = _controller.weatherMap[key]?['emoji'];
+                          final weatherEmoji =
+                              _controller.weatherMap[key]?['emoji'];
                           final Color colBorderColor = isDark
-                              ? AppColors.slate600.withOpacity(0.9)
-                              : AppColors.slate400.withOpacity(0.7);
+                              ? AppColors.slate600.withValues(alpha: 0.9)
+                              : AppColors.slate400.withValues(alpha: 0.7);
 
                           return DragTarget<Map<String, dynamic>>(
-                            onWillAccept: (data) => data != null && (data['canMove'] == true),
-                            onAccept: (data) async {
-                              final event = data['event'] as Event;
-                              final sourceDate = data['sourceDate'] as DateTime;
+                            onWillAcceptWithDetails: (details) =>
+                                details.data['canMove'] == true,
+                            onAcceptWithDetails: (details) async {
+                              final event = details.data['event'] as Event;
+                              final sourceDate = details.data['sourceDate'] as DateTime;
                               if (!_controller.isSameDay(sourceDate, date)) {
                                 await _controller.moveEvent(event, date);
                               }
@@ -757,19 +867,31 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 8),
                                 decoration: BoxDecoration(
-                                  border: Border(right: BorderSide(color: colBorderColor.withOpacity(0.3), width: 1)),
+                                  border: Border(
+                                      right: BorderSide(
+                                          color: colBorderColor.withValues(
+                                              alpha: 0.3),
+                                          width: 1)),
                                   color: isHighlighted
-                                      ? AppColors.govGreen.withOpacity(isDark ? 0.18 : 0.12)
-                                      : (isToday ? cs.primary.withOpacity(isDark ? 0.12 : 0.06) : null),
+                                      ? AppColors.govGreen.withValues(
+                                          alpha: isDark ? 0.18 : 0.12)
+                                      : (isToday
+                                          ? cs.primary.withValues(
+                                              alpha: isDark ? 0.12 : 0.06)
+                                          : null),
                                 ),
                                 child: Column(
                                   children: [
                                     // ── Dual-date header ──
                                     Container(
-                                      padding: const EdgeInsets.only(top: 8, bottom: 4),
+                                      padding: const EdgeInsets.only(
+                                          top: 8, bottom: 4),
                                       decoration: BoxDecoration(
                                         color: headerSurface,
-                                        border: Border(right: BorderSide(color: colBorderColor, width: 2)),
+                                        border: Border(
+                                            right: BorderSide(
+                                                color: colBorderColor,
+                                                width: 2)),
                                       ),
                                       width: double.infinity,
                                       child: Column(
@@ -780,30 +902,64 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                                               // Left: English date
                                               Expanded(
                                                 child: Column(
-                                                  mainAxisSize: MainAxisSize.min,
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
                                                   children: [
-                                                    Text(ScheduleController.monthFormat.format(date),
+                                                    Text(
+                                                        ScheduleController
+                                                            .monthFormat
+                                                            .format(date),
                                                         style: TextStyle(
                                                           fontSize: 13,
-                                                          color: isToday ? AppColors.govGreen : secondaryText,
-                                                          fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
+                                                          color: isToday
+                                                              ? AppColors
+                                                                  .govGreen
+                                                              : secondaryText,
+                                                          fontWeight: isToday
+                                                              ? FontWeight.bold
+                                                              : FontWeight.w500,
                                                         )),
                                                     Row(
-                                                      mainAxisAlignment: MainAxisAlignment.center,
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .center,
                                                       children: [
-                                                        Text(ScheduleController.numFormat.format(date),
+                                                        Text(
+                                                            ScheduleController
+                                                                .numFormat
+                                                                .format(date),
                                                             style: TextStyle(
                                                               fontSize: 28,
-                                                              color: isToday ? AppColors.govGreen : (isDark ? AppColors.slate50 : AppColors.slate800),
-                                                              fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                                                              color: isToday
+                                                                  ? AppColors
+                                                                      .govGreen
+                                                                  : (isDark
+                                                                      ? AppColors
+                                                                          .slate50
+                                                                      : AppColors
+                                                                          .slate800),
+                                                              fontWeight: isToday
+                                                                  ? FontWeight
+                                                                      .bold
+                                                                  : FontWeight
+                                                                      .normal,
                                                             )),
                                                       ],
                                                     ),
-                                                    Text(ScheduleController.dayFormat.format(date),
+                                                    Text(
+                                                        ScheduleController
+                                                            .dayFormat
+                                                            .format(date),
                                                         style: TextStyle(
                                                           fontSize: 13,
-                                                          color: isToday ? AppColors.govGreen : secondaryText,
-                                                          fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                                                          color: isToday
+                                                              ? AppColors
+                                                                  .govGreen
+                                                              : secondaryText,
+                                                          fontWeight: isToday
+                                                              ? FontWeight.bold
+                                                              : FontWeight
+                                                                  .normal,
                                                         )),
                                                   ],
                                                 ),
@@ -812,30 +968,64 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                                               Container(
                                                 width: 1.5,
                                                 height: 55,
-                                                color: isDark ? AppColors.slate500 : AppColors.slate400,
+                                                color: isDark
+                                                    ? AppColors.slate500
+                                                    : AppColors.slate400,
                                               ),
                                               // Right: Nepali date
                                               Expanded(
                                                 child: Column(
-                                                  mainAxisSize: MainAxisSize.min,
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
                                                   children: [
-                                                    if (weatherEmoji != null && weatherEmoji.isNotEmpty)
-                                                      Text(weatherEmoji, style: const TextStyle(fontSize: 14))
+                                                    if (weatherEmoji != null &&
+                                                        weatherEmoji.isNotEmpty)
+                                                      Text(weatherEmoji,
+                                                          style: const TextStyle(
+                                                              fontSize: 14))
                                                     else
-                                                      Icon(Icons.account_balance, size: 14,
-                                                          color: isToday ? AppColors.govGreen : (isDark ? const Color(0xFF7EB8E0) : const Color(0xFF4A90B8))),
+                                                      Icon(
+                                                          Icons.account_balance,
+                                                          size: 14,
+                                                          color: isToday
+                                                              ? AppColors
+                                                                  .govGreen
+                                                              : (isDark
+                                                                  ? const Color(
+                                                                      0xFF7EB8E0)
+                                                                  : const Color(
+                                                                      0xFF4A90B8))),
                                                     const SizedBox(height: 4),
                                                     Text(nepaliMonth,
                                                         style: TextStyle(
                                                           fontSize: 12,
-                                                          color: isToday ? AppColors.govGreen : (isDark ? const Color(0xFF7EB8E0) : const Color(0xFF4A90B8)),
-                                                          fontWeight: FontWeight.w600,
+                                                          color: isToday
+                                                              ? AppColors
+                                                                  .govGreen
+                                                              : (isDark
+                                                                  ? const Color(
+                                                                      0xFF7EB8E0)
+                                                                  : const Color(
+                                                                      0xFF4A90B8)),
+                                                          fontWeight:
+                                                              FontWeight.w600,
                                                         )),
                                                     Text(nepaliDay,
                                                         style: TextStyle(
                                                           fontSize: 22,
-                                                          color: isToday ? (isDark ? AppColors.slate50 : AppColors.slate900) : (isDark ? const Color(0xFF9DC8E8) : const Color(0xFF3A7CA5)),
-                                                          fontWeight: FontWeight.w400,
+                                                          color: isToday
+                                                              ? (isDark
+                                                                  ? AppColors
+                                                                      .slate50
+                                                                  : AppColors
+                                                                      .slate900)
+                                                              : (isDark
+                                                                  ? const Color(
+                                                                      0xFF9DC8E8)
+                                                                  : const Color(
+                                                                      0xFF3A7CA5)),
+                                                          fontWeight:
+                                                              FontWeight.w400,
                                                         )),
                                                   ],
                                                 ),
@@ -844,7 +1034,10 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                                           ),
                                           const SizedBox(height: 2),
                                           // diffText
-                                          Text(diffText, style: TextStyle(fontSize: 11, color: secondaryText)),
+                                          Text(diffText,
+                                              style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: secondaryText)),
                                         ],
                                       ),
                                     ),
@@ -856,8 +1049,11 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                                             ? const SizedBox.expand()
                                             : ListView.builder(
                                                 itemCount: events.length,
-                                                padding: const EdgeInsets.only(bottom: 85),
-                                                itemBuilder: (context, i) => _buildEventContainer(events[i], date),
+                                                padding: const EdgeInsets.only(
+                                                    bottom: 85),
+                                                itemBuilder: (context, i) =>
+                                                    _buildEventContainer(
+                                                        events[i], date),
                                               ),
                                       ),
                                     ),
@@ -869,7 +1065,9 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                         },
                       ),
                     )
-                  : (_controller.viewMode == ScheduleView.week ? _buildWeekView(cs, isDark, today, todayKey) : _buildMonthView(cs, isDark, today, todayKey)),
+                  : (_controller.viewMode == ScheduleView.week
+                      ? _buildWeekView(cs, isDark, today, todayKey)
+                      : _buildMonthView(cs, isDark, today, todayKey)),
             ),
           ),
           if (_controller.isDragging)
@@ -877,9 +1075,9 @@ class ScheduleScreenState extends State<ScheduleScreen> {
               left: 16,
               bottom: 110,
               child: DragTarget<Map<String, dynamic>>(
-                onWillAccept: (data) => data != null,
-                onAccept: (data) async {
-                  final event = data['event'] as Event;
+                onWillAcceptWithDetails: (details) => true,
+                onAcceptWithDetails: (details) async {
+                  final event = details.data['event'] as Event;
                   await _controller.deleteEvent(event);
                 },
                 builder: (context, candidateData, rejectedData) {
@@ -888,11 +1086,19 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                     duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: isHighlighted ? Colors.red.shade600 : Colors.red.shade400,
+                      color: isHighlighted
+                          ? Colors.red.shade600
+                          : Colors.red.shade400,
                       borderRadius: BorderRadius.circular(50),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 2))],
+                      boxShadow: [
+                        BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2))
+                      ],
                     ),
-                    child: Icon(Icons.delete, color: Colors.white, size: isHighlighted ? 32 : 24),
+                    child: Icon(Icons.delete,
+                        color: Colors.white, size: isHighlighted ? 32 : 24),
                   );
                 },
               ),
@@ -906,21 +1112,25 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
-                    constraints: const BoxConstraints(maxWidth: 36, maxHeight: 36),
+                    constraints:
+                        const BoxConstraints(maxWidth: 36, maxHeight: 36),
                     padding: EdgeInsets.zero,
                     tooltip: "Previous event",
                     onPressed: () => _controller.jumpToEvent(-1),
                     icon: const Icon(Icons.chevron_left, size: 22),
                   ),
                   IconButton(
-                    constraints: const BoxConstraints(maxWidth: 36, maxHeight: 36),
+                    constraints:
+                        const BoxConstraints(maxWidth: 36, maxHeight: 36),
                     padding: EdgeInsets.zero,
                     tooltip: "Today",
                     onPressed: () => _controller.jumpToDate(DateTime.now()),
-                    icon: Icon(Icons.today, color: AppColors.govGreen, size: 22),
+                    icon:
+                        Icon(Icons.today, color: AppColors.govGreen, size: 22),
                   ),
                   IconButton(
-                    constraints: const BoxConstraints(maxWidth: 36, maxHeight: 36),
+                    constraints:
+                        const BoxConstraints(maxWidth: 36, maxHeight: 36),
                     padding: EdgeInsets.zero,
                     tooltip: "Next event",
                     onPressed: () => _controller.jumpToEvent(1),
@@ -928,7 +1138,12 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 0),
-                    child: Container(height: 20, width: 1, color: (isDark ? AppColors.slate700 : AppColors.slate300).withOpacity(0.3)),
+                    child: Container(
+                        height: 20,
+                        width: 1,
+                        color:
+                            (isDark ? AppColors.slate700 : AppColors.slate300)
+                                .withValues(alpha: 0.3)),
                   ),
                   _buildViewSwitcher(isDark),
                 ],
@@ -938,14 +1153,25 @@ class ScheduleScreenState extends State<ScheduleScreen> {
         ],
       ),
       floatingActionButton: Container(
-        width: 64, height: 64,
+        width: 64,
+        height: 64,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: AppColors.slate800.withOpacity(0.95),
-          border: Border.all(color: AppColors.govGreen.withOpacity(0.6), width: 1.5),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.35), blurRadius: 18, offset: const Offset(0, 6))],
+          color: AppColors.slate800.withValues(alpha: 0.95),
+          border: Border.all(
+              color: AppColors.govGreen.withValues(alpha: 0.6), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.35),
+                blurRadius: 18,
+                offset: const Offset(0, 6))
+          ],
         ),
-        child: IconButton(onPressed: _showAddEventDialog, icon: const Icon(Icons.add), color: AppColors.govGreen, iconSize: 30),
+        child: IconButton(
+            onPressed: _showAddEventDialog,
+            icon: const Icon(Icons.add),
+            color: AppColors.govGreen,
+            iconSize: 30),
       ),
     );
   }
@@ -956,10 +1182,19 @@ class ScheduleScreenState extends State<ScheduleScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
         decoration: BoxDecoration(
-          color: (isDark ? AppColors.slate800 : Colors.white).withOpacity(0.9),
+          color: (isDark ? AppColors.slate800 : Colors.white)
+              .withValues(alpha: 0.9),
           borderRadius: BorderRadius.circular(24),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 10, offset: const Offset(0, 4))],
-          border: Border.all(color: (isDark ? AppColors.slate700 : AppColors.slate300).withOpacity(0.8), width: 1),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 10,
+                offset: const Offset(0, 4))
+          ],
+          border: Border.all(
+              color: (isDark ? AppColors.slate700 : AppColors.slate300)
+                  .withValues(alpha: 0.8),
+              width: 1),
         ),
         child: child,
       ),
@@ -969,18 +1204,27 @@ class ScheduleScreenState extends State<ScheduleScreen> {
   Widget _buildEventsListForSelected(ColorScheme cs) {
     final events = _controller.eventsForDate(_controller.selectedDate);
     if (events.isEmpty) {
-      return Center(child: Text("No events", style: TextStyle(color: cs.onSurface.withOpacity(0.6))));
+      return Center(
+          child: Text("No events",
+              style: TextStyle(color: cs.onSurface.withValues(alpha: 0.6))));
     }
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: List.generate(events.length, (i) => Padding(padding: const EdgeInsets.only(bottom: 8), child: _buildEventContainer(events[i], _controller.selectedDate))),
+        children: List.generate(
+            events.length,
+            (i) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child:
+                    _buildEventContainer(events[i], _controller.selectedDate))),
       ),
     );
   }
 
-  Widget _buildWeekView(ColorScheme cs, bool isDark, DateTime today, String todayKey) {
-    final startOfWeek = _controller.selectedDate.subtract(Duration(days: _controller.selectedDate.weekday % 7));
+  Widget _buildWeekView(
+      ColorScheme cs, bool isDark, DateTime today, String todayKey) {
+    final startOfWeek = _controller.selectedDate
+        .subtract(Duration(days: _controller.selectedDate.weekday % 7));
     final days = List.generate(7, (i) => startOfWeek.add(Duration(days: i)));
 
     return Column(
@@ -991,11 +1235,23 @@ class ScheduleScreenState extends State<ScheduleScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Week of ${DateFormat('MMM d, yyyy').format(startOfWeek)}", style: TextStyle(color: isDark ? AppColors.slate200 : AppColors.slate800, fontWeight: FontWeight.w700)),
+              Text("Week of ${DateFormat('MMM d, yyyy').format(startOfWeek)}",
+                  style: TextStyle(
+                      color: isDark ? AppColors.slate200 : AppColors.slate800,
+                      fontWeight: FontWeight.w700)),
               Row(
                 children: [
-                  IconButton(tooltip: "Previous week", onPressed: () => _controller.selectedDate = _controller.selectedDate.subtract(const Duration(days: 7)), icon: const Icon(Icons.chevron_left, size: 20)),
-                  IconButton(tooltip: "Next week", onPressed: () => _controller.selectedDate = _controller.selectedDate.add(const Duration(days: 7)), icon: const Icon(Icons.chevron_right, size: 20)),
+                  IconButton(
+                      tooltip: "Previous week",
+                      onPressed: () => _controller.selectedDate = _controller
+                          .selectedDate
+                          .subtract(const Duration(days: 7)),
+                      icon: const Icon(Icons.chevron_left, size: 20)),
+                  IconButton(
+                      tooltip: "Next week",
+                      onPressed: () => _controller.selectedDate =
+                          _controller.selectedDate.add(const Duration(days: 7)),
+                      icon: const Icon(Icons.chevron_right, size: 20)),
                 ],
               ),
             ],
@@ -1009,7 +1265,8 @@ class ScheduleScreenState extends State<ScheduleScreen> {
               final key = ScheduleController.dateFormat.format(date);
               final isToday = key == todayKey;
               final events = _controller.eventsForDate(date);
-              final isSelected = _controller.isSameDay(_controller.selectedDate, date);
+              final isSelected =
+                  _controller.isSameDay(_controller.selectedDate, date);
 
               String nepaliDay = '';
               final nepaliInfo = _controller.getNepaliDateInfo(date);
@@ -1019,29 +1276,68 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                 child: GestureDetector(
                   onTap: () => _controller.selectedDate = date,
                   child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: isSelected ? cs.primary.withOpacity(0.15) : (isToday ? cs.primary.withOpacity(0.08) : cs.surface.withOpacity(0.5)),
+                      color: isSelected
+                          ? cs.primary.withValues(alpha: 0.15)
+                          : (isToday
+                              ? cs.primary.withValues(alpha: 0.08)
+                              : cs.surface.withValues(alpha: 0.5)),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: isToday ? AppColors.govGreen : cs.outline.withOpacity(0.4), width: isSelected ? 1.5 : 1),
+                      border: Border.all(
+                          color: isToday
+                              ? AppColors.govGreen
+                              : cs.outline.withValues(alpha: 0.4),
+                          width: isSelected ? 1.5 : 1),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(DateFormat('E').format(date), style: TextStyle(color: cs.onSurface.withOpacity(0.7), fontSize: 11, fontWeight: FontWeight.w600)),
+                        Text(DateFormat('E').format(date),
+                            style: TextStyle(
+                                color: cs.onSurface.withValues(alpha: 0.7),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600)),
                         const SizedBox(height: 3),
-                        Text(DateFormat('d').format(date), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: isToday ? AppColors.govGreen : cs.onSurface)),
+                        Text(DateFormat('d').format(date),
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: isToday
+                                    ? AppColors.govGreen
+                                    : cs.onSurface)),
                         if (nepaliDay.isNotEmpty) ...[
                           const SizedBox(height: 2),
-                          Text(nepaliDay, style: TextStyle(fontSize: 10, color: cs.onSurface.withOpacity(0.6), fontWeight: FontWeight.w600)),
+                          Text(nepaliDay,
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  color: cs.onSurface.withValues(alpha: 0.6),
+                                  fontWeight: FontWeight.w600)),
                         ],
                         const SizedBox(height: 4),
                         SizedBox(
                           height: 20,
                           child: events.isNotEmpty
-                              ? Wrap(spacing: 2, runSpacing: 2, alignment: WrapAlignment.center, children: events.take(2).map((e) => Container(width: 6, height: 6, decoration: BoxDecoration(color: _eventColor(e), shape: BoxShape.circle))).toList())
-                              : Center(child: Opacity(opacity: 0.3, child: Icon(Icons.event_note, size: 14, color: cs.onSurface))),
+                              ? Wrap(
+                                  spacing: 2,
+                                  runSpacing: 2,
+                                  alignment: WrapAlignment.center,
+                                  children: events
+                                      .take(2)
+                                      .map((e) => Container(
+                                          width: 6,
+                                          height: 6,
+                                          decoration: BoxDecoration(
+                                              color: _eventColor(e),
+                                              shape: BoxShape.circle)))
+                                      .toList())
+                              : Center(
+                                  child: Opacity(
+                                      opacity: 0.3,
+                                      child: Icon(Icons.event_note,
+                                          size: 14, color: cs.onSurface))),
                         ),
                       ],
                     ),
@@ -1052,23 +1348,30 @@ class ScheduleScreenState extends State<ScheduleScreen> {
           ),
         ),
         const Divider(height: 1),
-        Expanded(child: Padding(padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 0), child: _buildEventsListForSelected(cs))),
+        Expanded(
+            child: Padding(
+                padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 0),
+                child: _buildEventsListForSelected(cs))),
       ],
     );
   }
 
-  Widget _buildMonthView(ColorScheme cs, bool isDark, DateTime today, String todayKey) {
-    final firstOfMonth = DateTime(_controller.selectedDate.year, _controller.selectedDate.month, 1);
-    final daysInMonth = DateUtils.getDaysInMonth(_controller.selectedDate.year, _controller.selectedDate.month);
-    final startWeekday = firstOfMonth.weekday % 7; 
+  Widget _buildMonthView(
+      ColorScheme cs, bool isDark, DateTime today, String todayKey) {
+    final firstOfMonth = DateTime(
+        _controller.selectedDate.year, _controller.selectedDate.month, 1);
+    final daysInMonth = DateUtils.getDaysInMonth(
+        _controller.selectedDate.year, _controller.selectedDate.month);
+    final startWeekday = firstOfMonth.weekday % 7;
     final totalCells = startWeekday + daysInMonth;
     final rows = (totalCells / 7).ceil();
     final cells = rows * 7;
-    
+
     // Fill all cells with actual dates, including prev/next month
     final dates = List<DateTime>.generate(cells, (i) {
       final dayNum = i - startWeekday + 1;
-      return DateTime(_controller.selectedDate.year, _controller.selectedDate.month, dayNum);
+      return DateTime(_controller.selectedDate.year,
+          _controller.selectedDate.month, dayNum);
     });
 
     return Column(
@@ -1080,26 +1383,46 @@ class ScheduleScreenState extends State<ScheduleScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Builder(builder: (context) {
-                String englishMonth = DateFormat('MMMM yyyy').format(_controller.selectedDate);
+                String englishMonth =
+                    DateFormat('MMMM yyyy').format(_controller.selectedDate);
                 String nepaliMonth = '';
                 final infoStart = _controller.getNepaliDateInfo(firstOfMonth);
-                final lastOfMonth = DateTime(_controller.selectedDate.year, _controller.selectedDate.month, daysInMonth);
+                final lastOfMonth = DateTime(_controller.selectedDate.year,
+                    _controller.selectedDate.month, daysInMonth);
                 final infoEnd = _controller.getNepaliDateInfo(lastOfMonth);
-                
+
                 final m1 = infoStart['month'] ?? '';
                 final m2 = infoEnd['month'] ?? '';
-                
+
                 if (m1.isNotEmpty && m2.isNotEmpty && m1 != m2) {
                   nepaliMonth = "$m1/$m2";
                 } else {
                   nepaliMonth = m1.isNotEmpty ? m1 : m2;
                 }
-                return Text(nepaliMonth.isEmpty ? englishMonth : "$englishMonth ($nepaliMonth)", style: TextStyle(color: isDark ? AppColors.slate200 : AppColors.slate800, fontWeight: FontWeight.w700));
+                return Text(
+                    nepaliMonth.isEmpty
+                        ? englishMonth
+                        : "$englishMonth ($nepaliMonth)",
+                    style: TextStyle(
+                        color: isDark ? AppColors.slate200 : AppColors.slate800,
+                        fontWeight: FontWeight.w700));
               }),
               Row(
                 children: [
-                  IconButton(tooltip: "Previous month", onPressed: () => _controller.selectedDate = DateTime(_controller.selectedDate.year, _controller.selectedDate.month - 1, _controller.selectedDate.day), icon: const Icon(Icons.chevron_left, size: 20)),
-                  IconButton(tooltip: "Next month", onPressed: () => _controller.selectedDate = DateTime(_controller.selectedDate.year, _controller.selectedDate.month + 1, _controller.selectedDate.day), icon: const Icon(Icons.chevron_right, size: 20)),
+                  IconButton(
+                      tooltip: "Previous month",
+                      onPressed: () => _controller.selectedDate = DateTime(
+                          _controller.selectedDate.year,
+                          _controller.selectedDate.month - 1,
+                          _controller.selectedDate.day),
+                      icon: const Icon(Icons.chevron_left, size: 20)),
+                  IconButton(
+                      tooltip: "Next month",
+                      onPressed: () => _controller.selectedDate = DateTime(
+                          _controller.selectedDate.year,
+                          _controller.selectedDate.month + 1,
+                          _controller.selectedDate.day),
+                      icon: const Icon(Icons.chevron_right, size: 20)),
                 ],
               )
             ],
@@ -1110,13 +1433,43 @@ class ScheduleScreenState extends State<ScheduleScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Row(
             children: const [
-              Expanded(child: Center(child: Text("Sun", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.redAccent)))),
-              Expanded(child: Center(child: Text("Mon", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)))),
-              Expanded(child: Center(child: Text("Tue", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)))),
-              Expanded(child: Center(child: Text("Wed", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)))),
-              Expanded(child: Center(child: Text("Thu", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)))),
-              Expanded(child: Center(child: Text("Fri", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)))),
-              Expanded(child: Center(child: Text("Sat", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)))),
+              Expanded(
+                  child: Center(
+                      child: Text("Sun",
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.redAccent)))),
+              Expanded(
+                  child: Center(
+                      child: Text("Mon",
+                          style: TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.w600)))),
+              Expanded(
+                  child: Center(
+                      child: Text("Tue",
+                          style: TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.w600)))),
+              Expanded(
+                  child: Center(
+                      child: Text("Wed",
+                          style: TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.w600)))),
+              Expanded(
+                  child: Center(
+                      child: Text("Thu",
+                          style: TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.w600)))),
+              Expanded(
+                  child: Center(
+                      child: Text("Fri",
+                          style: TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.w600)))),
+              Expanded(
+                  child: Center(
+                      child: Text("Sat",
+                          style: TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.w600)))),
             ],
           ),
         ),
@@ -1127,14 +1480,18 @@ class ScheduleScreenState extends State<ScheduleScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             itemCount: cells,
             physics: const BouncingScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 7, childAspectRatio: 0.75),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 7, childAspectRatio: 0.75),
             itemBuilder: (context, i) {
               final date = dates[i];
-              final isCurrentMonth = date.month == _controller.selectedDate.month && date.year == _controller.selectedDate.year;
+              final isCurrentMonth =
+                  date.month == _controller.selectedDate.month &&
+                      date.year == _controller.selectedDate.year;
               final key = ScheduleController.dateFormat.format(date);
               final isToday = key == todayKey;
               final events = _controller.eventsForDate(date);
-              final isSelected = _controller.isSameDay(_controller.selectedDate, date);
+              final isSelected =
+                  _controller.isSameDay(_controller.selectedDate, date);
 
               String nepaliDay = '';
               final nepaliInfo = _controller.getNepaliDateInfo(date);
@@ -1159,15 +1516,17 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color: isSelected && isCurrentMonth
-                          ? cs.primary.withOpacity(0.15)
+                          ? cs.primary.withValues(alpha: 0.15)
                           : (isToday
-                              ? cs.primary.withOpacity(0.08)
-                              : cs.surface.withOpacity(isCurrentMonth ? 0.4 : 0.15)),
+                              ? cs.primary.withValues(alpha: 0.08)
+                              : cs.surface.withValues(
+                                  alpha: isCurrentMonth ? 0.4 : 0.15)),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: isToday && isCurrentMonth
                             ? AppColors.govGreen
-                            : cs.outline.withOpacity(isCurrentMonth ? 0.4 : 0.15),
+                            : cs.outline
+                                .withValues(alpha: isCurrentMonth ? 0.4 : 0.15),
                         width: isSelected && isCurrentMonth ? 1.2 : 0.8,
                       ),
                     ),
@@ -1178,17 +1537,42 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(DateFormat('d').format(date), style: TextStyle(fontWeight: FontWeight.w700, color: isToday && isCurrentMonth ? AppColors.govGreen : cs.onSurface, fontSize: 12)),
-                            if (isToday && isCurrentMonth) ...[const SizedBox(width: 2), Icon(Icons.circle, size: 4, color: AppColors.govGreen)]
+                            Text(DateFormat('d').format(date),
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    color: isToday && isCurrentMonth
+                                        ? AppColors.govGreen
+                                        : cs.onSurface,
+                                    fontSize: 12)),
+                            if (isToday && isCurrentMonth) ...[
+                              const SizedBox(width: 2),
+                              Icon(Icons.circle,
+                                  size: 4, color: AppColors.govGreen)
+                            ]
                           ],
                         ),
                         if (nepaliDay.isNotEmpty) ...[
                           const SizedBox(height: 1),
-                          Text(nepaliDay, style: TextStyle(fontSize: 9, color: cs.onSurface.withOpacity(0.5), fontWeight: FontWeight.w600)),
+                          Text(nepaliDay,
+                              style: TextStyle(
+                                  fontSize: 9,
+                                  color: cs.onSurface.withValues(alpha: 0.5),
+                                  fontWeight: FontWeight.w600)),
                         ],
                         const SizedBox(height: 3),
                         if (events.isNotEmpty)
-                          Wrap(spacing: 2, runSpacing: 1, children: events.take(3).map((e) => Container(width: 5, height: 5, decoration: BoxDecoration(color: _eventColor(e), shape: BoxShape.circle))).toList()),
+                          Wrap(
+                              spacing: 2,
+                              runSpacing: 1,
+                              children: events
+                                  .take(3)
+                                  .map((e) => Container(
+                                      width: 5,
+                                      height: 5,
+                                      decoration: BoxDecoration(
+                                          color: _eventColor(e),
+                                          shape: BoxShape.circle)))
+                                  .toList()),
                       ],
                     ),
                   ),
@@ -1198,7 +1582,11 @@ class ScheduleScreenState extends State<ScheduleScreen> {
           ),
         ),
         const Divider(height: 1),
-        Expanded(flex: 2, child: Padding(padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 0), child: _buildEventsListForSelected(cs))),
+        Expanded(
+            flex: 2,
+            child: Padding(
+                padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 0),
+                child: _buildEventsListForSelected(cs))),
       ],
     );
   }

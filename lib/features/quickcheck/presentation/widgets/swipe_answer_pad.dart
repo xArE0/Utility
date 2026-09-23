@@ -65,11 +65,11 @@ class _SwipeAnswerPadState extends State<SwipeAnswerPad>
 
   void _onPanUpdate(DragUpdateDetails details) {
     if (!widget.enabled) return;
-    
+
     // Initialize start position on first update
     _panStartPosition ??= details.globalPosition - details.delta;
     _panLastPosition = details.globalPosition;
-    
+
     // Calculate accumulated delta from start
     final accumulatedDelta = _panLastPosition! - _panStartPosition!;
     final dx = accumulatedDelta.dx;
@@ -90,43 +90,43 @@ class _SwipeAnswerPadState extends State<SwipeAnswerPad>
     }
   }
 
-   void _onPanEnd(DragEndDetails details) {
-     if (!widget.enabled) return;
-     
-     setState(() => _activeDirection = null);
-     
-     // Use accumulated delta from start to end
-     if (_panStartPosition == null || _panLastPosition == null) {
-       _panStartPosition = null;
-       _panLastPosition = null;
-       return;
-     }
-     
-     final accumulatedDelta = _panLastPosition! - _panStartPosition!;
-     final dx = accumulatedDelta.dx;
-     final dy = accumulatedDelta.dy;
-     final distance = accumulatedDelta.distance;
-     
-     // Require minimum distance (not velocity) for swipes (deadzone boundary)
-     if (distance < 50.0) {
-       _panStartPosition = null;
-       _panLastPosition = null;
-       return;
-     }
+  void _onPanEnd(DragEndDetails details) {
+    if (!widget.enabled) return;
 
-     String answer;
-     if (dy.abs() > dx.abs()) {
-       // Vertical dominant
-       answer = dy < 0 ? 'A' : 'C'; // up=A, down=C
-     } else {
-       // Horizontal dominant
-       answer = dx > 0 ? 'B' : 'D'; // right=B, left=D
-     }
-     
-     _panStartPosition = null;
-     _panLastPosition = null;
-     widget.onAnswer(answer);
-   }
+    setState(() => _activeDirection = null);
+
+    // Use accumulated delta from start to end
+    if (_panStartPosition == null || _panLastPosition == null) {
+      _panStartPosition = null;
+      _panLastPosition = null;
+      return;
+    }
+
+    final accumulatedDelta = _panLastPosition! - _panStartPosition!;
+    final dx = accumulatedDelta.dx;
+    final dy = accumulatedDelta.dy;
+    final distance = accumulatedDelta.distance;
+
+    // Require minimum distance (not velocity) for swipes (deadzone boundary)
+    if (distance < 50.0) {
+      _panStartPosition = null;
+      _panLastPosition = null;
+      return;
+    }
+
+    String answer;
+    if (dy.abs() > dx.abs()) {
+      // Vertical dominant
+      answer = dy < 0 ? 'A' : 'C'; // up=A, down=C
+    } else {
+      // Horizontal dominant
+      answer = dx > 0 ? 'B' : 'D'; // right=B, left=D
+    }
+
+    _panStartPosition = null;
+    _panLastPosition = null;
+    widget.onAnswer(answer);
+  }
 
   void _onPanCancel() {
     setState(() => _activeDirection = null);
@@ -198,8 +198,7 @@ class _SwipeAnswerPadState extends State<SwipeAnswerPad>
                       iconAfter: false,
                     ),
                     // E — Center (only if 5 options)
-                    if (widget.optionCount >= 5)
-                      _buildCenterLabel(),
+                    if (widget.optionCount >= 5) _buildCenterLabel(),
                     // Center dot (always shown)
                     if (widget.optionCount < 5)
                       Center(
@@ -208,7 +207,7 @@ class _SwipeAnswerPadState extends State<SwipeAnswerPad>
                           height: 40,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: AppColors.slate800.withOpacity(0.5),
+                            color: AppColors.slate800.withValues(alpha: 0.5),
                             border: Border.all(
                               color: AppColors.slate600,
                               width: 1.5,
@@ -238,9 +237,7 @@ class _SwipeAnswerPadState extends State<SwipeAnswerPad>
     final isFeedback = widget.feedbackAnswer == answer;
     final isActive = _activeDirection == answer;
     final feedbackColor = isFeedback
-        ? (widget.feedbackCorrect == true
-            ? AppColors.success
-            : AppColors.error)
+        ? (widget.feedbackCorrect == true ? AppColors.success : AppColors.error)
         : null;
 
     return AnimatedBuilder(
@@ -265,7 +262,8 @@ class _SwipeAnswerPadState extends State<SwipeAnswerPad>
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: feedbackColor!.withOpacity(glowOpacity),
+                            color:
+                                feedbackColor!.withValues(alpha: glowOpacity),
                             blurRadius: 24,
                             spreadRadius: 4,
                           ),
@@ -320,9 +318,7 @@ class _SwipeAnswerPadState extends State<SwipeAnswerPad>
   Widget _buildCenterLabel() {
     final isFeedback = widget.feedbackAnswer == 'E';
     final feedbackColor = isFeedback
-        ? (widget.feedbackCorrect == true
-            ? AppColors.success
-            : AppColors.error)
+        ? (widget.feedbackCorrect == true ? AppColors.success : AppColors.error)
         : null;
 
     return AnimatedBuilder(
@@ -343,12 +339,12 @@ class _SwipeAnswerPadState extends State<SwipeAnswerPad>
             height: 52,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.slate800.withOpacity(0.5),
+              color: AppColors.slate800.withValues(alpha: 0.5),
               border: Border.all(color: borderColor, width: 1.5),
               boxShadow: isFeedback && glowOpacity > 0
                   ? [
                       BoxShadow(
-                        color: feedbackColor!.withOpacity(glowOpacity),
+                        color: feedbackColor!.withValues(alpha: glowOpacity),
                         blurRadius: 20,
                         spreadRadius: 2,
                       ),
@@ -369,7 +365,7 @@ class _SwipeAnswerPadState extends State<SwipeAnswerPad>
                   Text(
                     'TAP',
                     style: AppTypography.micro.copyWith(
-                      color: labelColor.withOpacity(0.6),
+                      color: labelColor.withValues(alpha: 0.6),
                       letterSpacing: 1.0,
                     ),
                   ),
@@ -445,7 +441,7 @@ class _CompassPainter extends CustomPainter {
 
     // Dotted deadzone circle (radius 50.0)
     final dottedPaint = Paint()
-      ..color = AppColors.slate600.withOpacity(0.4)
+      ..color = AppColors.slate600.withValues(alpha: 0.4)
       ..style = PaintingStyle.fill;
     const double radius = 50.0;
     const int dotCount = 40;
@@ -458,7 +454,7 @@ class _CompassPainter extends CustomPainter {
 
     // Center circle
     final circlePaint = Paint()
-      ..color = AppColors.slate700.withOpacity(0.5)
+      ..color = AppColors.slate700.withValues(alpha: 0.5)
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
     canvas.drawCircle(center, 26, circlePaint);
@@ -474,8 +470,8 @@ class _CompassPainter extends CustomPainter {
       Canvas canvas, Offset start, Offset end, Paint basePaint) {
     final shader = LinearGradient(
       colors: [
-        AppColors.slate600.withOpacity(0.6),
-        AppColors.slate700.withOpacity(0.1),
+        AppColors.slate600.withValues(alpha: 0.6),
+        AppColors.slate700.withValues(alpha: 0.1),
       ],
     ).createShader(Rect.fromPoints(start, end));
 

@@ -29,10 +29,10 @@ class AnimatedBackground extends StatelessWidget {
               height: 400,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.govBlue.withOpacity(0.2),
+                color: AppColors.govBlue.withValues(alpha: 0.2),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.govBlue.withOpacity(0.2),
+                    color: AppColors.govBlue.withValues(alpha: 0.2),
                     blurRadius: 100,
                     spreadRadius: 50,
                   ),
@@ -40,18 +40,18 @@ class AnimatedBackground extends StatelessWidget {
               ),
             ),
           )
-          .animate(onPlay: (controller) => controller.repeat(reverse: true))
-          .move(
-            duration: 12.seconds,
-            begin: const Offset(0, 0),
-            end: const Offset(50, 50),
-            curve: Curves.easeInOut,
-          )
-          .scale(
-             duration: 16.seconds,
-             begin: const Offset(1,1),
-             end: const Offset(1.2, 1.2),
-          ),
+              .animate(onPlay: (controller) => controller.repeat(reverse: true))
+              .move(
+                duration: 12.seconds,
+                begin: const Offset(0, 0),
+                end: const Offset(50, 50),
+                curve: Curves.easeInOut,
+              )
+              .scale(
+                duration: 16.seconds,
+                begin: const Offset(1, 1),
+                end: const Offset(1.2, 1.2),
+              ),
         ),
 
         // Orb 2: Bottom Right - Green
@@ -64,10 +64,10 @@ class AnimatedBackground extends StatelessWidget {
               height: 350,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.govGreen.withOpacity(0.15),
+                color: AppColors.govGreen.withValues(alpha: 0.15),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.govGreen.withOpacity(0.15),
+                    color: AppColors.govGreen.withValues(alpha: 0.15),
                     blurRadius: 120,
                     spreadRadius: 60,
                   ),
@@ -75,17 +75,17 @@ class AnimatedBackground extends StatelessWidget {
               ),
             ),
           )
-          .animate(onPlay: (controller) => controller.repeat(reverse: true))
-          .move(
-            duration: 14.seconds,
-            begin: const Offset(0, 0),
-            end: const Offset(-40, -40),
-            curve: Curves.easeInOut,
-          ),
+              .animate(onPlay: (controller) => controller.repeat(reverse: true))
+              .move(
+                duration: 14.seconds,
+                begin: const Offset(0, 0),
+                end: const Offset(-40, -40),
+                curve: Curves.easeInOut,
+              ),
         ),
-        
+
         // Orb 3: Center/Top - Gold/Warning
-         Positioned(
+        Positioned(
           top: 100,
           right: 50,
           child: RepaintBoundary(
@@ -94,10 +94,10 @@ class AnimatedBackground extends StatelessWidget {
               height: 200,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.govGold.withOpacity(0.05),
+                color: AppColors.govGold.withValues(alpha: 0.05),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.govGold.withOpacity(0.05),
+                    color: AppColors.govGold.withValues(alpha: 0.05),
                     blurRadius: 80,
                     spreadRadius: 40,
                   ),
@@ -105,13 +105,13 @@ class AnimatedBackground extends StatelessWidget {
               ),
             ),
           )
-          .animate(onPlay: (controller) => controller.repeat(reverse: true))
-          .move(
-            duration: 18.seconds,
-            begin: const Offset(0, 0),
-            end: const Offset(-30, 60),
-            curve: Curves.easeInOut,
-          ),
+              .animate(onPlay: (controller) => controller.repeat(reverse: true))
+              .move(
+                duration: 18.seconds,
+                begin: const Offset(0, 0),
+                end: const Offset(-30, 60),
+                curve: Curves.easeInOut,
+              ),
         ),
 
         // 3. Child Content (Glass layer on top)

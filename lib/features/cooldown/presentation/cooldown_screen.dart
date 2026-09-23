@@ -11,12 +11,12 @@ import '../data/local_cooldown_repository.dart';
 import 'cooldown_controller.dart';
 
 const _accentColors = [
-  Color(0xFF06B6D4), 
-  Color(0xFF8B5CF6), 
-  Color(0xFFF59E0B), 
-  Color(0xFFEC4899), 
-  Color(0xFF10B981), 
-  Color(0xFFEF4444), 
+  Color(0xFF06B6D4),
+  Color(0xFF8B5CF6),
+  Color(0xFFF59E0B),
+  Color(0xFFEC4899),
+  Color(0xFF10B981),
+  Color(0xFFEF4444),
 ];
 
 const _categoryIcons = [
@@ -77,13 +77,15 @@ class _CooldownScreenState extends State<CooldownScreen>
     super.dispose();
   }
 
-  Future<void> _startCooldown(CooldownItem item, {bool forceManual = false}) async {
+  Future<void> _startCooldown(CooldownItem item,
+      {bool forceManual = false}) async {
     final cat = _controller.categoryForItem(item);
     if (cat != null && !forceManual) {
       // Has a category and not forcing manual — auto-start with category duration
       await _controller.startCategoryCooldown(item);
       if (mounted) {
-        AppToast.show(context, '${item.name} → ${cat.readableDuration} cooldown',
+        AppToast.show(
+            context, '${item.name} → ${cat.readableDuration} cooldown',
             icon: Icons.timer);
       }
     } else {
@@ -104,7 +106,7 @@ class _CooldownScreenState extends State<CooldownScreen>
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: Text("Cooldown", style: AppTypography.titleLarge),
-          backgroundColor: AppColors.slate900.withOpacity(0.85),
+          backgroundColor: AppColors.slate900.withValues(alpha: 0.85),
           actions: [
             IconButton(
               onPressed: () => _showCategoryManager(context),
@@ -120,7 +122,8 @@ class _CooldownScreenState extends State<CooldownScreen>
           child: const Icon(Icons.add, color: Colors.white),
         ),
         body: _controller.loading
-            ? const Center(child: CircularProgressIndicator(color: Color(0xFF06B6D4)))
+            ? const Center(
+                child: CircularProgressIndicator(color: Color(0xFF06B6D4)))
             : _controller.items.isEmpty
                 ? _buildEmptyState()
                 : _buildContent(),
@@ -133,16 +136,16 @@ class _CooldownScreenState extends State<CooldownScreen>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.hourglass_empty_rounded, size: 72,
-              color: AppColors.slate500.withOpacity(0.5)),
+          Icon(Icons.hourglass_empty_rounded,
+              size: 72, color: AppColors.slate500.withValues(alpha: 0.5)),
           const SizedBox(height: 16),
           Text("No cooldowns yet",
               style: AppTypography.titleMedium
                   .copyWith(color: AppColors.slate400)),
           const SizedBox(height: 8),
           Text("Tap + to add your first item",
-              style: AppTypography.bodyMedium
-                  .copyWith(color: AppColors.slate500)),
+              style:
+                  AppTypography.bodyMedium.copyWith(color: AppColors.slate500)),
           if (_controller.allCategories.isEmpty) ...[
             const SizedBox(height: 24),
             OutlinedButton.icon(
@@ -151,11 +154,13 @@ class _CooldownScreenState extends State<CooldownScreen>
               label: const Text('Set up categories first'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFF06B6D4),
-                side: BorderSide(color: const Color(0xFF06B6D4).withOpacity(0.4)),
+                side: BorderSide(
+                    color: const Color(0xFF06B6D4).withValues(alpha: 0.4)),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
             ),
           ],
@@ -166,7 +171,8 @@ class _CooldownScreenState extends State<CooldownScreen>
 
   Widget _buildContent() {
     final allCats = _controller.allCategories;
-    final uncategorized = _controller.items.where((i) => i.categoryId == null).toList();
+    final uncategorized =
+        _controller.items.where((i) => i.categoryId == null).toList();
     final hasCategories = allCats.isNotEmpty;
 
     return ListView(
@@ -201,9 +207,8 @@ class _CooldownScreenState extends State<CooldownScreen>
   Widget _buildCategoryGroupHeader(CooldownCategory cat) {
     final accent = _accentColors[cat.colorIndex % _accentColors.length];
     final icon = _getCategoryIcon(cat.iconCodePoint);
-    final itemsInCat = _controller.items
-        .where((i) => i.categoryId == cat.id)
-        .toList();
+    final itemsInCat =
+        _controller.items.where((i) => i.categoryId == cat.id).toList();
     final onCooldownCount = itemsInCat.where((i) => i.isOnCooldown).length;
     final availableCount = itemsInCat.length - onCooldownCount;
 
@@ -214,9 +219,10 @@ class _CooldownScreenState extends State<CooldownScreen>
         child: Row(
           children: [
             Container(
-              width: 36, height: 36,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
-                color: accent.withOpacity(0.15),
+                color: accent.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, size: 18, color: accent),
@@ -237,7 +243,8 @@ class _CooldownScreenState extends State<CooldownScreen>
                   const SizedBox(height: 2),
                   Row(
                     children: [
-                      Icon(Icons.timer_outlined, size: 12, color: AppColors.slate400),
+                      Icon(Icons.timer_outlined,
+                          size: 12, color: AppColors.slate400),
                       const SizedBox(width: 4),
                       Text(
                         cat.readableDuration,
@@ -247,7 +254,8 @@ class _CooldownScreenState extends State<CooldownScreen>
                       ),
                       const SizedBox(width: 12),
                       Container(
-                        width: 4, height: 4,
+                        width: 4,
+                        height: 4,
                         decoration: BoxDecoration(
                           color: AppColors.slate600,
                           shape: BoxShape.circle,
@@ -270,13 +278,14 @@ class _CooldownScreenState extends State<CooldownScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.govGreen.withOpacity(0.1),
+                  color: AppColors.govGreen.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.swipe_right_outlined, size: 14, color: AppColors.govGreen),
+                    Icon(Icons.swipe_right_outlined,
+                        size: 14, color: AppColors.govGreen),
                     const SizedBox(width: 4),
                     Text(
                       'swipe',
@@ -295,9 +304,8 @@ class _CooldownScreenState extends State<CooldownScreen>
   }
 
   List<Widget> _buildCategoryGroupItems(CooldownCategory cat) {
-    final itemsInCat = _controller.items
-        .where((i) => i.categoryId == cat.id)
-        .toList();
+    final itemsInCat =
+        _controller.items.where((i) => i.categoryId == cat.id).toList();
     if (itemsInCat.isEmpty) {
       return [
         Padding(
@@ -333,7 +341,10 @@ class _CooldownScreenState extends State<CooldownScreen>
               height: 1,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [AppColors.slate600.withOpacity(0.4), Colors.transparent],
+                  colors: [
+                    AppColors.slate600.withValues(alpha: 0.4),
+                    Colors.transparent
+                  ],
                 ),
               ),
             ),
@@ -348,13 +359,15 @@ class _CooldownScreenState extends State<CooldownScreen>
     final available = _controller.available;
     return [
       if (cooldown.isNotEmpty) ...[
-        _buildSectionHeader("ON COOLDOWN", Icons.timer, AppColors.govGold, cooldown.length),
+        _buildSectionHeader(
+            "ON COOLDOWN", Icons.timer, AppColors.govGold, cooldown.length),
         const SizedBox(height: 8),
         ...cooldown.map(_buildCooldownTile),
         const SizedBox(height: 20),
       ],
       if (available.isNotEmpty) ...[
-        _buildSectionHeader("AVAILABLE", Icons.check_circle_outline, AppColors.govGreen, available.length),
+        _buildSectionHeader("AVAILABLE", Icons.check_circle_outline,
+            AppColors.govGreen, available.length),
         const SizedBox(height: 8),
         ...available.map(_buildAvailableTile),
       ],
@@ -421,8 +434,7 @@ class _CooldownScreenState extends State<CooldownScreen>
         ),
         const SizedBox(height: 2),
         Text(label,
-            style: AppTypography.bodySmall
-                .copyWith(color: AppColors.slate400)),
+            style: AppTypography.bodySmall.copyWith(color: AppColors.slate400)),
       ],
     );
   }
@@ -442,17 +454,19 @@ class _CooldownScreenState extends State<CooldownScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
+              color: color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text('$count',
                 style: AppTypography.bodySmall.copyWith(color: color)),
           ),
           const Spacer(),
-          Container(height: 1, width: 60,
+          Container(
+              height: 1,
+              width: 60,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [color.withOpacity(0.4), Colors.transparent],
+                  colors: [color.withValues(alpha: 0.4), Colors.transparent],
                 ),
               )),
         ],
@@ -463,7 +477,8 @@ class _CooldownScreenState extends State<CooldownScreen>
   Widget _buildCooldownTile(CooldownItem item) {
     final accent = _accentColors[item.colorIndex % _accentColors.length];
     final progress = item.cooldownProgress;
-    final progressColor = Color.lerp(AppColors.govGold, AppColors.error, progress)!;
+    final progressColor =
+        Color.lerp(AppColors.govGold, AppColors.error, progress)!;
     final cat = _controller.categoryForItem(item);
 
     return Padding(
@@ -492,15 +507,16 @@ class _CooldownScreenState extends State<CooldownScreen>
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [progressColor, accent.withOpacity(0.4)],
+                      colors: [progressColor, accent.withValues(alpha: 0.4)],
                     ),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                   child: SizedBox(
-                    width: 44, height: 44,
+                    width: 44,
+                    height: 44,
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
@@ -591,9 +607,9 @@ class _CooldownScreenState extends State<CooldownScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: accent.withOpacity(0.1),
+        color: accent.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: accent.withOpacity(0.2)),
+        border: Border.all(color: accent.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -611,7 +627,7 @@ class _CooldownScreenState extends State<CooldownScreen>
           Text(
             '· ${cat.readableDuration}',
             style: AppTypography.micro.copyWith(
-              color: accent.withOpacity(0.7),
+              color: accent.withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -646,7 +662,7 @@ class _CooldownScreenState extends State<CooldownScreen>
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.govGreen.withOpacity(0.4),
+                      color: AppColors.govGreen.withValues(alpha: 0.4),
                       blurRadius: 20,
                       spreadRadius: 2,
                     )
@@ -665,17 +681,18 @@ class _CooldownScreenState extends State<CooldownScreen>
                         topLeft: Radius.circular(24),
                         bottomLeft: Radius.circular(24),
                       ),
-                      color: AppColors.govGreen.withOpacity(0.7),
+                      color: AppColors.govGreen.withValues(alpha: 0.7),
                     ),
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 14),
                     child: Container(
-                      width: 44, height: 44,
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: AppColors.govGreen.withOpacity(0.12),
+                        color: AppColors.govGreen.withValues(alpha: 0.12),
                       ),
                       child: Icon(Icons.check_rounded,
                           color: AppColors.govGreen, size: 22),
@@ -695,7 +712,8 @@ class _CooldownScreenState extends State<CooldownScreen>
                           Row(
                             children: [
                               Container(
-                                width: 6, height: 6,
+                                width: 6,
+                                height: 6,
                                 decoration: BoxDecoration(
                                   color: AppColors.govGreen,
                                   shape: BoxShape.circle,
@@ -703,7 +721,9 @@ class _CooldownScreenState extends State<CooldownScreen>
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                justReady ? 'Just became ready!' : 'Ready to use',
+                                justReady
+                                    ? 'Just became ready!'
+                                    : 'Ready to use',
                                 style: AppTypography.bodySmall.copyWith(
                                   color: justReady
                                       ? AppColors.govGreen
@@ -730,14 +750,15 @@ class _CooldownScreenState extends State<CooldownScreen>
                       ),
                     ),
                   Container(
-                    width: 10, height: 10,
+                    width: 10,
+                    height: 10,
                     margin: const EdgeInsets.only(right: 4),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: accent,
                       boxShadow: [
                         BoxShadow(
-                            color: accent.withOpacity(0.5), blurRadius: 6)
+                            color: accent.withValues(alpha: 0.5), blurRadius: 6)
                       ],
                     ),
                   ),
@@ -760,8 +781,12 @@ class _CooldownScreenState extends State<CooldownScreen>
                       }
                     },
                     itemBuilder: (_) => [
-                      _popupItem('cooldown', Icons.timer,
-                          hasCat ? 'Cooldown (${cat.readableDuration})' : 'Start Cooldown',
+                      _popupItem(
+                          'cooldown',
+                          Icons.timer,
+                          hasCat
+                              ? 'Cooldown (${cat.readableDuration})'
+                              : 'Start Cooldown',
                           const Color(0xFF06B6D4)),
                       _popupItem(
                           'edit', Icons.edit, 'Edit', AppColors.slate300),
@@ -786,7 +811,7 @@ class _CooldownScreenState extends State<CooldownScreen>
       margin: const EdgeInsets.symmetric(vertical: 2),
       padding: const EdgeInsets.symmetric(horizontal: 24),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
@@ -796,8 +821,7 @@ class _CooldownScreenState extends State<CooldownScreen>
             Icon(icon, color: color, size: 22),
             const SizedBox(width: 8),
           ],
-          Text(label,
-              style: AppTypography.labelLarge.copyWith(color: color)),
+          Text(label, style: AppTypography.labelLarge.copyWith(color: color)),
           if (align == Alignment.centerRight) ...[
             const SizedBox(width: 8),
             Icon(icon, color: color, size: 22),
@@ -815,8 +839,7 @@ class _CooldownScreenState extends State<CooldownScreen>
         children: [
           Icon(icon, size: 18, color: color),
           const SizedBox(width: 12),
-          Text(label,
-              style: AppTypography.bodyMedium.copyWith(color: color)),
+          Text(label, style: AppTypography.bodyMedium.copyWith(color: color)),
         ],
       ),
     );
@@ -824,10 +847,10 @@ class _CooldownScreenState extends State<CooldownScreen>
 
   String _formatEnd(DateTime dt) {
     final now = DateTime.now();
-    final isToday = dt.year == now.year &&
-        dt.month == now.month &&
-        dt.day == now.day;
-    final isTomorrow = dt.difference(DateTime(now.year, now.month, now.day)).inDays == 1;
+    final isToday =
+        dt.year == now.year && dt.month == now.month && dt.day == now.day;
+    final isTomorrow =
+        dt.difference(DateTime(now.year, now.month, now.day)).inDays == 1;
 
     if (isToday) return 'Today ${DateFormat.jm().format(dt)}';
     if (isTomorrow) return 'Tomorrow ${DateFormat.jm().format(dt)}';
@@ -840,11 +863,10 @@ class _CooldownScreenState extends State<CooldownScreen>
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.slate800,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Delete "${item.name}"?',
-            style: AppTypography.titleMedium),
+        title: Text('Delete "${item.name}"?', style: AppTypography.titleMedium),
         content: Text('This action cannot be undone.',
-            style: AppTypography.bodyMedium
-                .copyWith(color: AppColors.slate400)),
+            style:
+                AppTypography.bodyMedium.copyWith(color: AppColors.slate400)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -855,8 +877,8 @@ class _CooldownScreenState extends State<CooldownScreen>
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: Text('Delete',
-                style: AppTypography.labelLarge
-                    .copyWith(color: AppColors.error)),
+                style:
+                    AppTypography.labelLarge.copyWith(color: AppColors.error)),
           ),
         ],
       ),
@@ -876,8 +898,7 @@ class _CooldownScreenState extends State<CooldownScreen>
     if (result != null) await _controller.addItem(result);
   }
 
-  Future<void> _showEditSheet(
-      BuildContext context, CooldownItem item) async {
+  Future<void> _showEditSheet(BuildContext context, CooldownItem item) async {
     final result = await showModalBottomSheet<CooldownItem>(
       context: context,
       isScrollControlled: true,
@@ -951,10 +972,10 @@ class _CategoryManagerSheetState extends State<_CategoryManagerSheet> {
         maxHeight: MediaQuery.of(context).size.height * 0.75,
       ),
       decoration: BoxDecoration(
-        color: AppColors.slate900.withOpacity(0.97),
+        color: AppColors.slate900.withValues(alpha: 0.97),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-            color: Colors.white.withOpacity(0.08), width: 1),
+        border:
+            Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -964,7 +985,8 @@ class _CategoryManagerSheetState extends State<_CategoryManagerSheet> {
             padding: const EdgeInsets.only(top: 16),
             child: Center(
               child: Container(
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
                   color: AppColors.slate600,
                   borderRadius: BorderRadius.circular(2),
@@ -984,10 +1006,11 @@ class _CategoryManagerSheetState extends State<_CategoryManagerSheet> {
                   icon: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF06B6D4).withOpacity(0.15),
+                      color: const Color(0xFF06B6D4).withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.add, size: 18, color: Color(0xFF06B6D4)),
+                    child: const Icon(Icons.add,
+                        size: 18, color: Color(0xFF06B6D4)),
                   ),
                 ),
               ],
@@ -998,7 +1021,8 @@ class _CategoryManagerSheetState extends State<_CategoryManagerSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Text(
               'Items in a category auto-cooldown when you swipe right',
-              style: AppTypography.bodySmall.copyWith(color: AppColors.slate500),
+              style:
+                  AppTypography.bodySmall.copyWith(color: AppColors.slate500),
             ),
           ),
           const SizedBox(height: 16),
@@ -1008,8 +1032,8 @@ class _CategoryManagerSheetState extends State<_CategoryManagerSheet> {
               padding: const EdgeInsets.symmetric(vertical: 40),
               child: Column(
                 children: [
-                  Icon(Icons.category_outlined, size: 48,
-                      color: AppColors.slate600),
+                  Icon(Icons.category_outlined,
+                      size: 48, color: AppColors.slate600),
                   const SizedBox(height: 12),
                   Text('No categories yet',
                       style: AppTypography.bodyMedium
@@ -1039,24 +1063,27 @@ class _CategoryManagerSheetState extends State<_CategoryManagerSheet> {
   Widget _buildCategoryTile(CooldownCategory cat) {
     final accent = _accentColors[cat.colorIndex % _accentColors.length];
     final icon = _getCategoryIcon(cat.iconCodePoint);
-    final itemCount = widget.controller.items
-        .where((i) => i.categoryId == cat.id)
-        .length;
+    final itemCount =
+        widget.controller.items.where((i) => i.categoryId == cat.id).length;
 
     return GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
           Container(
-            width: 42, height: 42,
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [accent.withOpacity(0.2), accent.withOpacity(0.05)],
+                colors: [
+                  accent.withValues(alpha: 0.2),
+                  accent.withValues(alpha: 0.05)
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: accent.withOpacity(0.2)),
+              border: Border.all(color: accent.withValues(alpha: 0.2)),
             ),
             child: Icon(icon, size: 20, color: accent),
           ),
@@ -1071,9 +1098,10 @@ class _CategoryManagerSheetState extends State<_CategoryManagerSheet> {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 2),
                       decoration: BoxDecoration(
-                        color: accent.withOpacity(0.12),
+                        color: accent.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Row(
@@ -1100,11 +1128,13 @@ class _CategoryManagerSheetState extends State<_CategoryManagerSheet> {
           ),
           IconButton(
             onPressed: () => _showEditCategorySheet(context, cat),
-            icon: Icon(Icons.edit_outlined, size: 18, color: AppColors.slate400),
+            icon:
+                Icon(Icons.edit_outlined, size: 18, color: AppColors.slate400),
           ),
           IconButton(
             onPressed: () => _confirmDeleteCategory(cat),
-            icon: Icon(Icons.delete_outline, size: 18, color: AppColors.error.withOpacity(0.7)),
+            icon: Icon(Icons.delete_outline,
+                size: 18, color: AppColors.error.withValues(alpha: 0.7)),
           ),
         ],
       ),
@@ -1123,7 +1153,8 @@ class _CategoryManagerSheetState extends State<_CategoryManagerSheet> {
     }
   }
 
-  Future<void> _showEditCategorySheet(BuildContext context, CooldownCategory cat) async {
+  Future<void> _showEditCategorySheet(
+      BuildContext context, CooldownCategory cat) async {
     final result = await showModalBottomSheet<CooldownCategory>(
       context: context,
       isScrollControlled: true,
@@ -1136,23 +1167,21 @@ class _CategoryManagerSheetState extends State<_CategoryManagerSheet> {
   }
 
   Future<void> _confirmDeleteCategory(CooldownCategory cat) async {
-    final itemCount = widget.controller.items
-        .where((i) => i.categoryId == cat.id)
-        .length;
+    final itemCount =
+        widget.controller.items.where((i) => i.categoryId == cat.id).length;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.slate800,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Delete "${cat.name}"?',
-            style: AppTypography.titleMedium),
+        title: Text('Delete "${cat.name}"?', style: AppTypography.titleMedium),
         content: Text(
             itemCount > 0
                 ? '$itemCount items will become uncategorized. They won\'t be deleted.'
                 : 'This action cannot be undone.',
-            style: AppTypography.bodyMedium
-                .copyWith(color: AppColors.slate400)),
+            style:
+                AppTypography.bodyMedium.copyWith(color: AppColors.slate400)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -1163,8 +1192,8 @@ class _CategoryManagerSheetState extends State<_CategoryManagerSheet> {
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: Text('Delete',
-                style: AppTypography.labelLarge
-                    .copyWith(color: AppColors.error)),
+                style:
+                    AppTypography.labelLarge.copyWith(color: AppColors.error)),
           ),
         ],
       ),
@@ -1232,10 +1261,10 @@ class _AddEditCategorySheetState extends State<_AddEditCategorySheet> {
       padding: EdgeInsets.only(bottom: bottomInset),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.slate900.withOpacity(0.97),
+          color: AppColors.slate900.withValues(alpha: 0.97),
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(
-              color: Colors.white.withOpacity(0.08), width: 1),
+          border:
+              Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1),
         ),
         child: SingleChildScrollView(
           child: Container(
@@ -1246,7 +1275,8 @@ class _AddEditCategorySheetState extends State<_AddEditCategorySheet> {
               children: [
                 Center(
                   child: Container(
-                    width: 40, height: 4,
+                    width: 40,
+                    height: 4,
                     decoration: BoxDecoration(
                       color: AppColors.slate600,
                       borderRadius: BorderRadius.circular(2),
@@ -1261,7 +1291,8 @@ class _AddEditCategorySheetState extends State<_AddEditCategorySheet> {
                 const SizedBox(height: 4),
                 Text(
                   'Set a name and default cooldown duration',
-                  style: AppTypography.bodySmall.copyWith(color: AppColors.slate500),
+                  style: AppTypography.bodySmall
+                      .copyWith(color: AppColors.slate500),
                 ),
                 const SizedBox(height: 20),
                 // Name
@@ -1275,7 +1306,7 @@ class _AddEditCategorySheetState extends State<_AddEditCategorySheet> {
                     hintStyle: AppTypography.bodyLarge
                         .copyWith(color: AppColors.slate500),
                     filled: true,
-                    fillColor: AppColors.slate800.withOpacity(0.6),
+                    fillColor: AppColors.slate800.withValues(alpha: 0.6),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
@@ -1297,22 +1328,26 @@ class _AddEditCategorySheetState extends State<_AddEditCategorySheet> {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    _buildDurationSpinner('Days', _days, (v) => setState(() => _days = v), 365),
+                    _buildDurationSpinner(
+                        'Days', _days, (v) => setState(() => _days = v), 365),
                     const SizedBox(width: 12),
-                    _buildDurationSpinner('Hours', _hours, (v) => setState(() => _hours = v), 23),
+                    _buildDurationSpinner(
+                        'Hours', _hours, (v) => setState(() => _hours = v), 23),
                     const SizedBox(width: 12),
-                    _buildDurationSpinner('Mins', _minutes, (v) => setState(() => _minutes = v), 59),
+                    _buildDurationSpinner('Mins', _minutes,
+                        (v) => setState(() => _minutes = v), 59),
                   ],
                 ),
                 const SizedBox(height: 8),
                 // Duration preview
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: accent.withOpacity(0.08),
+                    color: accent.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: accent.withOpacity(0.15)),
+                    border: Border.all(color: accent.withValues(alpha: 0.15)),
                   ),
                   child: Row(
                     children: [
@@ -1340,15 +1375,16 @@ class _AddEditCategorySheetState extends State<_AddEditCategorySheet> {
                       onTap: () => setState(() => _selectedIconIndex = i),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
-                        width: 38, height: 38,
+                        width: 38,
+                        height: 38,
                         decoration: BoxDecoration(
                           color: _selectedIconIndex == i
-                              ? accent.withOpacity(0.2)
-                              : AppColors.slate800.withOpacity(0.5),
+                              ? accent.withValues(alpha: 0.2)
+                              : AppColors.slate800.withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: _selectedIconIndex == i
-                                ? accent.withOpacity(0.5)
+                                ? accent.withValues(alpha: 0.5)
                                 : Colors.transparent,
                             width: 1.5,
                           ),
@@ -1377,7 +1413,8 @@ class _AddEditCategorySheetState extends State<_AddEditCategorySheet> {
                       onTap: () => setState(() => _colorIndex = i),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
-                        width: 32, height: 32,
+                        width: 32,
+                        height: 32,
                         margin: const EdgeInsets.only(right: 10),
                         decoration: BoxDecoration(
                           color: _accentColors[i],
@@ -1392,7 +1429,7 @@ class _AddEditCategorySheetState extends State<_AddEditCategorySheet> {
                               ? [
                                   BoxShadow(
                                     color:
-                                        _accentColors[i].withOpacity(0.5),
+                                        _accentColors[i].withValues(alpha: 0.5),
                                     blurRadius: 10,
                                   )
                                 ]
@@ -1435,18 +1472,21 @@ class _AddEditCategorySheetState extends State<_AddEditCategorySheet> {
     );
   }
 
-  Widget _buildDurationSpinner(String label, int value, ValueChanged<int> onChanged, int max) {
+  Widget _buildDurationSpinner(
+      String label, int value, ValueChanged<int> onChanged, int max) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.slate800.withOpacity(0.6),
+          color: AppColors.slate800.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(14),
         ),
         child: Column(
           children: [
             GestureDetector(
-              onTap: () { if (value < max) onChanged(value + 1); },
+              onTap: () {
+                if (value < max) onChanged(value + 1);
+              },
               child: Container(
                 padding: const EdgeInsets.all(4),
                 child: Icon(Icons.keyboard_arrow_up_rounded,
@@ -1462,7 +1502,9 @@ class _AddEditCategorySheetState extends State<_AddEditCategorySheet> {
             Text(label,
                 style: AppTypography.micro.copyWith(color: AppColors.slate500)),
             GestureDetector(
-              onTap: () { if (value > 0) onChanged(value - 1); },
+              onTap: () {
+                if (value > 0) onChanged(value - 1);
+              },
               child: Container(
                 padding: const EdgeInsets.all(4),
                 child: Icon(Icons.keyboard_arrow_down_rounded,
@@ -1537,8 +1579,7 @@ class _AddEditSheetState extends State<_AddEditSheet> {
   void initState() {
     super.initState();
     _isEdit = widget.existing != null;
-    _nameCtrl =
-        TextEditingController(text: widget.existing?.name ?? '');
+    _nameCtrl = TextEditingController(text: widget.existing?.name ?? '');
     _colorIndex = widget.existing?.colorIndex ?? 0;
     _selectedCategoryId = widget.existing?.categoryId;
   }
@@ -1557,174 +1598,183 @@ class _AddEditSheetState extends State<_AddEditSheet> {
       padding: EdgeInsets.only(bottom: bottomInset),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.slate900.withOpacity(0.97),
+          color: AppColors.slate900.withValues(alpha: 0.97),
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(
-              color: Colors.white.withOpacity(0.08), width: 1),
+          border:
+              Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1),
         ),
         child: Container(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40, height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.slate600,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.slate600,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const SizedBox(height: 20),
-                Text(
-                  _isEdit ? 'Edit Item' : 'Add Cooldown Item',
-                  style: AppTypography.titleLarge,
-                ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: _nameCtrl,
-                  autofocus: true,
-                  style: AppTypography.bodyLarge,
-                  decoration: InputDecoration(
-                    hintText: 'Item name',
-                    hintStyle: AppTypography.bodyLarge
-                        .copyWith(color: AppColors.slate500),
-                    filled: true,
-                    fillColor: AppColors.slate800.withOpacity(0.6),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14),
-                    prefixIcon: Icon(Icons.label_outline,
-                        color: _accentColors[_colorIndex]),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                _isEdit ? 'Edit Item' : 'Add Cooldown Item',
+                style: AppTypography.titleLarge,
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _nameCtrl,
+                autofocus: true,
+                style: AppTypography.bodyLarge,
+                decoration: InputDecoration(
+                  hintText: 'Item name',
+                  hintStyle: AppTypography.bodyLarge
+                      .copyWith(color: AppColors.slate500),
+                  filled: true,
+                  fillColor: AppColors.slate800.withValues(alpha: 0.6),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
                   ),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  prefixIcon: Icon(Icons.label_outline,
+                      color: _accentColors[_colorIndex]),
                 ),
-                const SizedBox(height: 16),
-                // Category picker
-                if (widget.categories.isNotEmpty) ...[
-                  Text('Category',
-                      style: AppTypography.bodySmall
-                          .copyWith(color: AppColors.slate400)),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      // "None" chip
-                      _buildCategoryChip(null, 'None', Icons.inbox_outlined, AppColors.slate500),
-                      // Category chips
-                      ...widget.categories.map((cat) {
-                        final accent = _accentColors[cat.colorIndex % _accentColors.length];
-                        final icon = _getCategoryIcon(cat.iconCodePoint);
-                        return _buildCategoryChip(cat.id, cat.name, icon, accent);
-                      }),
-                    ],
-                  ),
-                  if (_selectedCategoryId != null) ...[
-                    const SizedBox(height: 8),
-                    Builder(builder: (ctx) {
-                      final cat = widget.categories
-                          .where((c) => c.id == _selectedCategoryId)
-                          .firstOrNull;
-                      if (cat == null) return const SizedBox.shrink();
-                      final accent = _accentColors[cat.colorIndex % _accentColors.length];
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: accent.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: accent.withOpacity(0.15)),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.auto_awesome, size: 14, color: accent),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Swipe right → auto ${cat.readableDuration} cooldown',
-                                style: AppTypography.bodySmall.copyWith(color: accent),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                  ],
-                  const SizedBox(height: 16),
-                ],
-                Text('Color Tag',
+              ),
+              const SizedBox(height: 16),
+              // Category picker
+              if (widget.categories.isNotEmpty) ...[
+                Text('Category',
                     style: AppTypography.bodySmall
                         .copyWith(color: AppColors.slate400)),
                 const SizedBox(height: 8),
-                Row(
-                  children: List.generate(
-                    _accentColors.length,
-                    (i) => GestureDetector(
-                      onTap: () => setState(() => _colorIndex = i),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: 32, height: 32,
-                        margin: const EdgeInsets.only(right: 10),
-                        decoration: BoxDecoration(
-                          color: _accentColors[i],
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: _colorIndex == i
-                                ? Colors.white
-                                : Colors.transparent,
-                            width: 2.5,
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    // "None" chip
+                    _buildCategoryChip(
+                        null, 'None', Icons.inbox_outlined, AppColors.slate500),
+                    // Category chips
+                    ...widget.categories.map((cat) {
+                      final accent =
+                          _accentColors[cat.colorIndex % _accentColors.length];
+                      final icon = _getCategoryIcon(cat.iconCodePoint);
+                      return _buildCategoryChip(cat.id, cat.name, icon, accent);
+                    }),
+                  ],
+                ),
+                if (_selectedCategoryId != null) ...[
+                  const SizedBox(height: 8),
+                  Builder(builder: (ctx) {
+                    final cat = widget.categories
+                        .where((c) => c.id == _selectedCategoryId)
+                        .firstOrNull;
+                    if (cat == null) return const SizedBox.shrink();
+                    final accent =
+                        _accentColors[cat.colorIndex % _accentColors.length];
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(10),
+                        border:
+                            Border.all(color: accent.withValues(alpha: 0.15)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.auto_awesome, size: 14, color: accent),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Swipe right → auto ${cat.readableDuration} cooldown',
+                              style: AppTypography.bodySmall
+                                  .copyWith(color: accent),
+                            ),
                           ),
-                          boxShadow: _colorIndex == i
-                              ? [
-                                  BoxShadow(
-                                    color:
-                                        _accentColors[i].withOpacity(0.5),
-                                    blurRadius: 10,
-                                  )
-                                ]
-                              : null,
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+                const SizedBox(height: 16),
+              ],
+              Text('Color Tag',
+                  style: AppTypography.bodySmall
+                      .copyWith(color: AppColors.slate400)),
+              const SizedBox(height: 8),
+              Row(
+                children: List.generate(
+                  _accentColors.length,
+                  (i) => GestureDetector(
+                    onTap: () => setState(() => _colorIndex = i),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 32,
+                      height: 32,
+                      margin: const EdgeInsets.only(right: 10),
+                      decoration: BoxDecoration(
+                        color: _accentColors[i],
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: _colorIndex == i
+                              ? Colors.white
+                              : Colors.transparent,
+                          width: 2.5,
                         ),
-                        child: _colorIndex == i
-                            ? const Icon(Icons.check,
-                                size: 16, color: Colors.white)
+                        boxShadow: _colorIndex == i
+                            ? [
+                                BoxShadow(
+                                  color:
+                                      _accentColors[i].withValues(alpha: 0.5),
+                                  blurRadius: 10,
+                                )
+                              ]
                             : null,
                       ),
+                      child: _colorIndex == i
+                          ? const Icon(Icons.check,
+                              size: 16, color: Colors.white)
+                          : null,
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _save,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF06B6D4),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 0,
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _save,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF06B6D4),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Text(
-                      _isEdit ? 'Save Changes' : 'Add Item',
-                      style: AppTypography.labelLarge
-                          .copyWith(color: Colors.white),
-                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    _isEdit ? 'Save Changes' : 'Add Item',
+                    style:
+                        AppTypography.labelLarge.copyWith(color: Colors.white),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
+      ),
     );
   }
 
-  Widget _buildCategoryChip(int? catId, String label, IconData icon, Color color) {
+  Widget _buildCategoryChip(
+      int? catId, String label, IconData icon, Color color) {
     final isSelected = _selectedCategoryId == catId;
     return GestureDetector(
       onTap: () => setState(() => _selectedCategoryId = catId),
@@ -1732,17 +1782,22 @@ class _AddEditSheetState extends State<_AddEditSheet> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.15) : AppColors.slate800.withOpacity(0.5),
+          color: isSelected
+              ? color.withValues(alpha: 0.15)
+              : AppColors.slate800.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? color.withOpacity(0.4) : AppColors.slate700.withOpacity(0.5),
+            color: isSelected
+                ? color.withValues(alpha: 0.4)
+                : AppColors.slate700.withValues(alpha: 0.5),
             width: 1.5,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: isSelected ? color : AppColors.slate500),
+            Icon(icon,
+                size: 16, color: isSelected ? color : AppColors.slate500),
             const SizedBox(width: 6),
             Text(
               label,
@@ -1817,107 +1872,108 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
       padding: EdgeInsets.only(bottom: bottomInset),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.slate900.withOpacity(0.97),
+          color: AppColors.slate900.withValues(alpha: 0.97),
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(
-              color: Colors.white.withOpacity(0.08), width: 1),
+          border:
+              Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1),
         ),
         child: Container(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40, height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.slate600,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.slate600,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const SizedBox(height: 20),
-                Text('Set Cooldown',
-                    style: AppTypography.titleLarge),
-                const SizedBox(height: 4),
-                Text('for "${widget.itemName}"',
-                    style: AppTypography.bodyMedium
-                        .copyWith(color: AppColors.slate400)),
-                const SizedBox(height: 20),
-                Row(
+              ),
+              const SizedBox(height: 20),
+              Text('Set Cooldown', style: AppTypography.titleLarge),
+              const SizedBox(height: 4),
+              Text('for "${widget.itemName}"',
+                  style: AppTypography.bodyMedium
+                      .copyWith(color: AppColors.slate400)),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  _buildModeChip(
+                      'Date', _PickMode.dateOnly, Icons.calendar_today),
+                  const SizedBox(width: 8),
+                  _buildModeChip('Time', _PickMode.timeOnly, Icons.access_time),
+                  const SizedBox(width: 8),
+                  _buildModeChip(
+                      'Both', _PickMode.dateAndTime, Icons.date_range),
+                ],
+              ),
+              const SizedBox(height: 20),
+              if (_mode != _PickMode.timeOnly)
+                _buildPickerButton(
+                  icon: Icons.calendar_today,
+                  label: DateFormat('EEE, MMM d, yyyy').format(_selectedDate),
+                  onTap: _pickDate,
+                ),
+              if (_mode == _PickMode.dateAndTime) const SizedBox(height: 12),
+              if (_mode != _PickMode.dateOnly)
+                _buildPickerButton(
+                  icon: Icons.access_time,
+                  label: _selectedTime.format(context),
+                  onTap: _pickTime,
+                ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF06B6D4).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                      color: const Color(0xFF06B6D4).withValues(alpha: 0.2)),
+                ),
+                child: Row(
                   children: [
-                    _buildModeChip('Date', _PickMode.dateOnly, Icons.calendar_today),
-                    const SizedBox(width: 8),
-                    _buildModeChip('Time', _PickMode.timeOnly, Icons.access_time),
-                    const SizedBox(width: 8),
-                    _buildModeChip('Both', _PickMode.dateAndTime, Icons.date_range),
+                    const Icon(Icons.info_outline,
+                        size: 16, color: Color(0xFF06B6D4)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Cooldown until ${_formatPreview()}',
+                        style: AppTypography.bodySmall
+                            .copyWith(color: const Color(0xFF06B6D4)),
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                if (_mode != _PickMode.timeOnly)
-                  _buildPickerButton(
-                    icon: Icons.calendar_today,
-                    label: DateFormat('EEE, MMM d, yyyy').format(_selectedDate),
-                    onTap: _pickDate,
-                  ),
-                if (_mode == _PickMode.dateAndTime)
-                  const SizedBox(height: 12),
-                if (_mode != _PickMode.dateOnly)
-                  _buildPickerButton(
-                    icon: Icons.access_time,
-                    label: _selectedTime.format(context),
-                    onTap: _pickTime,
-                  ),
-                const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF06B6D4).withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                        color: const Color(0xFF06B6D4).withOpacity(0.2)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.info_outline,
-                          size: 16, color: Color(0xFF06B6D4)),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Cooldown until ${_formatPreview()}',
-                          style: AppTypography.bodySmall
-                              .copyWith(color: const Color(0xFF06B6D4)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _confirm,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF06B6D4),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 0,
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _confirm,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF06B6D4),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Text('Start Cooldown',
-                        style: AppTypography.labelLarge
-                            .copyWith(color: Colors.white)),
+                    elevation: 0,
                   ),
+                  child: Text('Start Cooldown',
+                      style: AppTypography.labelLarge
+                          .copyWith(color: Colors.white)),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
+      ),
     );
   }
 
@@ -1931,13 +1987,13 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: selected
-                ? const Color(0xFF06B6D4).withOpacity(0.15)
-                : AppColors.slate800.withOpacity(0.5),
+                ? const Color(0xFF06B6D4).withValues(alpha: 0.15)
+                : AppColors.slate800.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: selected
-                  ? const Color(0xFF06B6D4).withOpacity(0.4)
-                  : AppColors.slate700.withOpacity(0.5),
+                  ? const Color(0xFF06B6D4).withValues(alpha: 0.4)
+                  : AppColors.slate700.withValues(alpha: 0.5),
             ),
           ),
           child: Row(
@@ -1945,17 +2001,14 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
             children: [
               Icon(icon,
                   size: 14,
-                  color: selected
-                      ? const Color(0xFF06B6D4)
-                      : AppColors.slate400),
+                  color:
+                      selected ? const Color(0xFF06B6D4) : AppColors.slate400),
               const SizedBox(width: 6),
               Text(label,
                   style: AppTypography.bodySmall.copyWith(
-                    color: selected
-                        ? const Color(0xFF06B6D4)
-                        : AppColors.slate400,
-                    fontWeight:
-                        selected ? FontWeight.w600 : FontWeight.w400,
+                    color:
+                        selected ? const Color(0xFF06B6D4) : AppColors.slate400,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                   )),
             ],
           ),
@@ -1976,7 +2029,7 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: AppColors.slate800.withOpacity(0.6),
+          color: AppColors.slate800.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
@@ -2000,20 +2053,17 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
   DateTime _buildDateTime() {
     switch (_mode) {
       case _PickMode.dateOnly:
-        return DateTime(
-            _selectedDate.year, _selectedDate.month, _selectedDate.day,
-            23, 59, 59);
+        return DateTime(_selectedDate.year, _selectedDate.month,
+            _selectedDate.day, 23, 59, 59);
       case _PickMode.timeOnly:
         final now = DateTime.now();
-        var dt = DateTime(
-            now.year, now.month, now.day,
-            _selectedTime.hour, _selectedTime.minute);
+        var dt = DateTime(now.year, now.month, now.day, _selectedTime.hour,
+            _selectedTime.minute);
         if (dt.isBefore(now)) dt = dt.add(const Duration(days: 1));
         return dt;
       case _PickMode.dateAndTime:
-        return DateTime(
-            _selectedDate.year, _selectedDate.month, _selectedDate.day,
-            _selectedTime.hour, _selectedTime.minute);
+        return DateTime(_selectedDate.year, _selectedDate.month,
+            _selectedDate.day, _selectedTime.hour, _selectedTime.minute);
     }
   }
 

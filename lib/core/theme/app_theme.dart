@@ -9,17 +9,15 @@ class AppTheme {
       brightness: Brightness.dark,
       primaryColor: AppColors.govBlue,
       scaffoldBackgroundColor: AppColors.slate900,
-      
+
       fontFamily: AppTypography.fontFamily,
-      
+
       // Color Scheme
       colorScheme: const ColorScheme.dark(
         primary: AppColors.govBlue,
         secondary: AppColors.govGold,
         surface: AppColors.slate800,
-        error: AppColors.error, 
-        // We use slate900 for background mainly
-        background: AppColors.slate900,
+        error: AppColors.error,
       ),
 
       // Text Theme
@@ -52,17 +50,17 @@ class AppTheme {
 
       // Card Theme
       cardTheme: CardThemeData(
-        color: AppColors.slate800.withOpacity(0.5),
+        color: AppColors.slate800.withValues(alpha: 0.5),
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
-            color: AppColors.slate700.withOpacity(0.5),
+            color: AppColors.slate700.withValues(alpha: 0.5),
             width: 1,
           ),
         ),
       ),
-      
+
       // Divider Theme
       dividerTheme: DividerThemeData(
         color: AppColors.slate700,

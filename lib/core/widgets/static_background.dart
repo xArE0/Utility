@@ -29,7 +29,7 @@ class StaticBackground extends StatelessWidget {
             height: 400,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.govBlue.withOpacity(0.12),
+              color: AppColors.govBlue.withValues(alpha: 0.12),
             ),
           ),
         ),
@@ -43,11 +43,11 @@ class StaticBackground extends StatelessWidget {
             height: 350,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.govGreen.withOpacity(0.08),
+              color: AppColors.govGreen.withValues(alpha: 0.08),
             ),
           ),
         ),
-        
+
         // Orb 3: Center/Top - Gold/Warning
         Positioned(
           top: 120,
@@ -57,7 +57,7 @@ class StaticBackground extends StatelessWidget {
             height: 200,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.govGold.withOpacity(0.04),
+              color: AppColors.govGold.withValues(alpha: 0.04),
             ),
           ),
         ),

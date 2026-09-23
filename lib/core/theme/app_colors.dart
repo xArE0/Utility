@@ -42,11 +42,11 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
+
   // Shadows (Glows)
   static final List<BoxShadow> glowShadow = [
     BoxShadow(
-      color: govBlue.withOpacity(0.3),
+      color: govBlue.withValues(alpha: 0.3),
       blurRadius: 20,
       spreadRadius: 2,
     ),

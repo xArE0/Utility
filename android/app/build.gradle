@@ -28,7 +28,7 @@ String get appVersion => '\$buildDate.v\$appRevision';
 
 android {
     namespace = "com.example.utility"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

@@ -39,7 +39,8 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
     _resultSlideAnim = Tween<Offset>(
       begin: const Offset(0, 1),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _resultSlideCtrl, curve: Curves.easeOutCubic));
+    ).animate(
+        CurvedAnimation(parent: _resultSlideCtrl, curve: Curves.easeOutCubic));
 
     _init();
   }
@@ -83,7 +84,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                 bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
               decoration: BoxDecoration(
-                color: AppColors.slate800.withOpacity(0.98),
+                color: AppColors.slate800.withValues(alpha: 0.98),
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(24)),
                 border: const Border(
@@ -108,8 +109,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Text("Add Answer Key",
-                        style: AppTypography.headlineSmall),
+                    Text("Add Answer Key", style: AppTypography.headlineSmall),
                     const SizedBox(height: 6),
                     Text(
                       "Give it a name, type answers as letters: ABCDEABC...",
@@ -125,14 +125,17 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                           child: TextField(
                             controller: pageCtrl,
                             keyboardType: TextInputType.number,
-                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly
+                            ],
                             style: AppTypography.bodyLarge,
                             decoration: InputDecoration(
                               labelText: "Page #",
                               labelStyle: AppTypography.bodySmall
                                   .copyWith(color: AppColors.slate400),
                               filled: true,
-                              fillColor: AppColors.slate700.withOpacity(0.5),
+                              fillColor:
+                                  AppColors.slate700.withValues(alpha: 0.5),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(14),
                                 borderSide: BorderSide.none,
@@ -158,7 +161,8 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                               labelStyle: AppTypography.bodySmall
                                   .copyWith(color: AppColors.slate400),
                               filled: true,
-                              fillColor: AppColors.slate700.withOpacity(0.5),
+                              fillColor:
+                                  AppColors.slate700.withValues(alpha: 0.5),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(14),
                                 borderSide: BorderSide.none,
@@ -192,7 +196,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                         labelStyle: AppTypography.bodyMedium
                             .copyWith(color: AppColors.slate400),
                         filled: true,
-                        fillColor: AppColors.slate700.withOpacity(0.5),
+                        fillColor: AppColors.slate700.withValues(alpha: 0.5),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
                           borderSide: BorderSide.none,
@@ -212,8 +216,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                           .split('\n')
                           .where((l) => l.trim().isNotEmpty)
                           .toList();
-                      final startPage =
-                          int.tryParse(pageCtrl.text) ?? 0;
+                      final startPage = int.tryParse(pageCtrl.text) ?? 0;
                       if (lines.isEmpty || startPage == 0) {
                         return const SizedBox.shrink();
                       }
@@ -233,21 +236,20 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                       height: 50,
                       child: ElevatedButton(
                         onPressed: () {
-                          final startPage =
-                              int.tryParse(pageCtrl.text);
+                          final startPage = int.tryParse(pageCtrl.text);
                           final rawLines = answersCtrl.text
                               .split('\n')
                               .where((l) => l.trim().isNotEmpty)
                               .toList();
 
                           if (startPage == null || startPage <= 0) {
-                            setSheetState(() =>
-                                errorText = 'Enter a valid page number');
+                            setSheetState(
+                                () => errorText = 'Enter a valid page number');
                             return;
                           }
                           if (rawLines.isEmpty) {
-                            setSheetState(
-                                () => errorText = 'Enter at least one line of answers');
+                            setSheetState(() => errorText =
+                                'Enter at least one line of answers');
                             return;
                           }
 
@@ -260,8 +262,8 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                               .toList();
 
                           if (cleaned.isEmpty) {
-                            setSheetState(() =>
-                                errorText = 'No valid answers found (A-E only)');
+                            setSheetState(() => errorText =
+                                'No valid answers found (A-E only)');
                             return;
                           }
 
@@ -352,7 +354,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          backgroundColor: AppColors.slate900.withOpacity(0.5),
+          backgroundColor: AppColors.slate900.withValues(alpha: 0.5),
           title: Text("MCQ Practice", style: AppTypography.titleLarge),
           actions: [
             if (pages.isNotEmpty)
@@ -386,8 +388,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
         ),
         body: _loading
             ? const Center(
-                child:
-                    CircularProgressIndicator(color: AppColors.govBlue))
+                child: CircularProgressIndicator(color: AppColors.govBlue))
             : pages.isEmpty
                 ? _buildEmptyState()
                 : Column(
@@ -423,12 +424,12 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppColors.govBlue.withOpacity(0.2),
-                    AppColors.govGreen.withOpacity(0.2),
+                    AppColors.govBlue.withValues(alpha: 0.2),
+                    AppColors.govGreen.withValues(alpha: 0.2),
                   ],
                 ),
                 border: Border.all(
-                  color: AppColors.govBlue.withOpacity(0.3),
+                  color: AppColors.govBlue.withValues(alpha: 0.3),
                   width: 2,
                 ),
               ),
@@ -459,10 +460,10 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.govBlue.withOpacity(0.15),
+                color: AppColors.govBlue.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: AppColors.govBlue.withOpacity(0.3),
+                  color: AppColors.govBlue.withValues(alpha: 0.3),
                   width: 1,
                 ),
               ),
@@ -502,7 +503,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
           Expanded(
             child: _statCard(
               "🎯",
-              "${(accuracy * 100).toStringAsFixed(0)}",
+              (accuracy * 100).toStringAsFixed(0),
               "%",
               accuracy >= 0.8 ? AppColors.govGreen : AppColors.govGold,
             ),
@@ -529,13 +530,13 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            color.withOpacity(0.15),
-            color.withOpacity(0.05),
+            color.withValues(alpha: 0.15),
+            color.withValues(alpha: 0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: color.withOpacity(0.3),
+          color: color.withValues(alpha: 0.3),
           width: 1.5,
         ),
       ),
@@ -561,7 +562,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                   TextSpan(
                     text: suffix,
                     style: AppTypography.bodySmall.copyWith(
-                      color: color.withOpacity(0.7),
+                      color: color.withValues(alpha: 0.7),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -620,18 +621,18 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              AppColors.slate800.withOpacity(0.9),
-              AppColors.slate800.withOpacity(0.7),
+              AppColors.slate800.withValues(alpha: 0.9),
+              AppColors.slate800.withValues(alpha: 0.7),
             ],
           ),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: statusColor.withOpacity(0.5),
+            color: statusColor.withValues(alpha: 0.5),
             width: 2,
           ),
           boxShadow: [
             BoxShadow(
-              color: statusColor.withOpacity(0.2),
+              color: statusColor.withValues(alpha: 0.2),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -649,80 +650,81 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                   width: 100,
                   height: 100,
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
+                    color: statusColor.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                 ),
               ),
-               Padding(
-                 padding: const EdgeInsets.all(16),
-                 child: Column(
-                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                   crossAxisAlignment: CrossAxisAlignment.start,
-                   children: [
-                     // Header: Title and questions count
-                     Column(
-                       crossAxisAlignment: CrossAxisAlignment.start,
-                       children: [
-                         Text(
-                           page.answerKey.displayName,
-                           style: AppTypography.headlineSmall.copyWith(
-                             color: Colors.white,
-                             fontWeight: FontWeight.w700,
-                           ),
-                           softWrap: true,
-                           maxLines: 4,
-                         ),
-                         const SizedBox(height: 3),
-                          Row(
-                            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header: Title and questions count
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          page.answerKey.displayName,
+                          style: AppTypography.headlineSmall.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          softWrap: true,
+                          maxLines: 4,
+                        ),
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            Text(
+                              "${page.totalQuestions} questions",
+                              style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.slate400,
+                              ),
+                            ),
+                            if (page.answerKey.flaggedAnswers.isNotEmpty) ...[
+                              const SizedBox(width: 8),
+                              Icon(Icons.flag,
+                                  color: AppColors.govGold, size: 14),
+                              const SizedBox(width: 2),
                               Text(
-                                "${page.totalQuestions} questions",
+                                "${page.answerKey.flaggedAnswers.length}",
                                 style: AppTypography.bodySmall.copyWith(
-                                  color: AppColors.slate400,
+                                  color: AppColors.govGold,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              if (page.answerKey.flaggedAnswers.isNotEmpty) ...[
-                                const SizedBox(width: 8),
-                                Icon(Icons.flag, color: AppColors.govGold, size: 14),
-                                const SizedBox(width: 2),
-                                Text(
-                                  "${page.answerKey.flaggedAnswers.length}",
-                                  style: AppTypography.bodySmall.copyWith(
-                                    color: AppColors.govGold,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
                             ],
+                          ],
+                        ),
+                      ],
+                    ),
+                    // Progress bar
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: LinearProgressIndicator(
+                            value: progressValue,
+                            minHeight: 5,
+                            backgroundColor: AppColors.slate700,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              page.status == PageStatus.perfected
+                                  ? const Color(0xFFEAB308)
+                                  : page.status == PageStatus.completed
+                                      ? AppColors.govGreen
+                                      : page.status == PageStatus.inProgress
+                                          ? AppColors.govGold
+                                          : AppColors.slate600,
+                            ),
                           ),
-                       ],
-                     ),
-                     // Progress bar
-                     Column(
-                       crossAxisAlignment: CrossAxisAlignment.start,
-                       children: [
-                         ClipRRect(
-                           borderRadius: BorderRadius.circular(6),
-                           child: LinearProgressIndicator(
-                             value: progressValue,
-                             minHeight: 5,
-                             backgroundColor: AppColors.slate700,
-                             valueColor: AlwaysStoppedAnimation<Color>(
-                               page.status == PageStatus.perfected
-                                   ? const Color(0xFFEAB308)
-                                   : page.status == PageStatus.completed
-                                       ? AppColors.govGreen
-                                       : page.status == PageStatus.inProgress
-                                           ? AppColors.govGold
-                                           : AppColors.slate600,
-                             ),
-                           ),
-                         ),
-                         const SizedBox(height: 6),
-                         // Stats row
-                         Row(
-                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        ),
+                        const SizedBox(height: 6),
+                        // Stats row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             RichText(
                               text: TextSpan(
@@ -734,31 +736,31 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
-                                   TextSpan(
-                                     text: " ✓",
-                                     style: AppTypography.bodySmall.copyWith(
-                                       color: AppColors.govGreen,
-                                     ),
-                                   ),
-                                 ],
-                               ),
-                             ),
-                             RichText(
-                               text: TextSpan(
-                                 children: [
-                                   TextSpan(
-                                     text: "${page.wrongCount}",
-                                     style: AppTypography.labelLarge.copyWith(
-                                       color: AppColors.error,
-                                       fontWeight: FontWeight.w700,
-                                     ),
-                                   ),
-                                   TextSpan(
-                                     text: " ✗",
-                                     style: AppTypography.bodySmall.copyWith(
-                                       color: AppColors.error,
-                                     ),
-                                   ),
+                                  TextSpan(
+                                    text: " ✓",
+                                    style: AppTypography.bodySmall.copyWith(
+                                      color: AppColors.govGreen,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            RichText(
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: "${page.wrongCount}",
+                                    style: AppTypography.labelLarge.copyWith(
+                                      color: AppColors.error,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: " ✗",
+                                    style: AppTypography.bodySmall.copyWith(
+                                      color: AppColors.error,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -796,9 +798,8 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
       builder: (ctx) {
         return Container(
           decoration: BoxDecoration(
-            color: AppColors.slate800.withOpacity(0.98),
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(24)),
+            color: AppColors.slate800.withValues(alpha: 0.98),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
           child: Column(
@@ -815,20 +816,20 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                   ),
                 ),
               ),
-               const SizedBox(height: 20),
-               Text(
-                 page.answerKey.displayName,
-                 style: AppTypography.headlineSmall,
-                 softWrap: true,
-                 maxLines: 4,
-               ),
-               const SizedBox(height: 4),
-               Text(
-                 "${page.answerKey.questionCount} questions  •  ${page.correctCount}✓ ${wrongCount}✗",
-                 style: AppTypography.bodySmall
-                     .copyWith(color: AppColors.slate400, letterSpacing: 1.5),
-                 softWrap: true,
-               ),
+              const SizedBox(height: 20),
+              Text(
+                page.answerKey.displayName,
+                style: AppTypography.headlineSmall,
+                softWrap: true,
+                maxLines: 4,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                "${page.answerKey.questionCount} questions  •  ${page.correctCount}✓ $wrongCount✗",
+                style: AppTypography.bodySmall
+                    .copyWith(color: AppColors.slate400, letterSpacing: 1.5),
+                softWrap: true,
+              ),
               const SizedBox(height: 24),
               // Continue button (only if in-progress)
               if (canContinue) ...[
@@ -927,7 +928,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                 bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
               decoration: BoxDecoration(
-                color: AppColors.slate800.withOpacity(0.98),
+                color: AppColors.slate800.withValues(alpha: 0.98),
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(24)),
                 border: const Border(
@@ -971,7 +972,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                         labelStyle: AppTypography.bodySmall
                             .copyWith(color: AppColors.slate400),
                         filled: true,
-                        fillColor: AppColors.slate700.withOpacity(0.5),
+                        fillColor: AppColors.slate700.withValues(alpha: 0.5),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
                           borderSide: BorderSide.none,
@@ -999,7 +1000,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                         labelStyle: AppTypography.bodyMedium
                             .copyWith(color: AppColors.slate400),
                         filled: true,
-                        fillColor: AppColors.slate700.withOpacity(0.5),
+                        fillColor: AppColors.slate700.withValues(alpha: 0.5),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
                           borderSide: BorderSide.none,
@@ -1023,16 +1024,18 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                               .replaceAll(RegExp(r'[^A-E]'), '');
 
                           if (cleanedAnswers.isEmpty) {
-                            setSheetState(() =>
-                                errorText = 'Enter at least one answer');
+                            setSheetState(
+                                () => errorText = 'Enter at least one answer');
                             return;
                           }
 
-                          _ctrl.updateAnswerKey(
+                          _ctrl
+                              .updateAnswerKey(
                             key.pageNumber,
                             newName: nameCtrl.text.trim(),
                             newAnswers: cleanedAnswers,
-                          ).then((_) {
+                          )
+                              .then((_) {
                             Navigator.pop(ctx);
                           });
                         },
@@ -1060,7 +1063,8 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
 
   void _showCopyAnswerKeySheet(AnswerKey key) {
     final pageCtrl = TextEditingController();
-    final nameCtrl = TextEditingController(text: key.name.isNotEmpty ? "${key.name} (Copy)" : "");
+    final nameCtrl = TextEditingController(
+        text: key.name.isNotEmpty ? "${key.name} (Copy)" : "");
     String? errorText;
 
     showModalBottomSheet(
@@ -1075,7 +1079,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                 bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
               decoration: BoxDecoration(
-                color: AppColors.slate800.withOpacity(0.98),
+                color: AppColors.slate800.withValues(alpha: 0.98),
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(24)),
                 border: const Border(
@@ -1115,14 +1119,17 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                           child: TextField(
                             controller: pageCtrl,
                             keyboardType: TextInputType.number,
-                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly
+                            ],
                             style: AppTypography.bodyLarge,
                             decoration: InputDecoration(
                               labelText: "Page #",
                               labelStyle: AppTypography.bodySmall
                                   .copyWith(color: AppColors.slate400),
                               filled: true,
-                              fillColor: AppColors.slate700.withOpacity(0.5),
+                              fillColor:
+                                  AppColors.slate700.withValues(alpha: 0.5),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(14),
                                 borderSide: BorderSide.none,
@@ -1145,7 +1152,8 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                               labelStyle: AppTypography.bodySmall
                                   .copyWith(color: AppColors.slate400),
                               filled: true,
-                              fillColor: AppColors.slate700.withOpacity(0.5),
+                              fillColor:
+                                  AppColors.slate700.withValues(alpha: 0.5),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(14),
                                 borderSide: BorderSide.none,
@@ -1162,7 +1170,9 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                     ),
                     if (errorText != null) ...[
                       const SizedBox(height: 8),
-                      Text(errorText!, style: AppTypography.bodySmall.copyWith(color: AppColors.error)),
+                      Text(errorText!,
+                          style: AppTypography.bodySmall
+                              .copyWith(color: AppColors.error)),
                     ],
                     const SizedBox(height: 20),
                     SizedBox(
@@ -1172,12 +1182,15 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                         onPressed: () {
                           final targetPage = int.tryParse(pageCtrl.text);
                           if (targetPage == null || targetPage <= 0) {
-                            setSheetState(() => errorText = 'Enter a valid page number');
+                            setSheetState(
+                                () => errorText = 'Enter a valid page number');
                             return;
                           }
-                          final exists = _ctrl.answerKeys.any((k) => k.pageNumber == targetPage);
+                          final exists = _ctrl.answerKeys
+                              .any((k) => k.pageNumber == targetPage);
                           if (exists) {
-                            setSheetState(() => errorText = 'Page $targetPage already has an answer key');
+                            setSheetState(() => errorText =
+                                'Page $targetPage already has an answer key');
                             return;
                           }
 
@@ -1226,12 +1239,12 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
         label: Text(label,
             style: AppTypography.labelLarge.copyWith(color: Colors.white)),
         style: ElevatedButton.styleFrom(
-          backgroundColor: color.withOpacity(0.2),
+          backgroundColor: color.withValues(alpha: 0.2),
           foregroundColor: Colors.white,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           elevation: 0,
-          side: BorderSide(color: color.withOpacity(0.4)),
+          side: BorderSide(color: color.withValues(alpha: 0.4)),
         ),
       ),
     );
@@ -1247,8 +1260,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
             style: AppTypography.titleLarge),
         content: Text(
           "This will remove the answer key and all attempt history for this session.",
-          style:
-              AppTypography.bodyMedium.copyWith(color: AppColors.slate400),
+          style: AppTypography.bodyMedium.copyWith(color: AppColors.slate400),
         ),
         actions: [
           TextButton(
@@ -1263,8 +1275,8 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
               _ctrl.deleteAnswerKey(page.answerKey.pageNumber);
             },
             child: Text("Delete",
-                style: AppTypography.labelLarge
-                    .copyWith(color: AppColors.error)),
+                style:
+                    AppTypography.labelLarge.copyWith(color: AppColors.error)),
           ),
         ],
       ),
@@ -1280,8 +1292,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
         title: Text("Clear All Data?", style: AppTypography.titleLarge),
         content: Text(
           "This will permanently delete all answer keys and attempt history. This cannot be undone.",
-          style:
-              AppTypography.bodyMedium.copyWith(color: AppColors.slate400),
+          style: AppTypography.bodyMedium.copyWith(color: AppColors.slate400),
         ),
         actions: [
           TextButton(
@@ -1296,8 +1307,8 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
               _ctrl.deleteAllData();
             },
             child: Text("Delete Everything",
-                style: AppTypography.labelLarge
-                    .copyWith(color: AppColors.error)),
+                style:
+                    AppTypography.labelLarge.copyWith(color: AppColors.error)),
           ),
         ],
       ),
@@ -1353,7 +1364,8 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                     color: AppColors.slate800,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.close, color: AppColors.slate400, size: 20),
+                  child: const Icon(Icons.close,
+                      color: AppColors.slate400, size: 20),
                 ),
               ),
               const SizedBox(width: 16),
@@ -1391,27 +1403,29 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                 ),
               ),
               const SizedBox(width: 16),
-               // Score - show all-time right/wrong for this page, not just session
-               Container(
-                 padding:
-                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                 decoration: BoxDecoration(
-                   color: AppColors.slate800,
-                   borderRadius: BorderRadius.circular(10),
-                 ),
-                 child: Row(
-                   mainAxisSize: MainAxisSize.min,
-                   children: [
-                     Text("${_ctrl.getCorrectCountForPage(session.pageNumber)}✓",
-                         style: AppTypography.titleSmall
-                             .copyWith(color: AppColors.govGreen, fontWeight: FontWeight.bold)),
-                     const SizedBox(width: 8),
-                     Text("${_ctrl.getWrongCountForPage(session.pageNumber)}✗",
-                         style: AppTypography.titleSmall
-                             .copyWith(color: AppColors.error, fontWeight: FontWeight.bold)),
-                   ],
-                 ),
-               ),
+              // Score - show all-time right/wrong for this page, not just session
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.slate800,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text("${_ctrl.getCorrectCountForPage(session.pageNumber)}✓",
+                        style: AppTypography.titleSmall.copyWith(
+                            color: AppColors.govGreen,
+                            fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 8),
+                    Text("${_ctrl.getWrongCountForPage(session.pageNumber)}✗",
+                        style: AppTypography.titleSmall.copyWith(
+                            color: AppColors.error,
+                            fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -1425,7 +1439,8 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
               child: Builder(
                 key: ValueKey(session.currentIndex),
                 builder: (context) {
-                  final isFlagged = session.flaggedAnswers.containsKey(session.currentQuestionIndex);
+                  final isFlagged = session.flaggedAnswers
+                      .containsKey(session.currentQuestionIndex);
                   return Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -1451,62 +1466,68 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                           IconButton(
                             icon: Icon(
                               isFlagged ? Icons.flag : Icons.flag_outlined,
-                              color: isFlagged ? AppColors.govGold : AppColors.slate400,
+                              color: isFlagged
+                                  ? AppColors.govGold
+                                  : AppColors.slate400,
                               size: 32,
                             ),
-                            onPressed: () => _showFlagQuestionDialog(session, session.currentQuestionIndex),
+                            onPressed: () => _showFlagQuestionDialog(
+                                session, session.currentQuestionIndex),
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () => _showJumpToQuestionSheet(session),
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppColors.slate800,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.slate700.withOpacity(0.5)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            "$questionNum of $total",
-                            style: AppTypography.bodySmall.copyWith(
-                              color: AppColors.slate400,
-                              fontWeight: FontWeight.w500,
-                            ),
+                      GestureDetector(
+                        onTap: () => _showJumpToQuestionSheet(session),
+                        behavior: HitTestBehavior.opaque,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.slate800,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color:
+                                    AppColors.slate700.withValues(alpha: 0.5)),
                           ),
-                          const SizedBox(width: 4),
-                          const Icon(
-                            Icons.arrow_drop_down,
-                            size: 16,
-                            color: AppColors.slate500,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                "$questionNum of $total",
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: AppColors.slate400,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(
+                                Icons.arrow_drop_down,
+                                size: 16,
+                                color: AppColors.slate500,
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                   ),
-                   // Show correct answer on both correct and wrong
-                   if (_feedbackCorrect != null) ...[
-                     const SizedBox(height: 12),
-                     Text(
-                       "Answer: ${session.correctAnswer}",
-                       style: AppTypography.titleMedium.copyWith(
-                         color: AppColors.govGreen,
-                         fontWeight: FontWeight.w700,
-                       ),
-                     ),
-                   ],
-                 ],
-               );
-             },
-           ),
-         ),
-       ),
-     ),
+                      // Show correct answer on both correct and wrong
+                      if (_feedbackCorrect != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          "Answer: ${session.correctAnswer}",
+                          style: AppTypography.titleMedium.copyWith(
+                            color: AppColors.govGreen,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
 
         // ── Swipe Pad ──
         Expanded(
@@ -1537,7 +1558,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
           builder: (context, setModalState) {
             // Create a GlobalKey for the current question button for auto-scroll
             final currentQuestionKey = GlobalKey();
-            
+
             // Schedule scroll to current question after the first frame
             Future.delayed(const Duration(milliseconds: 100), () {
               try {
@@ -1551,10 +1572,11 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                 // Ignore if context no longer available
               }
             });
-            
+
             return SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1577,65 +1599,75 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                               color: AppColors.slate800,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.close, color: AppColors.slate400, size: 16),
+                            child: const Icon(Icons.close,
+                                color: AppColors.slate400, size: 16),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 20),
-                     Flexible(
-                       child: SingleChildScrollView(
-                         child: Wrap(
-                           spacing: 10,
-                           runSpacing: 10,
-                           children: List.generate(session.questionIndices.length, (i) {
-                             final qIndex = session.questionIndices[i];
-                             final qNum = qIndex + 1;
-                             final isCurrent = qIndex == session.currentQuestionIndex;
-                             final isFlagged = session.flaggedAnswers.containsKey(qIndex);
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: List.generate(
+                              session.questionIndices.length, (i) {
+                            final qIndex = session.questionIndices[i];
+                            final qNum = qIndex + 1;
+                            final isCurrent =
+                                qIndex == session.currentQuestionIndex;
+                            final isFlagged =
+                                session.flaggedAnswers.containsKey(qIndex);
 
                             // Check attempt status
-                            final attempt = _ctrl.getAttemptForQuestion(session.pageNumber, qIndex);
+                            final attempt = _ctrl.getAttemptForQuestion(
+                                session.pageNumber, qIndex);
                             Color bgColor = AppColors.slate800;
                             Color borderCol = Colors.transparent;
                             Color textColor = AppColors.slate300;
-                            
+
                             if (attempt != null) {
                               if (attempt.isCorrect) {
-                                bgColor = AppColors.govGreen.withOpacity(0.15);
-                                borderCol = AppColors.govGreen.withOpacity(0.3);
+                                bgColor =
+                                    AppColors.govGreen.withValues(alpha: 0.15);
+                                borderCol =
+                                    AppColors.govGreen.withValues(alpha: 0.3);
                                 textColor = AppColors.govGreen;
                               } else {
-                                bgColor = AppColors.error.withOpacity(0.15);
-                                borderCol = AppColors.error.withOpacity(0.3);
+                                bgColor =
+                                    AppColors.error.withValues(alpha: 0.15);
+                                borderCol =
+                                    AppColors.error.withValues(alpha: 0.3);
                                 textColor = AppColors.error;
                               }
                             }
-                            
+
                             if (isCurrent) {
                               borderCol = AppColors.govBlue;
-                              bgColor = AppColors.govBlue.withOpacity(0.2);
+                              bgColor =
+                                  AppColors.govBlue.withValues(alpha: 0.2);
                               textColor = Colors.white;
                             }
-                            
-                             return GestureDetector(
-                               key: isCurrent ? currentQuestionKey : null,
-                               onTap: () {
-                                 Navigator.pop(context);
-                                 setState(() {
-                                   _feedbackAnswer = null;
-                                   _feedbackCorrect = null;
-                                   _feedbackTimer?.cancel();
-                                   _ctrl.jumpToQuestionIndex(qIndex);
-                                 });
-                               },
+
+                            return GestureDetector(
+                              key: isCurrent ? currentQuestionKey : null,
+                              onTap: () {
+                                Navigator.pop(context);
+                                setState(() {
+                                  _feedbackAnswer = null;
+                                  _feedbackCorrect = null;
+                                  _feedbackTimer?.cancel();
+                                  _ctrl.jumpToQuestionIndex(qIndex);
+                                });
+                              },
                               child: Container(
                                 width: 48,
                                 height: 48,
                                 decoration: BoxDecoration(
                                   color: bgColor,
                                   border: Border.all(
-                                    color: borderCol, 
+                                    color: borderCol,
                                     width: isCurrent ? 2 : 1,
                                   ),
                                   borderRadius: BorderRadius.circular(12),
@@ -1645,9 +1677,12 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                                     Center(
                                       child: Text(
                                         "$qNum",
-                                        style: AppTypography.titleSmall.copyWith(
+                                        style:
+                                            AppTypography.titleSmall.copyWith(
                                           color: textColor,
-                                          fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                                          fontWeight: isCurrent
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
                                         ),
                                       ),
                                     ),
@@ -1668,7 +1703,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                           }),
                         ),
                       ),
-                     ),
+                    ),
                     const SizedBox(height: 12),
                   ],
                 ),
@@ -1688,31 +1723,38 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
     showDialog(
       context: context,
       builder: (ctx) {
-        String? selectedLetter = currentCorrect.isNotEmpty ? currentCorrect : null;
+        String? selectedLetter =
+            currentCorrect.isNotEmpty ? currentCorrect : null;
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
               backgroundColor: AppColors.slate800,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-              title: Text("Flag Q${qIndex + 1}", style: AppTypography.titleLarge),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18)),
+              title:
+                  Text("Flag Q${qIndex + 1}", style: AppTypography.titleLarge),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     "Book's answer key: $bookAnswer",
-                    style: AppTypography.bodyMedium.copyWith(color: AppColors.slate300),
+                    style: AppTypography.bodyMedium
+                        .copyWith(color: AppColors.slate300),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     "Select the correct answer to override the wrong book answer:",
-                    style: AppTypography.bodySmall.copyWith(color: AppColors.slate400),
+                    style: AppTypography.bodySmall
+                        .copyWith(color: AppColors.slate400),
                   ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: ['A', 'B', 'C', 'D', 'E'].map((letter) {
-                      if (letter == 'E' && !session.answers.contains('E') && currentCorrect != 'E') {
+                      if (letter == 'E' &&
+                          !session.answers.contains('E') &&
+                          currentCorrect != 'E') {
                         return const SizedBox.shrink();
                       }
                       final isSelected = selectedLetter == letter;
@@ -1726,10 +1768,14 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColors.govBlue : AppColors.slate700,
+                            color: isSelected
+                                ? AppColors.govBlue
+                                : AppColors.slate700,
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: isSelected ? Colors.white : Colors.transparent,
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.transparent,
                               width: 1.5,
                             ),
                           ),
@@ -1737,7 +1783,9 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                             child: Text(
                               letter,
                               style: AppTypography.titleMedium.copyWith(
-                                color: isSelected ? Colors.white : AppColors.slate300,
+                                color: isSelected
+                                    ? Colors.white
+                                    : AppColors.slate300,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -1753,7 +1801,9 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                   TextButton(
                     onPressed: () {
                       Navigator.pop(ctx);
-                      _ctrl.unflagQuestion(session.pageNumber, qIndex).then((_) {
+                      _ctrl
+                          .unflagQuestion(session.pageNumber, qIndex)
+                          .then((_) {
                         setState(() {
                           session.flaggedAnswers.remove(qIndex);
                         });
@@ -1774,7 +1824,10 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                       ? null
                       : () {
                           Navigator.pop(ctx);
-                          _ctrl.flagQuestion(session.pageNumber, qIndex, selectedLetter!).then((_) {
+                          _ctrl
+                              .flagQuestion(
+                                  session.pageNumber, qIndex, selectedLetter!)
+                              .then((_) {
                             setState(() {
                               session.flaggedAnswers[qIndex] = selectedLetter!;
                             });
@@ -1782,7 +1835,9 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                         },
                   child: Text("Save",
                       style: AppTypography.labelLarge.copyWith(
-                        color: selectedLetter == null ? AppColors.slate600 : AppColors.govBlue,
+                        color: selectedLetter == null
+                            ? AppColors.slate600
+                            : AppColors.govBlue,
                       )),
                 ),
               ],
@@ -1802,8 +1857,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
         title: Text("Exit Practice?", style: AppTypography.titleLarge),
         content: Text(
           "Your progress so far has been saved.",
-          style:
-              AppTypography.bodyMedium.copyWith(color: AppColors.slate400),
+          style: AppTypography.bodyMedium.copyWith(color: AppColors.slate400),
         ),
         actions: [
           TextButton(
@@ -1878,16 +1932,10 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                   children: [
                     _resultStat("Correct", "${_ctrl.sessionCorrect}",
                         AppColors.govGreen),
-                    Container(
-                        width: 1,
-                        height: 36,
-                        color: AppColors.slate700),
+                    Container(width: 1, height: 36, color: AppColors.slate700),
                     _resultStat(
                         "Wrong", "${_ctrl.sessionWrong}", AppColors.error),
-                    Container(
-                        width: 1,
-                        height: 36,
-                        color: AppColors.slate700),
+                    Container(width: 1, height: 36, color: AppColors.slate700),
                     _resultStat(
                       "Accuracy",
                       "${(accuracy * 100).toStringAsFixed(0)}%",
@@ -1903,8 +1951,8 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                     : session.isContinueMode
                         ? "${session.sessionName} • Continued"
                         : session.sessionName,
-                style: AppTypography.bodySmall
-                    .copyWith(color: AppColors.slate500),
+                style:
+                    AppTypography.bodySmall.copyWith(color: AppColors.slate500),
               ),
               const SizedBox(height: 28),
               // Actions
@@ -1937,7 +1985,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.error,
                       side: BorderSide(
-                          color: AppColors.error.withOpacity(0.4)),
+                          color: AppColors.error.withValues(alpha: 0.4)),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14)),
                     ),
@@ -1963,8 +2011,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                 .copyWith(color: color, fontWeight: FontWeight.w700)),
         const SizedBox(height: 2),
         Text(label,
-            style:
-                AppTypography.micro.copyWith(color: AppColors.slate400)),
+            style: AppTypography.micro.copyWith(color: AppColors.slate400)),
       ],
     );
   }

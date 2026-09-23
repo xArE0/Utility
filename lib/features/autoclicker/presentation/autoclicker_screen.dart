@@ -118,8 +118,6 @@ class _AutoClickerScreenState extends State<AutoClickerScreen> with WidgetsBindi
                   _buildSettingsCard(),
                   const SizedBox(height: 12),
                   _buildControlCard(),
-                  const SizedBox(height: 12),
-                  _buildHelpCard(),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -382,55 +380,6 @@ class _AutoClickerScreenState extends State<AutoClickerScreen> with WidgetsBindi
             variant: ButtonVariant.secondary,
             width: double.infinity,
             onPressed: _controller.busy ? null : () async => _showError(await _controller.hideOverlay()),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Help ─────────────────────────────────────────────────────────────────
-
-  Widget _buildHelpCard() {
-    Widget step(String n, String text) => Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 22,
-                height: 22,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _accent.withValues(alpha: 0.2),
-                ),
-                child: Text(n, style: AppTypography.bodySmall.copyWith(color: _accent)),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(text, style: AppTypography.bodySmall.copyWith(color: AppColors.slate300)),
-              ),
-            ],
-          ),
-        );
-
-    return GlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('How it works', style: AppTypography.titleMedium),
-          const SizedBox(height: 12),
-          step('1', 'Switch on the accessibility service above (one time).'),
-          step('2', 'Tap "Show Floating Controls". This app steps aside.'),
-          step('3', 'Open the app you want to click in and drag the small ring over the button.'),
-          step('4', 'Tap the small bubble to open its controls, then press ▶. It taps under the ring until you press ■.'),
-          step('5', 'Keep the bubble away from the ring, or the bubble will be what gets tapped.'),
-          const SizedBox(height: 4),
-          Text(
-            'The notification also has Start / Stop and Close. On Xiaomi / HyperOS, if '
-            'the clicker dies after you swipe the app away, allow Autostart and set battery to '
-            '"No restrictions" for this app.',
-            style: AppTypography.bodySmall.copyWith(color: AppColors.slate400),
           ),
         ],
       ),

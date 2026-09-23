@@ -26,7 +26,8 @@ class CustomButton extends StatefulWidget {
   State<CustomButton> createState() => _CustomButtonState();
 }
 
-class _CustomButtonState extends State<CustomButton> with SingleTickerProviderStateMixin {
+class _CustomButtonState extends State<CustomButton>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
 
@@ -129,7 +130,7 @@ class _CustomButtonState extends State<CustomButton> with SingleTickerProviderSt
           boxShadow: widget.onPressed != null
               ? [
                   BoxShadow(
-                    color: AppColors.govBlue.withOpacity(0.3),
+                    color: AppColors.govBlue.withValues(alpha: 0.3),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -145,7 +146,7 @@ class _CustomButtonState extends State<CustomButton> with SingleTickerProviderSt
         return BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: AppColors.govBlue.withOpacity(0.5),
+            color: AppColors.govBlue.withValues(alpha: 0.5),
             width: 1.5,
           ),
           color: Colors.transparent,
@@ -160,7 +161,7 @@ class _CustomButtonState extends State<CustomButton> with SingleTickerProviderSt
 
   Color _getTextColor() {
     if (widget.onPressed == null) return AppColors.slate400;
-    
+
     switch (widget.variant) {
       case ButtonVariant.primary:
         return Colors.white;
