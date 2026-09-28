@@ -150,8 +150,9 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                           firstDate: DateTime(2000),
                           lastDate: DateTime(2100),
                         );
-                        if (picked != null)
+                        if (picked != null) {
                           setDialogState(() => chosenDate = picked);
+                        }
                       },
                     ),
                     const SizedBox(height: 8),
@@ -334,8 +335,9 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                                 context: context,
                                 initialTime: TimeOfDay.now(),
                               );
-                              if (t != null)
+                              if (t != null) {
                                 setDialogState(() => remindTime = t);
+                              }
                             },
                           ),
                         ],
@@ -856,7 +858,8 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                                 details.data['canMove'] == true,
                             onAcceptWithDetails: (details) async {
                               final event = details.data['event'] as Event;
-                              final sourceDate = details.data['sourceDate'] as DateTime;
+                              final sourceDate =
+                                  details.data['sourceDate'] as DateTime;
                               if (!_controller.isSameDay(sourceDate, date)) {
                                 await _controller.moveEvent(event, date);
                               }

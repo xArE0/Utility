@@ -6,7 +6,6 @@ import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/animated_background.dart';
 import '../../../core/widgets/app_toast.dart';
 import 'expense_controller.dart';
-import '../domain/expense_entities.dart';
 import '../data/local_expense_repository.dart';
 
 class ExpenseTrackerApp extends StatelessWidget {

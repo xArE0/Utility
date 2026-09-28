@@ -165,9 +165,10 @@ class _RoutineScreenState extends State<RoutineScreen>
                               hour: int.parse(p[0]), minute: int.parse(p[1]));
                         }
                         final picked = await _pickTime(init);
-                        if (picked != null)
+                        if (picked != null) {
                           ss(() => time =
                               '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}');
+                        }
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -376,12 +377,13 @@ class _RoutineScreenState extends State<RoutineScreen>
                     GestureDetector(
                       onTap: () async {
                         final armed = await _ctrl.toggleBell(habit.id!);
-                        if (mounted)
+                        if (mounted) {
                           AppToast.show(
                               context,
                               armed
                                   ? '🔔 Reminder set for ${_fmtTime(habit.scheduledTime!)}'
                                   : '🔕 Reminder cancelled');
+                        }
                       },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
@@ -467,11 +469,12 @@ class _RoutineScreenState extends State<RoutineScreen>
 
   // ═══════════════ HISTORY TAB ═══════════════
   Widget _buildHistoryTab() {
-    if (_ctrl.habits.isEmpty)
+    if (_ctrl.habits.isEmpty) {
       return Center(
           child: Text('Add habits to see history',
               style: AppTypography.bodyMedium
                   .copyWith(color: AppColors.slate500)));
+    }
     final heatmap = _ctrl.getHeatmapData();
     return ListView(
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 80),
@@ -615,8 +618,9 @@ class _HeatmapCalendar extends StatelessWidget {
                   style: TextStyle(fontSize: 9, color: AppColors.slate500))),
           ...List.generate(weeks, (w) {
             final date = start.add(Duration(days: w * 7 + di));
-            if (date.isAfter(today))
+            if (date.isAfter(today)) {
               return SizedBox(width: cellSize + gap, height: cellSize + gap);
+            }
             final ds = DateFormat('yyyy-MM-dd').format(date);
             final count = data[ds] ?? 0;
             final intensity =
@@ -681,8 +685,9 @@ class _HabitHistoryRow extends StatelessWidget {
             runSpacing: 3,
             children: List.generate(weeks * 7, (i) {
               final date = start.add(Duration(days: i));
-              if (date.isAfter(today))
+              if (date.isAfter(today)) {
                 return const SizedBox(width: 6, height: 6);
+              }
               final done = completionDates
                   .contains(DateFormat('yyyy-MM-dd').format(date));
               return Container(

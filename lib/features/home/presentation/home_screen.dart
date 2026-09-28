@@ -528,8 +528,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 success ? SyncState.success : SyncState.error);
 
                             await Future.delayed(const Duration(seconds: 2));
-                            if (mounted)
+                            if (mounted) {
                               setState(() => _syncState = SyncState.idle);
+                            }
                           },
                     icon: _buildSyncIcon(),
                   ),
@@ -631,8 +632,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               final todayKey = DateFormat('yyyy-MM-dd')
                                   .format(DateTime.now());
                               final w = ctrl.weatherMap[todayKey];
-                              if (w == null || (w['sunrise'] ?? '').isEmpty)
+                              if (w == null || (w['sunrise'] ?? '').isEmpty) {
                                 return const SizedBox.shrink();
+                              }
 
                               return Padding(
                                 padding: const EdgeInsets.only(top: 8),

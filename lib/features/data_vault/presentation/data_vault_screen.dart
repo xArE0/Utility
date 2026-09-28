@@ -93,10 +93,11 @@ class _DataVaultPageState extends State<DataVaultPage> {
       _copiedIds.add(itemId);
     });
     Future.delayed(const Duration(seconds: 2), () {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _copiedIds.remove(itemId);
         });
+      }
     });
   }
 
@@ -1567,8 +1568,9 @@ class _DataVaultPageState extends State<DataVaultPage> {
                               .where((i) => i.category == category)
                               .toList();
 
-                          if (categoryItems.isEmpty)
+                          if (categoryItems.isEmpty) {
                             return const SizedBox.shrink();
+                          }
 
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
