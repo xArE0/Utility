@@ -5,6 +5,7 @@ import '../../../core/widgets/animated_background.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../core/services/home_widget_service.dart';
 import '../../../core/services/settings_service.dart';
+import 'location_picker.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -217,6 +218,34 @@ class _SettingsScreenState extends State<SettingsScreen>
                       },
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              _buildSectionTitle('Weather', primaryText),
+              _buildCard(
+                cardBg,
+                ListenableBuilder(
+                  listenable: SettingsService.instance,
+                  builder: (context, _) {
+                    final location = SettingsService.instance.location;
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.place_outlined,
+                          color: AppColors.govBlue),
+                      title: Text(location.name,
+                          style: TextStyle(color: primaryText)),
+                      subtitle: Text(
+                        location.detail.isEmpty
+                            ? 'Weather, sunrise/sunset and air quality'
+                            : location.detail,
+                        style: AppTypography.bodySmall
+                            .copyWith(color: secondaryText),
+                      ),
+                      trailing: const Icon(Icons.chevron_right,
+                          color: AppColors.slate400),
+                      onTap: () => showLocationPicker(context),
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: 32),

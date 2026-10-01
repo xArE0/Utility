@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import '../models/weather_location.dart';
 import 'home_widget_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -38,6 +40,7 @@ class SettingsService extends ChangeNotifier {
     _defaultScreen = _prefs.getString('defaultScreen') ?? 'schedule';
     final raw = _prefs.getString('sidebarHiddenItems') ?? '';
     _sidebarHiddenItems = raw.isEmpty ? {} : raw.split(',').toSet();
+    _loadLocations();
 
     // The widget keeps its own copy (it works while the app isn't running); this app's settings
     // are the source, so push them on every launch. Never throws.
@@ -104,5 +107,56 @@ class SettingsService extends ChangeNotifier {
     _sidebarHiddenItems = Set.from(hidden);
     await _prefs.setString('sidebarHiddenItems', hidden.join(','));
     notifyListeners();
+  }
+
+  // ── Weather location ─────────────────────────────────────────────────────
+
+  WeatherLocation _location = WeatherLocation.kathmandu;
+  List<WeatherLocation> _savedLocations = [WeatherLocation.kathmandu];
+
+  /// The place weather, sunrise/sunset and air quality are shown for.
+  WeatherLocation get location => _location;
+
+  /// Places the user has picked before, for switching back quickly. Always includes [location].
+  List<WeatherLocation> get savedLocations => List.unmodifiable(_savedLocations);
+
+  void _loadLocations() {
+    try {
+      final saved = (json.decode(_prefs.getString('weatherLocations') ?? '[]') as List)
+          .map(WeatherLocation.fromJson)
+          .whereType<WeatherLocation>()
+          .toList();
+      final active = WeatherLocation.fromJson(json.decode(_prefs.getString('weatherLocation') ?? 'null'));
+      if (active != null) _location = active;
+      if (saved.isNotEmpty) _savedLocations = saved;
+    } catch (_) {
+      // Corrupt entry: keep the defaults.
+    }
+    if (!_savedLocations.any((l) => l.key == _location.key)) {
+      _savedLocations = [_location, ..._savedLocations];
+    }
+  }
+
+  Future<void> selectLocation(WeatherLocation value) async {
+    _location = value;
+    if (!_savedLocations.any((l) => l.key == value.key)) {
+      _savedLocations = [..._savedLocations, value];
+    }
+    await _saveLocations();
+    notifyListeners();
+  }
+
+  /// The active location can't be removed; pick another one first.
+  Future<void> removeLocation(WeatherLocation value) async {
+    if (value.key == _location.key) return;
+    _savedLocations = _savedLocations.where((l) => l.key != value.key).toList();
+    await _saveLocations();
+    notifyListeners();
+  }
+
+  Future<void> _saveLocations() async {
+    await _prefs.setString('weatherLocation', json.encode(_location.toJson()));
+    await _prefs.setString(
+        'weatherLocations', json.encode(_savedLocations.map((l) => l.toJson()).toList()));
   }
 }

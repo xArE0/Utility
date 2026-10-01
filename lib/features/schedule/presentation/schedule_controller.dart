@@ -9,6 +9,7 @@ import '../../../services/notification_service.dart';
 import '../../../utils/ics_parser.dart';
 import '../../../utils/api_services.dart';
 import '../../../core/services/home_widget_service.dart';
+import '../../../core/services/settings_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum ScheduleView { timeline, week, month }
@@ -50,6 +51,9 @@ class ScheduleController extends ChangeNotifier {
 
   Map<String, Map<String, String>> weatherMap = {};
   int? currentAqi;
+
+  /// Location [weatherMap] and [currentAqi] belong to; changes when the user picks another place.
+  String? _weatherLocationKey;
 
   bool _isLoadingNepaliDates = false;
 
@@ -122,19 +126,8 @@ class ScheduleController extends ChangeNotifier {
     precomputeNepaliDates(_selectedDate);
 
     // Fetch weather asynchronously so it doesn't block UI
-    ApiServices.fetchKathmanduWeather().then((fetched) {
-      if (fetched.isNotEmpty) {
-        weatherMap = fetched;
-        notifyListeners();
-      }
-    });
-    ApiServices.fetchKathmanduAQI().then((fetched) {
-      if (fetched != null) {
-        currentAqi = fetched;
-        notifyListeners();
-        updateHomeWidget();
-      }
-    });
+    SettingsService.instance.addListener(_onSettingsChanged);
+    refreshWeather();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController != null && _scrollController!.hasClients) {
@@ -279,6 +272,39 @@ class ScheduleController extends ChangeNotifier {
     }
 
     return results;
+  }
+
+  void _onSettingsChanged() {
+    if (SettingsService.instance.location.key != _weatherLocationKey) refreshWeather();
+  }
+
+  /// Loads weather and AQI for the selected location. Shows the cached copy straight away when the
+  /// location changed (or on first load), then fetches both; whatever fails keeps the cached value.
+  /// Returns false when neither request succeeded.
+  Future<bool> refreshWeather() async {
+    final location = SettingsService.instance.location;
+    if (location.key != _weatherLocationKey) {
+      _weatherLocationKey = location.key;
+      final cached = await Future.wait(
+          [ApiServices.cachedWeather(location), ApiServices.cachedAqi(location)]);
+      if (location.key != _weatherLocationKey) return false; // switched again meanwhile
+      weatherMap = cached[0] as Map<String, Map<String, String>>;
+      currentAqi = cached[1] as int?;
+      notifyListeners();
+      await updateHomeWidget();
+    }
+
+    final fetched =
+        await Future.wait([ApiServices.fetchWeather(location), ApiServices.fetchAQI(location)]);
+    if (location.key != _weatherLocationKey) return false;
+    final weather = fetched[0] as Map<String, Map<String, String>>?;
+    final aqi = fetched[1] as int?;
+    if (weather == null && aqi == null) return false;
+    if (weather != null) weatherMap = weather;
+    if (aqi != null) currentAqi = aqi;
+    notifyListeners();
+    await updateHomeWidget();
+    return true;
   }
 
   /// Pushes today's weather and AQI line to the home screen widget.
@@ -515,21 +541,8 @@ class ScheduleController extends ChangeNotifier {
   Future<bool> syncAllApiData() async {
     try {
       // 1. Sync Weather
-      final fetchedWeather = await ApiServices.fetchKathmanduWeather();
-      final fetchedAqi = await ApiServices.fetchKathmanduAQI();
-
-      if (fetchedWeather.isEmpty && fetchedAqi == null) {
+      if (!await refreshWeather()) {
         return false;
-      }
-
-      if (fetchedWeather.isNotEmpty) {
-        weatherMap = fetchedWeather;
-        notifyListeners();
-      }
-
-      if (fetchedAqi != null) {
-        currentAqi = fetchedAqi;
-        notifyListeners();
       }
 
       // 2. Sync Quote
@@ -567,6 +580,7 @@ class ScheduleController extends ChangeNotifier {
 
   @override
   void dispose() {
+    SettingsService.instance.removeListener(_onSettingsChanged);
     _repository.dispose();
     super.dispose();
   }

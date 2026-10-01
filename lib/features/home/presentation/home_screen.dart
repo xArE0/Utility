@@ -12,6 +12,7 @@ import '../../../utils/api_services.dart';
 import 'dart:async';
 import '../../../core/services/home_widget_service.dart';
 import '../../../core/services/settings_service.dart';
+import '../../settings/presentation/location_picker.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -624,32 +625,59 @@ class _HomeScreenState extends State<HomeScreen> {
                             Builder(builder: (context) {
                               final ctrl =
                                   _scheduleKey.currentState?.controller;
-                              if (ctrl == null) return const SizedBox.shrink();
 
                               // We use the same formatting key used in ScheduleController
                               final todayKey = DateFormat('yyyy-MM-dd')
                                   .format(DateTime.now());
-                              final w = ctrl.weatherMap[todayKey];
-                              if (w == null || (w['sunrise'] ?? '').isEmpty) {
-                                return const SizedBox.shrink();
-                              }
+                              final w = ctrl?.weatherMap[todayKey];
+                              final hasSun =
+                                  w != null && (w['sunrise'] ?? '').isNotEmpty;
+                              final secondary = AppTypography.bodySmall
+                                  .copyWith(color: AppColors.slate300);
 
-                              return Padding(
-                                padding: const EdgeInsets.only(top: 8),
-                                child: Row(
-                                  children: [
-                                    const Text("🌅 ",
-                                        style: TextStyle(fontSize: 14)),
-                                    Text(w['sunrise']!,
-                                        style: AppTypography.bodySmall.copyWith(
-                                            color: AppColors.slate300)),
-                                    const SizedBox(width: 12),
-                                    const Text("🌇 ",
-                                        style: TextStyle(fontSize: 14)),
-                                    Text(w['sunset']!,
-                                        style: AppTypography.bodySmall.copyWith(
-                                            color: AppColors.slate300)),
-                                  ],
+                              // Tap to pick the location weather is shown for.
+                              return GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () => showLocationPicker(context),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      if (hasSun)
+                                        Row(
+                                          children: [
+                                            const Text("🌅 ",
+                                                style: TextStyle(fontSize: 14)),
+                                            Text(w['sunrise']!,
+                                                style: secondary),
+                                            const SizedBox(width: 12),
+                                            const Text("🌇 ",
+                                                style: TextStyle(fontSize: 14)),
+                                            Text(w['sunset']!,
+                                                style: secondary),
+                                          ],
+                                        ),
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.place_outlined,
+                                              size: 14,
+                                              color: AppColors.slate400),
+                                          const SizedBox(width: 4),
+                                          Flexible(
+                                            child: Text(
+                                              SettingsService
+                                                  .instance.location.name,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: secondary.copyWith(
+                                                  color: AppColors.slate400),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               );
                             }),
