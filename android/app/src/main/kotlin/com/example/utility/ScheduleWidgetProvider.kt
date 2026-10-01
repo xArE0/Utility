@@ -11,5 +11,6 @@ import android.content.Context
 class ScheduleWidgetProvider : AppWidgetProvider() {
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         appWidgetManager.updateAppWidget(appWidgetIds, UtilityWidget.buildViews(context))
+        SettingsWatchJob.schedule(context) // also covers a widget placed before the app was ever opened
     }
 }

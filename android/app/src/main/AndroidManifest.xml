@@ -75,6 +75,12 @@
             </intent-filter>
         </receiver>
 
+        <!-- Redraws the widget's stay-awake button when the screen-off timeout changes elsewhere. -->
+        <service
+            android:name=".SettingsWatchJob"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="false" />
+
         <!-- Auto Clicker: taps are injected by this accessibility service. It is deliberately NOT a
              foreground service (startForeground without a foregroundServiceType crashes on API 34+). -->
         <service

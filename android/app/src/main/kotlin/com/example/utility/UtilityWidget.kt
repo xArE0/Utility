@@ -27,8 +27,11 @@ import android.widget.RemoteViews
  * Timer: one at a time. Its end is a single exact alarm; the countdown on the widget is a
  * Chronometer, which the launcher ticks by itself, so nothing runs while it counts down.
  *
- * Stay awake: switches the screen-off timeout to the configured duration and remembers the old
- * value; switching off restores it, unless the user changed the timeout by hand in the meantime.
+ * Stay awake: a two-way switch on the system screen-off timeout — on is the configured duration,
+ * off is [AWAKE_OFF_MS]. Nothing is remembered; the button reads the live setting, so it is lit
+ * whenever the timeout equals the configured duration, however it got there. Changes made outside
+ * the widget reach it through [SettingsWatchJob], which the system only starts when the setting
+ * actually changes.
  */
 object UtilityWidget {
     private const val PREFS = "utility_widget"
@@ -39,9 +42,9 @@ object UtilityWidget {
     private const val KEY_TIMER_END = "timer_end_ms"
     private const val KEY_TIMER_MINUTES = "timer_minutes"
     private const val KEY_TIMER_STARTED = "timer_started_ms"
-    private const val KEY_AWAKE_ON = "awake_on"
-    private const val KEY_AWAKE_PREVIOUS = "awake_previous_ms"
-    private const val KEY_AWAKE_SET = "awake_set_ms"
+
+    /** Left behind by the old remember-and-restore stay-awake; dropped on [restore]. */
+    private val LEGACY_AWAKE_KEYS = listOf("awake_on", "awake_previous_ms", "awake_set_ms")
 
     const val ACTION_TIMER_START = "com.example.utility.widget.TIMER_START"
     const val ACTION_TIMER_CANCEL = "com.example.utility.widget.TIMER_CANCEL"
@@ -67,6 +70,9 @@ object UtilityWidget {
     private const val DEFAULT_TIMER2 = 15
     private const val DEFAULT_AWAKE_MINUTES = 10
 
+    /** Screen-off timeout when stay awake is switched off. */
+    private const val AWAKE_OFF_MS = 60_000
+
     /**
      * The ✕ sits where the second timer button was; a quick double-tap on that button would
      * otherwise start the timer and cancel it straight away.
@@ -87,7 +93,7 @@ object UtilityWidget {
             "timer1" to p.getInt(KEY_TIMER1, DEFAULT_TIMER1),
             "timer2" to p.getInt(KEY_TIMER2, DEFAULT_TIMER2),
             "awakeMinutes" to p.getInt(KEY_AWAKE_MINUTES, DEFAULT_AWAKE_MINUTES),
-            "awakeOn" to p.getBoolean(KEY_AWAKE_ON, false),
+            "awakeOn" to isAwake(context),
             "canWriteSettings" to Settings.System.canWrite(context),
             "timerEndMs" to end.takeIf { it > System.currentTimeMillis() },
             "timerMinutes" to p.getInt(KEY_TIMER_MINUTES, 0),
@@ -95,25 +101,15 @@ object UtilityWidget {
     }
 
     fun configure(context: Context, timer1: Int, timer2: Int, awakeMinutes: Int) {
-        val p = prefs(context)
-        p.edit()
+        val wasAwake = isAwake(context)
+        prefs(context).edit()
             .putInt(KEY_TIMER1, timer1.coerceIn(1, 999))
             .putInt(KEY_TIMER2, timer2.coerceIn(1, 999))
             .putInt(KEY_AWAKE_MINUTES, awakeMinutes.coerceIn(1, 999))
             .apply()
 
         // A new duration while stay-awake is on takes effect right away.
-        if (p.getBoolean(KEY_AWAKE_ON, false) && Settings.System.canWrite(context)) {
-            val target = awakeMinutes.coerceIn(1, 999) * 60_000
-            val resolver = context.contentResolver
-            try {
-                if (Settings.System.getInt(resolver, Settings.System.SCREEN_OFF_TIMEOUT, -1) == p.getInt(KEY_AWAKE_SET, -2)) {
-                    Settings.System.putInt(resolver, Settings.System.SCREEN_OFF_TIMEOUT, target)
-                    p.edit().putInt(KEY_AWAKE_SET, target).apply()
-                }
-            } catch (_: SecurityException) {
-            }
-        }
+        if (wasAwake) setScreenTimeout(context, awakeTargetMs(context))
         changed(context)
     }
 
@@ -170,6 +166,8 @@ object UtilityWidget {
      */
     fun restore(context: Context, dropExpired: Boolean) {
         val p = prefs(context)
+        if (LEGACY_AWAKE_KEYS.any(p::contains)) p.edit().apply { LEGACY_AWAKE_KEYS.forEach(::remove) }.apply()
+        SettingsWatchJob.schedule(context) // non-persisted, so gone after a reboot
         val end = p.getLong(KEY_TIMER_END, 0L)
         if (end > 0L) {
             if (dropExpired && end <= System.currentTimeMillis()) {
@@ -241,45 +239,31 @@ object UtilityWidget {
 
     /** Returns false (and changes nothing) without the "Modify system settings" permission. */
     fun toggleAwake(context: Context): Boolean {
-        if (!Settings.System.canWrite(context)) {
-            changed(context) // swaps the button over to opening the permission screen
-            return false
-        }
-        val p = prefs(context)
-        val resolver = context.contentResolver
-        try {
-            if (!p.getBoolean(KEY_AWAKE_ON, false)) {
-                val previous = Settings.System.getInt(resolver, Settings.System.SCREEN_OFF_TIMEOUT, 60_000)
-                val target = p.getInt(KEY_AWAKE_MINUTES, DEFAULT_AWAKE_MINUTES) * 60_000
-                Settings.System.putInt(resolver, Settings.System.SCREEN_OFF_TIMEOUT, target)
-                p.edit()
-                    .putBoolean(KEY_AWAKE_ON, true)
-                    .putInt(KEY_AWAKE_PREVIOUS, previous)
-                    .putInt(KEY_AWAKE_SET, target)
-                    .apply()
-            } else {
-                val current = Settings.System.getInt(resolver, Settings.System.SCREEN_OFF_TIMEOUT, -1)
-                // Changed by hand while on: the user's newer choice wins.
-                if (current == p.getInt(KEY_AWAKE_SET, -2)) {
-                    Settings.System.putInt(
-                        resolver,
-                        Settings.System.SCREEN_OFF_TIMEOUT,
-                        p.getInt(KEY_AWAKE_PREVIOUS, 60_000),
-                    )
-                }
-                p.edit().putBoolean(KEY_AWAKE_ON, false).remove(KEY_AWAKE_PREVIOUS).remove(KEY_AWAKE_SET).apply()
-            }
-        } catch (_: SecurityException) {
-            changed(context)
-            return false
-        }
+        val ok = Settings.System.canWrite(context) &&
+            setScreenTimeout(context, if (isAwake(context)) AWAKE_OFF_MS else awakeTargetMs(context))
+        // Without the permission this swaps the button over to opening the permission screen.
         changed(context)
-        return true
+        return ok
+    }
+
+    /** On means the live timeout equals the configured duration, whoever set it. */
+    private fun isAwake(context: Context): Boolean =
+        Settings.System.getInt(context.contentResolver, Settings.System.SCREEN_OFF_TIMEOUT, -1) ==
+            awakeTargetMs(context)
+
+    private fun awakeTargetMs(context: Context) =
+        prefs(context).getInt(KEY_AWAKE_MINUTES, DEFAULT_AWAKE_MINUTES) * 60_000
+
+    private fun setScreenTimeout(context: Context, ms: Int): Boolean = try {
+        Settings.System.putInt(context.contentResolver, Settings.System.SCREEN_OFF_TIMEOUT, ms)
+    } catch (_: SecurityException) {
+        false
     }
 
     // ── Rendering ─────────────────────────────────────────────────────────────
 
-    private fun changed(context: Context) {
+    /** Redraw and tell the app; for changes made outside the widget, e.g. the timeout setting. */
+    fun changed(context: Context) {
         render(context)
         listener?.invoke()
     }
@@ -325,7 +309,7 @@ object UtilityWidget {
 
         // Stay awake. Without the permission the button opens its settings screen instead; an
         // activity can't be started from the receiver, so that choice is made here.
-        val awakeOn = p.getBoolean(KEY_AWAKE_ON, false)
+        val awakeOn = isAwake(context)
         views.setImageViewResource(R.id.btn_awake_icon, if (awakeOn) R.drawable.ic_awake_on else R.drawable.ic_awake_off)
         views.setInt(R.id.btn_awake_icon, "setBackgroundResource", if (awakeOn) R.drawable.widget_awake_on_bg else 0)
         views.setOnClickPendingIntent(
