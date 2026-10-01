@@ -26,9 +26,6 @@ void main() async {
 
   // Request exact alarm permission (Android 12+) for on-time delivery
   await NotificationService().requestExactAlarmPermission();
-
-  // Request battery optimization exemption so the OS doesn't kill scheduled alarms
-  await NotificationService().requestBatteryOptimizationExemption();
   
   runApp(const UtilityApp());
   

@@ -7,11 +7,15 @@ class WeatherLocation {
   final double latitude;
   final double longitude;
 
+  /// From "Use my location" rather than a search; only one such entry is kept.
+  final bool isDevice;
+
   const WeatherLocation({
     required this.name,
     this.detail = '',
     required this.latitude,
     required this.longitude,
+    this.isDevice = false,
   });
 
   static const kathmandu =
@@ -20,8 +24,13 @@ class WeatherLocation {
   /// Identity for comparisons and caches; ~10 m precision, so the same place found twice matches.
   String get key => '${latitude.toStringAsFixed(4)},${longitude.toStringAsFixed(4)}';
 
-  Map<String, dynamic> toJson() =>
-      {'name': name, 'detail': detail, 'lat': latitude, 'lon': longitude};
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'detail': detail,
+        'lat': latitude,
+        'lon': longitude,
+        if (isDevice) 'device': true,
+      };
 
   static WeatherLocation? fromJson(Object? json) {
     if (json is! Map) return null;
@@ -32,6 +41,7 @@ class WeatherLocation {
       detail: json['detail'] as String? ?? '',
       latitude: lat.toDouble(),
       longitude: lon.toDouble(),
+      isDevice: json['device'] == true,
     );
   }
 }

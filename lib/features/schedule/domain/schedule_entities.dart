@@ -57,6 +57,33 @@ class Event {
     );
   }
 
+  bool get isRecurring => type == 'birthday' || (repeat != null && repeat != 'none');
+
+  /// Whether a birthday or repeating event falls on [day] (a date; time is ignored). For one-off
+  /// events, whether [day] is its date. Shared by the calendar and reminder scheduling.
+  bool occursOn(DateTime day) {
+    final start = DateTime.parse(date);
+    final d = DateTime(day.year, day.month, day.day);
+    if (type == 'birthday') return start.month == d.month && start.day == d.day;
+    final startDay = DateTime(start.year, start.month, start.day);
+    if (d.isBefore(startDay)) return false;
+    switch (repeat) {
+      case 'daily':
+        return true;
+      case 'weekly':
+        return d.weekday == start.weekday;
+      case 'monthly':
+        return d.day == start.day;
+      case 'yearly':
+        return d.month == start.month && d.day == start.day;
+      case 'custom':
+        final interval = repeatInterval ?? 1;
+        return interval > 0 && d.difference(startDay).inDays % interval == 0;
+      default:
+        return d == startDay;
+    }
+  }
+
   bool spansDate(DateTime target) {
     if (durationDays == null || durationDays! <= 1) return false;
     final start = DateTime.parse(date);

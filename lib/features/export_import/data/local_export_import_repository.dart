@@ -18,6 +18,28 @@ class LocalExportImportRepository implements IExportImportRepository {
     return '$dir/$dbName';
   }
 
+  /// Every SQLite database file starts with this header.
+  static const _sqliteHeader = 'SQLite format 3\u0000';
+
+  static bool _isSqlite(List<int> bytes) =>
+      bytes.length >= 100 && String.fromCharCodes(bytes.take(16)) == _sqliteHeader;
+
+  /// Plain copies of earlier exports stay in the cache until the share target has read them;
+  /// remove them before writing new ones so they don't pile up.
+  Future<void> _clearOldExports() async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      await for (final f in tempDir.list()) {
+        final name = f.uri.pathSegments.last;
+        if (f is File &&
+            (name.contains('_backup_') || name == 'temp_import.vault') &&
+            (name.endsWith('.db') || name.endsWith('.vault') || name.endsWith('.zip'))) {
+          await f.delete();
+        }
+      }
+    } catch (_) {}
+  }
+
   @override
   Future<bool> checkDatabaseExists(String dbName) async {
     final dbPath = await _getDbPath(dbName);
@@ -29,6 +51,7 @@ class LocalExportImportRepository implements IExportImportRepository {
     try {
       final dbPath = await _getDbPath(dbName);
       if (await File(dbPath).exists()) {
+        await _clearOldExports();
         final tempDir = await getTemporaryDirectory();
         final now = DateTime.now();
         final dateStr =
@@ -53,6 +76,10 @@ class LocalExportImportRepository implements IExportImportRepository {
       final result = await FilePicker.pickFiles(type: FileType.any);
       if (result.isNotEmpty && result.single.path != null) {
         final pickedFile = File(result.single.path!);
+        // Refuse anything that isn't a database rather than overwrite data with it.
+        if (!_isSqlite(await pickedFile.openRead(0, 100).expand((b) => b).toList())) {
+          return false;
+        }
         final dbPath = await _getDbPath(dbName);
         await pickedFile.copy(dbPath);
         return true;
@@ -104,6 +131,7 @@ class LocalExportImportRepository implements IExportImportRepository {
       final jsonData = jsonEncode(exportData);
 
       // AES-GCM encrypt with the user's export password
+      await _clearOldExports();
       final encryptedFile =
           await _crypto.encryptVaultExport(jsonData, password);
 
@@ -312,6 +340,7 @@ class LocalExportImportRepository implements IExportImportRepository {
 
       // 3. Encode as ZIP and share
       final zipBytes = ZipEncoder().encode(archive);
+      await _clearOldExports();
 
       final tempDir = await getTemporaryDirectory();
       final now = DateTime.now();
@@ -336,40 +365,8 @@ class LocalExportImportRepository implements IExportImportRepository {
     try {
       final result = await FilePicker.pickFiles(type: FileType.any);
       if (result.isEmpty || result.single.path == null) return false;
-
-      final pickedFile = File(result.single.path!);
-      final bytes = await pickedFile.readAsBytes();
-      final archive = ZipDecoder().decodeBytes(bytes);
-
-      // 1. Restore plain DB files
-      for (final dbName in plainDbNames) {
-        final archiveFile = archive.findFile(dbName);
-        if (archiveFile != null) {
-          final dbPath = await _getDbPath(dbName);
-          final outFile = File(dbPath);
-          await outFile.writeAsBytes(archiveFile.content as List<int>,
-              flush: true);
-        }
-      }
-
-      // 2. Restore the encrypted vault
-      final vaultArchiveFile = archive.findFile('datavault_backup.vault');
-      if (vaultArchiveFile != null) {
-        // Write the encrypted vault to a temp file, then use the shared import logic
-        final tempDir = await getTemporaryDirectory();
-        final tempVaultFile = File('${tempDir.path}/temp_import.vault');
-        await tempVaultFile.writeAsBytes(vaultArchiveFile.content as List<int>,
-            flush: true);
-
-        final vaultImported = await _importVaultFromFile(
-            tempVaultFile, vaultDbName, vaultPassword);
-        // Clean up temp file
-        if (await tempVaultFile.exists()) await tempVaultFile.delete();
-
-        if (!vaultImported) return false;
-      }
-
-      return true;
+      return await importAllDatabasesFromPath(
+          result.single.path!, plainDbNames, vaultDbName, vaultPassword);
     } catch (e) {
       return false;
     }
@@ -386,6 +383,9 @@ class LocalExportImportRepository implements IExportImportRepository {
     }
   }
 
+  /// Restores everything in the archive, but only after checking all of it: each database must be
+  /// a real SQLite file and the vault must decrypt with [vaultPassword]. A wrong password or a bad
+  /// file leaves the current data untouched instead of half-restored.
   @override
   Future<bool> importAllDatabasesFromPath(
       String filePath,
@@ -397,30 +397,39 @@ class LocalExportImportRepository implements IExportImportRepository {
       final bytes = await pickedFile.readAsBytes();
       final archive = ZipDecoder().decodeBytes(bytes);
 
-      // 1. Restore plain DB files
+      // 1. Check everything first.
+      final plainFiles = <String, List<int>>{};
       for (final dbName in plainDbNames) {
         final archiveFile = archive.findFile(dbName);
-        if (archiveFile != null) {
-          final dbPath = await _getDbPath(dbName);
-          final outFile = File(dbPath);
-          await outFile.writeAsBytes(archiveFile.content as List<int>,
-              flush: true);
-        }
+        if (archiveFile == null) continue;
+        final content = archiveFile.content as List<int>;
+        if (!_isSqlite(content)) return false;
+        plainFiles[dbName] = content;
       }
-
-      // 2. Restore the encrypted vault
       final vaultArchiveFile = archive.findFile('datavault_backup.vault');
+      List<int>? vaultBytes;
       if (vaultArchiveFile != null) {
+        vaultBytes = vaultArchiveFile.content as List<int>;
+        // Throws on a wrong password or tampered data (AES-GCM is authenticated).
+        await _crypto.decryptBytes(Uint8List.fromList(vaultBytes), vaultPassword);
+      }
+      if (plainFiles.isEmpty && vaultBytes == null) return false;
+
+      // 2. Restore the encrypted vault (the step that can still fail).
+      if (vaultBytes != null) {
         final tempDir = await getTemporaryDirectory();
         final tempVaultFile = File('${tempDir.path}/temp_import.vault');
-        await tempVaultFile.writeAsBytes(vaultArchiveFile.content as List<int>,
-            flush: true);
-
+        await tempVaultFile.writeAsBytes(vaultBytes, flush: true);
         final vaultImported = await _importVaultFromFile(
             tempVaultFile, vaultDbName, vaultPassword);
         if (await tempVaultFile.exists()) await tempVaultFile.delete();
-
         if (!vaultImported) return false;
+      }
+
+      // 3. Restore plain DB files
+      for (final entry in plainFiles.entries) {
+        final dbPath = await _getDbPath(entry.key);
+        await File(dbPath).writeAsBytes(entry.value, flush: true);
       }
 
       return true;

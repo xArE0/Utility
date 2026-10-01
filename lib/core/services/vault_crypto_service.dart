@@ -140,6 +140,38 @@ class VaultCryptoService {
   }
 
   // ──────────────────────────────────────────────
+  //  Password hashing (secret menu)
+  // ──────────────────────────────────────────────
+
+  /// Salted PBKDF2 hash of [password], as "base64(salt):base64(hash)". Only the hash is stored, so
+  /// the password itself can't be read back from the device.
+  Future<String> hashPassword(String password) async {
+    final rng = Random.secure();
+    final salt = Uint8List.fromList(List.generate(_saltLength, (_) => rng.nextInt(256)));
+    final hash = await (await _deriveKey(password, salt)).extractBytes();
+    return '${base64.encode(salt)}:${base64.encode(hash)}';
+  }
+
+  /// Checks [password] against a [hashPassword] result, in constant time.
+  Future<bool> verifyPassword(String password, String stored) async {
+    try {
+      final parts = stored.split(':');
+      if (parts.length != 2) return false;
+      final salt = Uint8List.fromList(base64.decode(parts[0]));
+      final expected = base64.decode(parts[1]);
+      final actual = await (await _deriveKey(password, salt)).extractBytes();
+      if (actual.length != expected.length) return false;
+      var diff = 0;
+      for (var i = 0; i < actual.length; i++) {
+        diff |= actual[i] ^ expected[i];
+      }
+      return diff == 0;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // ──────────────────────────────────────────────
   //  Internal
   // ──────────────────────────────────────────────
 

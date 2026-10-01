@@ -22,8 +22,65 @@ class ExportImportController extends ChangeNotifier {
   /// The vault database name.
   static const String vaultDbName = 'datavault.db';
 
-  /// Gets the vault export password from settings (default: super123).
-  String get _vaultPassword => SettingsService.instance.vaultExportPassword;
+  /// The vault export password; asks the user to choose one (and saves it) if none is set yet.
+  Future<String?> _exportPassword(BuildContext context) async {
+    final stored = SettingsService.instance.vaultExportPassword;
+    if (stored.isNotEmpty) return stored;
+
+    final first = TextEditingController();
+    final second = TextEditingController();
+    String? error;
+    final chosen = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Set Export Password'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('The vault in your backup is encrypted with this password. '
+                  "You'll need it to restore — it can't be recovered."),
+              const SizedBox(height: 12),
+              TextField(
+                controller: first,
+                obscureText: true,
+                autofocus: true,
+                decoration: const InputDecoration(labelText: 'Password (min 8 chars)'),
+              ),
+              TextField(
+                controller: second,
+                obscureText: true,
+                decoration: InputDecoration(labelText: 'Repeat password', errorText: error),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(null),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final value = first.text.trim();
+                if (value.length < 8) {
+                  setDialogState(() => error = 'At least 8 characters');
+                } else if (value != second.text.trim()) {
+                  setDialogState(() => error = "Passwords don't match");
+                } else {
+                  Navigator.of(ctx).pop(value);
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (chosen == null) return null;
+    await SettingsService.instance.updateVaultExportPassword(chosen);
+    return chosen;
+  }
 
   /// Shows a dialog prompting the user to enter the vault password for import.
   Future<String?> _askVaultPassword(BuildContext context) async {
@@ -105,13 +162,15 @@ class ExportImportController extends ChangeNotifier {
     }
 
     if (!context.mounted) return;
+    final password = await _exportPassword(context);
+    if (password == null || !context.mounted) return;
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
-    final success = await _repository.exportEncryptedVault(dbName, _vaultPassword);
+    final success = await _repository.exportEncryptedVault(dbName, password);
 
     if (context.mounted) {
       Navigator.of(context).pop();
@@ -168,6 +227,8 @@ class ExportImportController extends ChangeNotifier {
   /// Exports all databases as a single .zip file using the stored vault password.
   Future<void> exportAll(BuildContext context) async {
     if (!context.mounted) return;
+    final password = await _exportPassword(context);
+    if (password == null || !context.mounted) return;
 
     showDialog(
       context: context,
@@ -176,7 +237,7 @@ class ExportImportController extends ChangeNotifier {
     );
 
     final success =
-        await _repository.exportAllDatabases(plainDbNames, vaultDbName, _vaultPassword);
+        await _repository.exportAllDatabases(plainDbNames, vaultDbName, password);
 
     if (context.mounted) {
       Navigator.of(context).pop();

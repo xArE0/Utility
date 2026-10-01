@@ -37,7 +37,6 @@ class _SettingsScreenState extends State<SettingsScreen>
     final settings = SettingsService.instance;
     _sidebarNameController.text = settings.sidebarName;
     _scheduleNameController.text = settings.scheduleName;
-    _passwordController.text = settings.secretPassword;
     _vaultExportPasswordController.text = settings.vaultExportPassword;
     _timer1Controller.text = settings.widgetTimer1.toString();
     _timer2Controller.text = settings.widgetTimer2.toString();
@@ -126,8 +125,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                   children: [
                     _buildTextField(
                       controller: _passwordController,
-                      label: 'Secret Menu Password',
-                      hint: 'Enter a strong password',
+                      label: 'New Secret Menu Password',
+                      hint: 'Leave blank to keep the current one',
                       icon: Icons.lock,
                       isPassword: true,
                       obscure: _obscureSecretPassword,
@@ -139,7 +138,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     _buildTextField(
                       controller: _vaultExportPasswordController,
                       label: 'Vault Export Password',
-                      hint: 'Default: super123',
+                      hint: 'Used to encrypt vault exports (min 8 chars)',
                       icon: Icons.shield,
                       isPassword: true,
                       obscure: _obscureVaultPassword,
@@ -393,6 +392,16 @@ class _SettingsScreenState extends State<SettingsScreen>
     final finalSchedule = schedule.isEmpty ? 'xArE0' : schedule;
 
     final vaultExportPw = _vaultExportPasswordController.text.trim();
+    if (password.isNotEmpty && password.length < 6) {
+      AppToast.show(context, 'Secret password must be at least 6 characters', isError: true);
+      return;
+    }
+    if (vaultExportPw.isNotEmpty &&
+        vaultExportPw != SettingsService.instance.vaultExportPassword &&
+        vaultExportPw.length < 8) {
+      AppToast.show(context, 'Vault export password must be at least 8 characters', isError: true);
+      return;
+    }
 
     await SettingsService.instance.updateSidebarName(finalSidebar);
     await SettingsService.instance.updateScheduleName(finalSchedule);

@@ -2,7 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
+import '../core/services/system_service.dart';
 import '../features/schedule/data/local_schedule_repository.dart';
 import '../features/schedule/domain/schedule_entities.dart';
 
@@ -30,11 +30,13 @@ class NotificationService {
 
     try {
       tz_data.initializeTimeZones();
+      // The phone's zone: repeating reminders keep their wall-clock time across DST and travel.
+      final zone = await SystemService.timezone();
       try {
-        tz.setLocalLocation(tz.getLocation('Asia/Kathmandu'));
+        tz.setLocalLocation(tz.getLocation(zone ?? 'Asia/Kathmandu'));
       } catch (e) {
-        debugPrint('Error setting location: $e');
-        tz.setLocalLocation(tz.local);
+        debugPrint('Unknown timezone $zone: $e');
+        tz.setLocalLocation(tz.getLocation('Asia/Kathmandu'));
       }
 
       const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -88,42 +90,24 @@ class NotificationService {
     return true;
   }
 
-  /// Request exact alarm permission (Android 12+).
-  /// Returns true if already granted or successfully requested.
+  /// Request exact alarm permission (Android 12+), only when it is actually missing (USE_EXACT_ALARM
+  /// normally grants it). Exact alarms fire on time without exempting the app from battery
+  /// optimisation, so no such exemption is requested.
   Future<bool> requestExactAlarmPermission() async {
     final android = _notifications.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
     if (android == null) return true;
+    if (await android.canScheduleExactNotifications() ?? true) return true;
 
     final granted = await android.requestExactAlarmsPermission();
     debugPrint('Exact alarm permission granted: $granted');
     return granted ?? false;
   }
 
-  /// Check and request battery optimization exemption so that
-  /// the OS doesn't kill the app and prevent alarms from firing.
-  /// This is especially important on OEM devices (Xiaomi, Samsung, etc.)
-  Future<bool> requestBatteryOptimizationExemption() async {
-    final status = await Permission.ignoreBatteryOptimizations.status;
-    if (status.isGranted) {
-      debugPrint('Battery optimization already exempted');
-      return true;
-    }
-
-    final result = await Permission.ignoreBatteryOptimizations.request();
-    debugPrint('Battery optimization exemption: $result');
-    return result.isGranted;
-  }
-
   /// Schedule a notification for an event
   Future<void> scheduleEventNotification(Event event) async {
     try {
       if (!event.remindMe || event.remindTime == null) return;
-
-      final eventDate = DateTime.parse(event.date);
-      final reminderDate = eventDate.subtract(
-        Duration(days: event.remindDaysBefore ?? 0),
-      );
 
       // Parse the reminder time (format: "HH:mm AM/PM" or "HH:mm")
       final timeParts = _parseTimeString(event.remindTime!);
@@ -132,21 +116,16 @@ class NotificationService {
         return;
       }
 
-      final scheduledDateTime = DateTime(
-        reminderDate.year,
-        reminderDate.month,
-        reminderDate.day,
-        timeParts['hour']!,
-        timeParts['minute']!,
-      );
-
-      // Don't schedule if the time has already passed
-      if (scheduledDateTime.isBefore(DateTime.now())) {
-        debugPrint('Skipping past notification for event ${event.id} at $scheduledDateTime');
+      final scheduledDateTime = _nextReminder(
+          event, timeParts['hour']!, timeParts['minute']!, event.remindDaysBefore ?? 0);
+      if (scheduledDateTime == null) {
+        debugPrint('No upcoming reminder for event ${event.id}');
         return;
       }
 
-      final tzScheduledDate = tz.TZDateTime.from(scheduledDateTime, tz.local);
+      final tzScheduledDate = tz.TZDateTime(tz.local, scheduledDateTime.year,
+          scheduledDateTime.month, scheduledDateTime.day, scheduledDateTime.hour,
+          scheduledDateTime.minute);
       final title = _getNotificationTitle(event);
       final body = event.task;
 
@@ -192,6 +171,9 @@ class NotificationService {
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         payload: event.id?.toString(),
+        // Re-armed natively after each firing where the pattern allows; monthly and custom
+        // intervals get their next occurrence when the app next starts.
+        matchDateTimeComponents: _repeatPattern(event),
       );
 
       debugPrint('✓ Scheduled notification for event ${event.id}:');
@@ -202,6 +184,39 @@ class NotificationService {
       debugPrint('Error scheduling notification: $e');
       debugPrint('Stack trace: $stackTrace');
     }
+  }
+
+  /// The first reminder still ahead: the event's next occurrence (today onwards), moved
+  /// [daysBefore] days earlier, at [hour]:[minute]. Null when there is none within 3 years.
+  DateTime? _nextReminder(Event event, int hour, int minute, int daysBefore) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    DateTime at(DateTime day) =>
+        DateTime(day.year, day.month, day.day - daysBefore, hour, minute);
+
+    if (!event.isRecurring) {
+      final reminder = at(DateTime.parse(event.date));
+      return reminder.isAfter(now) ? reminder : null;
+    }
+    for (int i = 0; i <= 3 * 366; i++) {
+      final day = DateTime(today.year, today.month, today.day + i);
+      if (!event.occursOn(day)) continue;
+      final reminder = at(day);
+      if (reminder.isAfter(now)) return reminder;
+    }
+    return null;
+  }
+
+  /// The match the plugin repeats on, or null for one-shot (one-off, monthly, custom).
+  /// Monthly isn't matched natively: with "days before", the reminder day shifts month to month.
+  DateTimeComponents? _repeatPattern(Event event) {
+    if (event.type == 'birthday') return DateTimeComponents.dateAndTime;
+    return switch (event.repeat) {
+      'daily' => DateTimeComponents.time,
+      'weekly' => DateTimeComponents.dayOfWeekAndTime,
+      'yearly' => DateTimeComponents.dateAndTime,
+      _ => null,
+    };
   }
 
   String _getNotificationTitle(Event event) {

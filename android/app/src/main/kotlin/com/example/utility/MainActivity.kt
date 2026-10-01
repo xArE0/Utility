@@ -24,6 +24,7 @@ class MainActivity : FlutterFragmentActivity() {
     private var widgetChannel: MethodChannel? = null
     private var widgetListener: (() -> Unit)? = null
     private var statusListener: (() -> Unit)? = null
+    private var systemChannel: MethodChannel? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -51,6 +52,11 @@ class MainActivity : FlutterFragmentActivity() {
         val onWidgetChanged: () -> Unit = { widget.invokeMethod("changed", null) }
         widgetListener = onWidgetChanged
         UtilityWidget.listener = onWidgetChanged
+
+        val system = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SYSTEM_CHANNEL)
+        val systemHandler = SystemChannel(this)
+        system.setMethodCallHandler { call, result -> systemHandler.handle(call, result) }
+        systemChannel = system
     }
 
     override fun onResume() {
@@ -75,6 +81,8 @@ class MainActivity : FlutterFragmentActivity() {
         widgetListener = null
         widgetChannel?.setMethodCallHandler(null)
         widgetChannel = null
+        systemChannel?.setMethodCallHandler(null)
+        systemChannel = null
         super.cleanUpFlutterEngine(flutterEngine)
     }
 
@@ -365,6 +373,7 @@ class MainActivity : FlutterFragmentActivity() {
         const val AUTOCLICKER_CHANNEL = "com.example.utility/autoclicker"
         const val VOLUME_CHANNEL = "com.example.utility/volume"
         const val WIDGET_CHANNEL = "com.example.utility/widget"
+        const val SYSTEM_CHANNEL = "com.example.utility/system"
 
         const val MIUI_OP_AUTO_START = 10008
 

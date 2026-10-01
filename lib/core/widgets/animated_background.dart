@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../theme/app_colors.dart';
 
+/// The app's mesh-gradient background with soft glowing orbs.
+///
+/// The orbs used to drift forever (three endless animations under every screen), which kept the
+/// GPU redrawing at the display's refresh rate the whole time the app was open. They now sit where
+/// the drift started; each is cached in its own RepaintBoundary, so it is drawn once.
 class AnimatedBackground extends StatelessWidget {
   final Widget child;
 
@@ -18,7 +22,7 @@ class AnimatedBackground extends StatelessWidget {
           ),
         ),
 
-        // 2. Animated Orbs
+        // 2. Orbs
         // Orb 1: Top Left - Blue
         Positioned(
           top: -100,
@@ -39,19 +43,7 @@ class AnimatedBackground extends StatelessWidget {
                 ],
               ),
             ),
-          )
-              .animate(onPlay: (controller) => controller.repeat(reverse: true))
-              .move(
-                duration: 12.seconds,
-                begin: const Offset(0, 0),
-                end: const Offset(50, 50),
-                curve: Curves.easeInOut,
-              )
-              .scale(
-                duration: 16.seconds,
-                begin: const Offset(1, 1),
-                end: const Offset(1.2, 1.2),
-              ),
+          ),
         ),
 
         // Orb 2: Bottom Right - Green
@@ -74,14 +66,7 @@ class AnimatedBackground extends StatelessWidget {
                 ],
               ),
             ),
-          )
-              .animate(onPlay: (controller) => controller.repeat(reverse: true))
-              .move(
-                duration: 14.seconds,
-                begin: const Offset(0, 0),
-                end: const Offset(-40, -40),
-                curve: Curves.easeInOut,
-              ),
+          ),
         ),
 
         // Orb 3: Center/Top - Gold/Warning
@@ -104,14 +89,7 @@ class AnimatedBackground extends StatelessWidget {
                 ],
               ),
             ),
-          )
-              .animate(onPlay: (controller) => controller.repeat(reverse: true))
-              .move(
-                duration: 18.seconds,
-                begin: const Offset(0, 0),
-                end: const Offset(-30, 60),
-                curve: Curves.easeInOut,
-              ),
+          ),
         ),
 
         // 3. Child Content (Glass layer on top)

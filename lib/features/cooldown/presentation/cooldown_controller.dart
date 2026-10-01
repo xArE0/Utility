@@ -13,6 +13,10 @@ class CooldownController extends ChangeNotifier {
 
   final Set<int> _justBecameAvailable = {};
 
+  /// Items on cooldown at the last tick; one missing now has just become available.
+  Set<int> _wasOnCooldown = {};
+  bool _disposed = false;
+
   List<CooldownItem> get items => _items;
   List<CooldownCategory> get allCategories => _categories;
   bool get loading => _loading;
@@ -58,14 +62,29 @@ class CooldownController extends ChangeNotifier {
     await _repository.init();
     await loadItems();
     await loadCategories();
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      _checkTransitions();
-      notifyListeners();
-    });
   }
+
+  /// The once-a-second countdown only runs while something is actually counting down.
+  void _syncTicker() {
+    final needed = _items.any((i) => i.isOnCooldown);
+    if (needed) {
+      _ticker ??= Timer.periodic(const Duration(seconds: 1), (_) {
+        _checkTransitions();
+        notifyListeners();
+        _syncTicker();
+      });
+    } else {
+      _ticker?.cancel();
+      _ticker = null;
+    }
+  }
+
+  Set<int> _onCooldownIds() =>
+      {for (final i in _items) if (i.isOnCooldown && i.id != null) i.id!};
 
   @override
   void dispose() {
+    _disposed = true;
     _ticker?.cancel();
     _repository.dispose();
     super.dispose();
@@ -74,8 +93,10 @@ class CooldownController extends ChangeNotifier {
   Future<void> loadItems() async {
     final items = await _repository.getAllItems();
     _items = items;
+    _wasOnCooldown = _onCooldownIds();
     _loading = false;
     notifyListeners();
+    _syncTicker();
   }
 
   Future<void> loadCategories() async {
@@ -84,17 +105,16 @@ class CooldownController extends ChangeNotifier {
   }
 
   void _checkTransitions() {
-    for (final item in _items) {
-      if (item.cooldownEnd != null &&
-          !item.isOnCooldown &&
-          !_justBecameAvailable.contains(item.id)) {
-        _justBecameAvailable.add(item.id!);
-        Future.delayed(const Duration(seconds: 2), () {
-          _justBecameAvailable.remove(item.id);
-          notifyListeners();
-        });
-      }
+    final now = _onCooldownIds();
+    for (final id in _wasOnCooldown.difference(now)) {
+      _justBecameAvailable.add(id);
+      Future.delayed(const Duration(seconds: 2), () {
+        if (_disposed) return;
+        _justBecameAvailable.remove(id);
+        notifyListeners();
+      });
     }
+    _wasOnCooldown = now;
   }
 
   Future<void> addItem(CooldownItem item) async {

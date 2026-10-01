@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Only gesture injection is needed. No window content is read, and no events are handled
-     (typeViewClicked is declared just so the service has a valid event mask). -->
+     (typeViewClicked is declared just so the service has a valid event mask; packageNames limits
+     even that to this app, so taps elsewhere don't wake the service). Gestures are not affected. -->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/accessibility_service_description"
     android:accessibilityEventTypes="typeViewClicked"
     android:accessibilityFeedbackType="feedbackGeneric"
     android:canPerformGestures="true"
     android:canRetrieveWindowContent="false"
+    android:packageNames="com.example.utility"
     android:notificationTimeout="100" />

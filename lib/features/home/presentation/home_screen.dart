@@ -113,10 +113,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showSecretAuthDialog() async {
-    final currentPassword = SettingsService.instance.secretPassword;
-    final isSetup = currentPassword.isEmpty;
+    final isSetup = !SettingsService.instance.hasSecretPassword;
     final controller = TextEditingController();
     String? errorText;
+    bool checking = false; // hashing takes a moment; ignore taps meanwhile
 
     await showDialog(
       context: context,
@@ -124,27 +124,44 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setStateBuilder) {
-            void handleSubmit(String input) async {
+            Future<void> submit(String input) async {
               if (isSetup) {
-                if (input.length < 4) {
+                if (input.length < 6) {
                   setStateBuilder(
-                      () => errorText = 'Password must be at least 4 chars');
+                      () => errorText = 'Password must be at least 6 chars');
                   return;
                 }
                 await SettingsService.instance.updateSecretPassword(input);
-                if (mounted) {
+                if (mounted && dialogContext.mounted) {
                   Navigator.pop(dialogContext); // close dialog
                   Navigator.pop(this.context); // close drawer
                   Navigator.pushNamed(this.context, AppRoutes.settings);
                 }
               } else {
-                if (input == currentPassword) {
+                final settings = SettingsService.instance;
+                final ok = await settings.verifySecretPassword(input);
+                if (!mounted || !dialogContext.mounted) return;
+                if (ok) {
                   Navigator.pop(dialogContext); // close dialog
                   Navigator.pop(this.context); // close drawer
                   Navigator.pushNamed(this.context, AppRoutes.settings);
                 } else {
-                  setStateBuilder(() => errorText = 'Incorrect password');
+                  final locked = settings.secretLockRemaining;
+                  setStateBuilder(() => errorText = locked == null
+                      ? 'Incorrect password'
+                      : 'Too many attempts — try again in '
+                          '${locked.inMinutes > 0 ? '${locked.inMinutes + 1} min' : '${locked.inSeconds + 1} s'}');
                 }
+              }
+            }
+
+            void handleSubmit(String input) async {
+              if (checking) return;
+              checking = true;
+              try {
+                await submit(input);
+              } finally {
+                checking = false;
               }
             }
 

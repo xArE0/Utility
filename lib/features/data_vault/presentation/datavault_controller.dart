@@ -78,6 +78,15 @@ class DataVaultController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Collapses and masks everything (used when the vault locks again).
+  void hideAll() {
+    _showAllPasswords = false;
+    _expandedIds.clear();
+    _visibleIds.clear();
+    _historyExpandedIds.clear();
+    notifyListeners();
+  }
+
   void toggleShowAll() {
     _showAllPasswords = !_showAllPasswords;
     if (_showAllPasswords) {

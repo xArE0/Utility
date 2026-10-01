@@ -14,6 +14,12 @@ class ApiServices {
   /// Air quality changes through the day; an older reading is dropped rather than shown as current.
   static const Duration _aqiMaxAge = Duration(hours: 3);
 
+  /// Weather and AQI younger than this aren't fetched again on app start (Sync always fetches).
+  static const Duration freshFor = Duration(hours: 1);
+
+  /// Responses bigger than this are dropped instead of read into memory.
+  static const int _maxResponseBytes = 5 * 1024 * 1024;
+
   static String _getWeatherEmoji(int code) {
     if (code == 0) return '☀️';
     if (code == 1 || code == 2) return '⛅';
@@ -28,21 +34,43 @@ class ApiServices {
     return '';
   }
 
-  /// GET and decode JSON; null on any failure. Always closes the client.
-  static Future<dynamic> _getJson(Uri uri) async {
-    final client = HttpClient()..connectionTimeout = const Duration(seconds: 8);
+  /// HTTPS GET; the body as text, or null on any failure. Always closes the client.
+  static Future<String?> getText(Uri uri) async {
+    if (uri.scheme != 'https') return null;
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(seconds: 8)
+      ..userAgent = null; // no client/version fingerprint
     try {
       final req = await client.getUrl(uri);
       final res = await req.close().timeout(const Duration(seconds: 12));
       if (res.statusCode != 200) return null;
-      final text = await res.transform(utf8.decoder).join();
-      return json.decode(text);
+      if (res.contentLength > _maxResponseBytes) return null;
+      final bytes = <int>[];
+      await for (final chunk in res.timeout(const Duration(seconds: 20))) {
+        bytes.addAll(chunk);
+        if (bytes.length > _maxResponseBytes) return null;
+      }
+      return utf8.decode(bytes, allowMalformed: true);
     } catch (_) {
       return null;
     } finally {
       client.close(force: true);
     }
   }
+
+  /// GET and decode JSON; null on any failure.
+  static Future<dynamic> _getJson(Uri uri) async {
+    final text = await getText(uri);
+    if (text == null) return null;
+    try {
+      return json.decode(text);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Coordinates as sent to the weather services: ~1 km, as precise as the forecasts are.
+  static String _coord(double value) => value.toStringAsFixed(2);
 
   /// "05:48" → "5:48 AM"
   static String _to12h(String raw) {
@@ -57,8 +85,8 @@ class ApiServices {
   /// Null when the request fails; a success is cached for [cachedWeather].
   static Future<Map<String, Map<String, String>>?> fetchWeather(WeatherLocation location) async {
     final data = await _getJson(Uri.https('api.open-meteo.com', '/v1/forecast', {
-      'latitude': '${location.latitude}',
-      'longitude': '${location.longitude}',
+      'latitude': _coord(location.latitude),
+      'longitude': _coord(location.longitude),
       'daily': 'weather_code,sunrise,sunset',
       'timezone': 'auto',
     }));
@@ -79,7 +107,12 @@ class ApiServices {
       if (weatherMap.isEmpty) return null;
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(
-          _weatherCacheKey, json.encode({'loc': location.key, 'days': weatherMap}));
+          _weatherCacheKey,
+          json.encode({
+            'loc': location.key,
+            'days': weatherMap,
+            'at': DateTime.now().millisecondsSinceEpoch,
+          }));
       return weatherMap;
     } catch (_) {
       return null;
@@ -89,8 +122,8 @@ class ApiServices {
   /// Current US AQI at [location]; null when unavailable. A success is cached for [cachedAqi].
   static Future<int?> fetchAQI(WeatherLocation location) async {
     final data = await _getJson(Uri.https('air-quality-api.open-meteo.com', '/v1/air-quality', {
-      'latitude': '${location.latitude}',
-      'longitude': '${location.longitude}',
+      'latitude': _coord(location.latitude),
+      'longitude': _coord(location.longitude),
       'current': 'us_aqi',
       'timezone': 'auto',
     }));
@@ -115,6 +148,22 @@ class ApiServices {
           MapEntry(date as String, (day as Map).map((k, v) => MapEntry(k as String, v as String))));
     } catch (_) {
       return {};
+    }
+  }
+
+  /// Whether weather and AQI for [location] were both fetched within [freshFor].
+  static Future<bool> isFresh(WeatherLocation location) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      for (final key in [_weatherCacheKey, _aqiCacheKey]) {
+        final cache = json.decode(prefs.getString(key) ?? 'null');
+        if (cache is! Map || cache['loc'] != location.key || cache['at'] is! int) return false;
+        final at = DateTime.fromMillisecondsSinceEpoch(cache['at'] as int);
+        if (DateTime.now().difference(at) > freshFor) return false;
+      }
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -159,46 +208,30 @@ class ApiServices {
     return locations;
   }
 
-  /// Fetches the daily ZenQuote, caching it locally for 24 hours.
-  /// Returns a formatted string: "Quote" - Author
+  /// The day's quote as "Quote" - Author. Fetched at most once a day; offline, the last one.
   static Future<String?> fetchDailyQuote() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final String todayKey = DateTime.now().toIso8601String().substring(0, 10);
-      
-      final cachedDate = prefs.getString('cached_quote_date');
       final cachedQuote = prefs.getString('cached_quote_text');
+      if (cachedQuote != null && prefs.getString('cached_quote_date') == todayKey) {
+        return cachedQuote;
+      }
 
-      final client = HttpClient();
-      client.connectionTimeout = const Duration(seconds: 5);
-      final req = await client.getUrl(Uri.parse(zenQuotesUrl));
-      final res = await req.close();
-
-      if (res.statusCode == 200) {
-        final text = await res.transform(utf8.decoder).join();
-        final data = json.decode(text);
-        if (data.isNotEmpty) {
-          final q = data[0]['q'];
-          final a = data[0]['a'];
+      final data = await _getJson(Uri.parse(zenQuotesUrl));
+      if (data is List && data.isNotEmpty && data[0] is Map) {
+        final q = data[0]['q'];
+        final a = data[0]['a'];
+        if (q is String && a is String) {
           final formattedQuote = '"$q" - $a';
-          
           await prefs.setString('cached_quote_date', todayKey);
           await prefs.setString('cached_quote_text', formattedQuote);
           return formattedQuote;
         }
       }
-      client.close();
-
-      // If offline, return the last cached quote even if it's expired
-      return cachedQuote; 
+      return cachedQuote;
     } catch (_) {
-      // Offline fail-safe
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        return prefs.getString('cached_quote_text');
-      } catch (_) {
-        return null;
-      }
+      return null;
     }
   }
 }

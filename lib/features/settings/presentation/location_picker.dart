@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../core/models/weather_location.dart';
 import '../../../core/services/settings_service.dart';
+import '../../../core/services/system_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../utils/api_services.dart';
@@ -33,6 +36,8 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
   bool _searching = false;
   bool _searchFailed = false;
   List<WeatherLocation>? _results;
+  bool _locating = false;
+  String? _locateError;
 
   @override
   void dispose() {
@@ -66,6 +71,49 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
       _searchFailed = results == null;
       _results = results ?? [];
     });
+  }
+
+  /// One coarse fix; asks for the location permission the first time.
+  Future<void> _useDeviceLocation() async {
+    setState(() {
+      _locating = true;
+      _locateError = null;
+    });
+    String? error;
+    try {
+      final status = await Permission.locationWhenInUse.request();
+      if (status.isPermanentlyDenied) {
+        error = 'Location permission is off — allow it in app settings';
+        await openAppSettings();
+      } else if (!status.isGranted && !status.isLimited) {
+        error = 'Location permission denied';
+      } else {
+        final fix = await SystemService.currentLocation();
+        if (!mounted) return;
+        await _select(WeatherLocation(
+          name: 'My location',
+          detail: '${fix.latitude.toStringAsFixed(2)}, ${fix.longitude.toStringAsFixed(2)}',
+          latitude: fix.latitude,
+          longitude: fix.longitude,
+          isDevice: true,
+        ));
+        return;
+      }
+    } on PlatformException catch (e) {
+      error = switch (e.code) {
+        'LOCATION_OFF' => 'Turn on location in quick settings and try again',
+        'TIMEOUT' => "Couldn't get a fix — try again",
+        _ => 'Location unavailable',
+      };
+    } catch (_) {
+      error = 'Location unavailable';
+    }
+    if (mounted) {
+      setState(() {
+        _locating = false;
+        _locateError = error;
+      });
+    }
   }
 
   Future<void> _select(WeatherLocation location) async {
@@ -175,6 +223,31 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
   List<Widget> _buildSaved() {
     final settings = SettingsService.instance;
     return [
+      ListTile(
+        dense: true,
+        contentPadding: const EdgeInsets.only(left: 4, right: 0),
+        leading: _locating
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: Padding(
+                  padding: EdgeInsets.all(3),
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            : const Icon(Icons.my_location, color: AppColors.govBlue),
+        title: const Text(
+          'Use my location',
+          style: TextStyle(color: AppColors.slate200, fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          _locateError ?? 'One approximate fix (~1 km), only when you tap',
+          style: AppTypography.bodySmall.copyWith(
+              color: _locateError != null ? AppColors.warning : AppColors.slate500),
+        ),
+        onTap: _locating ? null : _useDeviceLocation,
+      ),
+      const SizedBox(height: 8),
       Padding(
         padding: const EdgeInsets.only(left: 4, top: 4, bottom: 4),
         child: Text(
@@ -191,7 +264,7 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
         return _buildTile(
           l,
           active: active,
-          icon: Icons.bookmark_outline,
+          icon: l.isDevice ? Icons.my_location : Icons.bookmark_outline,
           trailing: active
               ? null
               : IconButton(

@@ -279,9 +279,10 @@ class ScheduleController extends ChangeNotifier {
   }
 
   /// Loads weather and AQI for the selected location. Shows the cached copy straight away when the
-  /// location changed (or on first load), then fetches both; whatever fails keeps the cached value.
-  /// Returns false when neither request succeeded.
-  Future<bool> refreshWeather() async {
+  /// location changed (or on first load), then fetches both — unless the cache is under an hour
+  /// old and [force] is false; whatever fails keeps the cached value.
+  /// Returns false when nothing new could be fetched.
+  Future<bool> refreshWeather({bool force = false}) async {
     final location = SettingsService.instance.location;
     if (location.key != _weatherLocationKey) {
       _weatherLocationKey = location.key;
@@ -293,6 +294,7 @@ class ScheduleController extends ChangeNotifier {
       notifyListeners();
       await updateHomeWidget();
     }
+    if (!force && await ApiServices.isFresh(location)) return true;
 
     final fetched =
         await Future.wait([ApiServices.fetchWeather(location), ApiServices.fetchAQI(location)]);
@@ -340,30 +342,9 @@ class ScheduleController extends ChangeNotifier {
       return e.spansDate(date);
     }));
 
-    events.addAll(_repeatingEvents.where((e) {
-      final eventDate = DateTime.parse(e.date);
-      if (date.isBefore(eventDate)) return false;
-      switch (e.repeat) {
-        case "daily":
-          return true;
-        case "weekly":
-          return date.weekday == eventDate.weekday;
-        case "monthly":
-          return date.day == eventDate.day;
-        case "yearly":
-          return date.month == eventDate.month && date.day == eventDate.day;
-        case "custom":
-          final interval = e.repeatInterval ?? 1;
-          return date.difference(eventDate).inDays % interval == 0;
-        default:
-          return false;
-      }
-    }));
+    events.addAll(_repeatingEvents.where((e) => e.occursOn(date)));
 
-    final bdays = _allBirthdays.where((e) {
-      final d = DateTime.parse(e.date);
-      return d.month == date.month && d.day == date.day;
-    }).toList();
+    final bdays = _allBirthdays.where((e) => e.occursOn(date)).toList();
 
     final exams = _allExams
         .where((e) =>
@@ -541,7 +522,7 @@ class ScheduleController extends ChangeNotifier {
   Future<bool> syncAllApiData() async {
     try {
       // 1. Sync Weather
-      if (!await refreshWeather()) {
+      if (!await refreshWeather(force: true)) {
         return false;
       }
 

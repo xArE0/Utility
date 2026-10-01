@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/animated_background.dart';
 import '../../../core/widgets/app_toast.dart';
+import '../../../core/services/system_service.dart';
 import 'package:local_auth/local_auth.dart';
 
 class DataVaultPage extends StatefulWidget {
@@ -17,13 +18,21 @@ class DataVaultPage extends StatefulWidget {
   State<DataVaultPage> createState() => _DataVaultPageState();
 }
 
-class _DataVaultPageState extends State<DataVaultPage> {
+class _DataVaultPageState extends State<DataVaultPage>
+    with WidgetsBindingObserver {
   late final DataVaultController _controller;
   final TextEditingController _searchController = TextEditingController();
 
   bool _isAuthenticated = false;
   bool _isAuthenticating = true;
   final LocalAuthentication auth = LocalAuthentication();
+
+  /// Set when the phone has no screen lock: the vault stays locked until one is set up.
+  bool _noDeviceLock = false;
+
+  /// Away from the app longer than this and the vault locks again.
+  static const _relockAfter = Duration(seconds: 60);
+  DateTime? _backgroundedAt;
 
   // Track which items just had their value copied (for checkmark feedback)
   final Set<int> _copiedIds = {};
@@ -32,21 +41,41 @@ class _DataVaultPageState extends State<DataVaultPage> {
   void initState() {
     super.initState();
     _controller = DataVaultController(repository: LocalVaultRepository());
-    _controller.init();
     _controller.addListener(_onControllerNotify);
+    WidgetsBinding.instance.addObserver(this);
+    // No screenshots, screen recording or recents preview while the vault is open.
+    SystemService.setSecure(true);
     _authenticate();
   }
 
-  Future<void> _authenticate() async {
-    try {
-      final bool canAuthenticateWithBiometrics = await auth.canCheckBiometrics;
-      final bool canAuthenticate =
-          canAuthenticateWithBiometrics || await auth.isDeviceSupported();
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // The PIN/pattern screen of the unlock prompt itself pauses the app; ignore that.
+    if (_isAuthenticating) return;
+    if (state == AppLifecycleState.paused) {
+      _backgroundedAt = DateTime.now();
+    } else if (state == AppLifecycleState.resumed && _backgroundedAt != null) {
+      final away = DateTime.now().difference(_backgroundedAt!);
+      _backgroundedAt = null;
+      if (_isAuthenticated && away > _relockAfter) {
+        _controller.hideAll();
+        setState(() => _isAuthenticated = false);
+        _authenticate();
+      }
+    }
+  }
 
+  Future<void> _authenticate() async {
+    if (mounted) setState(() => _isAuthenticating = true);
+    try {
+      // Biometrics or the screen lock PIN/pattern/password. Without any screen lock there is
+      // nothing to check against, so the vault stays locked rather than opening for anyone.
+      final bool canAuthenticate = await auth.isDeviceSupported();
       if (!canAuthenticate) {
         if (mounted) {
           setState(() {
-            _isAuthenticated = true;
+            _noDeviceLock = true;
+            _isAuthenticated = false;
             _isAuthenticating = false;
           });
         }
@@ -57,9 +86,23 @@ class _DataVaultPageState extends State<DataVaultPage> {
         localizedReason: 'Fingerprint ki Pattern Bina NoNo...',
       );
 
+      // The database is opened only once the user is through.
+      if (didAuthenticate && !_controller.initialized) {
+        await _controller.init();
+      }
+
       if (mounted) {
         setState(() {
+          _noDeviceLock = false;
           _isAuthenticated = didAuthenticate;
+          _isAuthenticating = false;
+        });
+      }
+    } on LocalAuthException catch (e) {
+      if (mounted) {
+        setState(() {
+          _noDeviceLock = e.code == LocalAuthExceptionCode.noCredentialsSet;
+          _isAuthenticated = false;
           _isAuthenticating = false;
         });
       }
@@ -81,14 +124,17 @@ class _DataVaultPageState extends State<DataVaultPage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    SystemService.setSecure(false);
     _controller.removeListener(_onControllerNotify);
     _searchController.dispose();
     _controller.dispose();
     super.dispose();
   }
 
+  /// Flagged sensitive (hidden from clipboard previews) and cleared again after 30 s.
   void _copyToClipboard(String value, int itemId) {
-    Clipboard.setData(ClipboardData(text: value));
+    SystemService.copySensitive(value);
     setState(() {
       _copiedIds.add(itemId);
     });
@@ -1385,8 +1431,8 @@ class _DataVaultPageState extends State<DataVaultPage> {
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             onPressed: () {
-              Clipboard.setData(ClipboardData(text: h.oldValue));
-              AppToast.show(context, 'Copied to clipboard');
+              SystemService.copySensitive(h.oldValue);
+              AppToast.show(context, 'Copied — clears in 30 s');
             },
           ),
           IconButton(
@@ -1482,6 +1528,17 @@ class _DataVaultPageState extends State<DataVaultPage> {
                       Text('Vault Locked',
                           style: AppTypography.titleLarge
                               .copyWith(color: primaryText)),
+                      if (_noDeviceLock)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(32, 8, 32, 0),
+                          child: Text(
+                            'Set a screen lock (PIN, pattern, password or fingerprint) '
+                            'in your phone settings to use the vault.',
+                            textAlign: TextAlign.center,
+                            style: AppTypography.bodySmall
+                                .copyWith(color: AppColors.slate400),
+                          ),
+                        ),
                       const SizedBox(height: 16),
                       ElevatedButton.icon(
                         onPressed: _authenticate,

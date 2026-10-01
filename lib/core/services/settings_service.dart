@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/weather_location.dart';
+import 'vault_crypto_service.dart';
 import 'home_widget_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -12,8 +14,8 @@ class SettingsService extends ChangeNotifier {
 
   String _sidebarName = 'Avishek Shrestha';
   String _scheduleName = 'xArE0';
-  String _secretPassword = '';
-  String _vaultExportPassword = 'super123';
+  String _secretPasswordHash = '';
+  String _vaultExportPassword = '';
   int _widgetTimer1 = 5;
   int _widgetTimer2 = 15;
   int _widgetAwakeMinutes = 10;
@@ -21,7 +23,10 @@ class SettingsService extends ChangeNotifier {
 
   String get sidebarName => _sidebarName;
   String get scheduleName => _scheduleName;
-  String get secretPassword => _secretPassword;
+  /// Whether the secret menu has a password yet (first use sets it).
+  bool get hasSecretPassword => _secretPasswordHash.isNotEmpty;
+
+  /// Password the vault is encrypted with on export; empty until the user sets one.
   String get vaultExportPassword => _vaultExportPassword;
   int get widgetTimer1 => _widgetTimer1;
   int get widgetTimer2 => _widgetTimer2;
@@ -32,8 +37,7 @@ class SettingsService extends ChangeNotifier {
     _prefs = await SharedPreferences.getInstance();
     _sidebarName = _prefs.getString('sidebarName') ?? 'Avishek Shrestha';
     _scheduleName = _prefs.getString('scheduleName') ?? 'xArE0';
-    _secretPassword = _prefs.getString('secretPassword') ?? '';
-    _vaultExportPassword = _prefs.getString('vaultExportPassword') ?? 'super123';
+    await _loadSecrets();
     _widgetTimer1 = _prefs.getInt('widgetTimer1') ?? 5;
     _widgetTimer2 = _prefs.getInt('widgetTimer2') ?? 15;
     _widgetAwakeMinutes = _prefs.getInt('widgetAwakeMinutes') ?? 10;
@@ -59,15 +63,90 @@ class SettingsService extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ── Secrets (Android Keystore via flutter_secure_storage, never SharedPreferences) ─────────
+
+  static const _secure = FlutterSecureStorage();
+  static const _secretHashKey = 'secret_password_hash';
+  static const _exportPasswordKey = 'vault_export_password';
+
+  /// The old default export password; treated as "not set".
+  static const _legacyDefaultExportPassword = 'super123';
+
+  Future<void> _loadSecrets() async {
+    try {
+      _secretPasswordHash = await _secure.read(key: _secretHashKey) ?? '';
+      _vaultExportPassword = await _secure.read(key: _exportPasswordKey) ?? '';
+
+      // One-time move out of plain-text SharedPreferences.
+      final legacySecret = _prefs.getString('secretPassword') ?? '';
+      if (legacySecret.isNotEmpty && _secretPasswordHash.isEmpty) {
+        await _storeSecretPassword(legacySecret);
+      }
+      final legacyExport = _prefs.getString('vaultExportPassword') ?? '';
+      if (legacyExport.isNotEmpty &&
+          legacyExport != _legacyDefaultExportPassword &&
+          _vaultExportPassword.isEmpty) {
+        await updateVaultExportPassword(legacyExport);
+      }
+      await _prefs.remove('secretPassword');
+      await _prefs.remove('vaultExportPassword');
+    } catch (e) {
+      debugPrint('Loading secrets failed: $e');
+    }
+  }
+
+  Future<void> _storeSecretPassword(String value) async {
+    _secretPasswordHash = await VaultCryptoService.instance.hashPassword(value);
+    await _secure.write(key: _secretHashKey, value: _secretPasswordHash);
+  }
+
+  /// Sets a new secret menu password. Empty keeps the current one.
   Future<void> updateSecretPassword(String value) async {
-    _secretPassword = value;
-    await _prefs.setString('secretPassword', value);
+    if (value.isEmpty) return;
+    await _storeSecretPassword(value);
     notifyListeners();
   }
 
+  /// Wrong secret-password attempts in a row; from the 5th on, each one locks entry for longer.
+  static const _failedAttemptsKey = 'secretFailedAttempts';
+  static const _lockedUntilKey = 'secretLockedUntil';
+
+  /// How long entry is still locked after too many wrong passwords; null when not locked.
+  Duration? get secretLockRemaining {
+    final until = _prefs.getInt(_lockedUntilKey) ?? 0;
+    final left = DateTime.fromMillisecondsSinceEpoch(until).difference(DateTime.now());
+    return left.isNegative ? null : left;
+  }
+
+  /// Checks [input] against the secret menu password. Returns false while locked out.
+  Future<bool> verifySecretPassword(String input) async {
+    if (secretLockRemaining != null) return false;
+    final ok = input.isNotEmpty &&
+        await VaultCryptoService.instance.verifyPassword(input, _secretPasswordHash);
+    if (ok) {
+      await _prefs.remove(_failedAttemptsKey);
+      await _prefs.remove(_lockedUntilKey);
+      return true;
+    }
+    final failures = (_prefs.getInt(_failedAttemptsKey) ?? 0) + 1;
+    await _prefs.setInt(_failedAttemptsKey, failures);
+    if (failures >= 5) {
+      // 30 s, 1 min, 2 min, … capped at 30 min.
+      final seconds = (30 * (1 << (failures - 5).clamp(0, 6))).clamp(30, 1800);
+      await _prefs.setInt(_lockedUntilKey,
+          DateTime.now().add(Duration(seconds: seconds)).millisecondsSinceEpoch);
+    }
+    return false;
+  }
+
+  /// Sets the vault export password. Empty clears it (export then asks for one).
   Future<void> updateVaultExportPassword(String value) async {
-    _vaultExportPassword = value.isEmpty ? 'super123' : value;
-    await _prefs.setString('vaultExportPassword', _vaultExportPassword);
+    _vaultExportPassword = value;
+    if (value.isEmpty) {
+      await _secure.delete(key: _exportPasswordKey);
+    } else {
+      await _secure.write(key: _exportPasswordKey, value: value);
+    }
     notifyListeners();
   }
 
@@ -139,7 +218,13 @@ class SettingsService extends ChangeNotifier {
 
   Future<void> selectLocation(WeatherLocation value) async {
     _location = value;
-    if (!_savedLocations.any((l) => l.key == value.key)) {
+    if (value.isDevice) {
+      // A fresh fix replaces the previous one instead of piling up.
+      _savedLocations = [
+        value,
+        ..._savedLocations.where((l) => !l.isDevice && l.key != value.key),
+      ];
+    } else if (!_savedLocations.any((l) => l.key == value.key)) {
       _savedLocations = [..._savedLocations, value];
     }
     await _saveLocations();

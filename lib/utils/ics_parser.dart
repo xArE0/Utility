@@ -1,6 +1,5 @@
-import 'dart:io';
-import 'dart:convert';
 import 'package:intl/intl.dart';
+import 'api_services.dart';
 import '../features/schedule/domain/schedule_entities.dart';
 
 class IcsParser {
@@ -9,16 +8,11 @@ class IcsParser {
 
   /// Fetches Google Calendar ICS feed and parses it into lightweight app Events.
   static Future<List<Event>> fetchNepalHolidays() async {
-    final url = Uri.parse(googleHolidaysUrl);
     final upcomingEvents = <Event>[];
 
     try {
-      final client = HttpClient();
-      final request = await client.getUrl(url);
-      final response = await request.close();
-
-      if (response.statusCode == 200) {
-        final content = await response.transform(utf8.decoder).join();
+      final content = await ApiServices.getText(Uri.parse(googleHolidaysUrl));
+      if (content != null) {
         final lines = content.split('\n');
 
         String? currentDate;
@@ -59,7 +53,6 @@ class IcsParser {
           }
         }
       }
-      client.close();
     } catch (e) {
       // Return empty list on failure, no need to crash
     }
