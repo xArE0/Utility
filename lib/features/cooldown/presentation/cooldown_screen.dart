@@ -11,12 +11,12 @@ import '../data/local_cooldown_repository.dart';
 import 'cooldown_controller.dart';
 
 const _accentColors = [
-  Color(0xFF06B6D4),
-  Color(0xFF8B5CF6),
-  Color(0xFFF59E0B),
-  Color(0xFFEC4899),
-  Color(0xFF10B981),
-  Color(0xFFEF4444),
+  AppColors.aqua,
+  AppColors.amethyst,
+  AppColors.amber,
+  AppColors.rose,
+  AppColors.jade,
+  AppColors.error,
 ];
 
 const _categoryIcons = [
@@ -114,18 +114,18 @@ class _CooldownScreenState extends State<CooldownScreen>
               onPressed: () => _showCategoryManager(context),
               icon: const Icon(Icons.category_outlined, size: 22),
               tooltip: 'Manage Categories',
-              color: const Color(0xFF06B6D4),
+              color: AppColors.aqua,
             ),
           ],
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () => _showAddSheet(context),
-          backgroundColor: const Color(0xFF06B6D4),
+          backgroundColor: AppColors.aqua,
           child: const Icon(Icons.add, color: Colors.white),
         ),
         body: _controller.loading
             ? const Center(
-                child: CircularProgressIndicator(color: Color(0xFF06B6D4)))
+                child: CircularProgressIndicator(color: AppColors.aqua))
             : _controller.items.isEmpty
                 ? _buildEmptyState()
                 : _buildContent(),
@@ -155,9 +155,9 @@ class _CooldownScreenState extends State<CooldownScreen>
               icon: const Icon(Icons.category_outlined, size: 18),
               label: const Text('Set up categories first'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF06B6D4),
+                foregroundColor: AppColors.aqua,
                 side: BorderSide(
-                    color: const Color(0xFF06B6D4).withValues(alpha: 0.4)),
+                    color: AppColors.aqua.withValues(alpha: 0.4)),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -248,7 +248,7 @@ class _CooldownScreenState extends State<CooldownScreen>
     final isSelected = isUncategorized
         ? _showUncategorized
         : !_showUncategorized && _selectedCategoryId == categoryId;
-    final accent = color ?? const Color(0xFF06B6D4);
+    final accent = color ?? AppColors.aqua;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ChoiceChip(
@@ -447,7 +447,7 @@ class _CooldownScreenState extends State<CooldownScreen>
           _buildStatChip(
             _controller.items.length.toString(),
             "Total",
-            const Color(0xFF06B6D4),
+            AppColors.aqua,
             Icons.inventory_2_outlined,
           ),
         ],
@@ -524,7 +524,7 @@ class _CooldownScreenState extends State<CooldownScreen>
         key: ValueKey('cd_${item.id}'),
         direction: DismissDirection.endToStart,
         background: _buildDismissBackground(
-            Colors.green, Icons.check, Alignment.centerRight, 'Mark Ready'),
+            AppColors.success, Icons.check, Alignment.centerRight, 'Mark Ready'),
         confirmDismiss: (_) async {
           await _controller.clearCooldown(item);
           return false;
@@ -684,7 +684,7 @@ class _CooldownScreenState extends State<CooldownScreen>
         key: ValueKey('av_${item.id}'),
         direction: DismissDirection.startToEnd,
         background: _buildDismissBackground(
-            const Color(0xFF06B6D4),
+            AppColors.aqua,
             Icons.timer,
             Alignment.centerLeft,
             hasCat ? '${cat.readableDuration} Cooldown' : 'Start Cooldown'),
@@ -822,7 +822,7 @@ class _CooldownScreenState extends State<CooldownScreen>
                           'cooldown',
                           Icons.timer,
                           'Cooldown',
-                          const Color(0xFF06B6D4)),
+                          AppColors.aqua),
                       _popupItem(
                           'edit', Icons.edit, 'Edit', AppColors.slate300),
                       _popupItem('delete', Icons.delete_outline, 'Delete',
@@ -1041,11 +1041,11 @@ class _CategoryManagerSheetState extends State<_CategoryManagerSheet> {
                   icon: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF06B6D4).withValues(alpha: 0.15),
+                      color: AppColors.aqua.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(Icons.add,
-                        size: 18, color: Color(0xFF06B6D4)),
+                        size: 18, color: AppColors.aqua),
                   ),
                 ),
               ],
@@ -1485,8 +1485,8 @@ class _AddEditCategorySheetState extends State<_AddEditCategorySheet> {
                   child: ElevatedButton(
                     onPressed: _save,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF06B6D4),
-                      foregroundColor: Colors.white,
+                      backgroundColor: AppColors.aqua,
+                      foregroundColor: AppColors.onAccent,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -1531,7 +1531,7 @@ class _AddEditCategorySheetState extends State<_AddEditCategorySheet> {
             Text(
               value.toString().padLeft(2, '0'),
               style: AppTypography.headlineSmall.copyWith(
-                color: const Color(0xFF06B6D4),
+                color: AppColors.aqua,
               ),
             ),
             Text(label,
@@ -1787,8 +1787,8 @@ class _AddEditSheetState extends State<_AddEditSheet> {
                 child: ElevatedButton(
                   onPressed: _save,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF06B6D4),
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppColors.aqua,
+                    foregroundColor: AppColors.onAccent,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -1998,21 +1998,21 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF06B6D4).withValues(alpha: 0.08),
+                  color: AppColors.aqua.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                      color: const Color(0xFF06B6D4).withValues(alpha: 0.2)),
+                      color: AppColors.aqua.withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   children: [
                     const Icon(Icons.info_outline,
-                        size: 16, color: Color(0xFF06B6D4)),
+                        size: 16, color: AppColors.aqua),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         'Cooldown until ${_formatPreview()}',
                         style: AppTypography.bodySmall
-                            .copyWith(color: const Color(0xFF06B6D4)),
+                            .copyWith(color: AppColors.aqua),
                       ),
                     ),
                   ],
@@ -2025,8 +2025,8 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
                 child: ElevatedButton(
                   onPressed: _confirm,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF06B6D4),
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppColors.aqua,
+                    foregroundColor: AppColors.onAccent,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -2056,12 +2056,12 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: selected
-                ? const Color(0xFF06B6D4).withValues(alpha: 0.15)
+                ? AppColors.aqua.withValues(alpha: 0.15)
                 : AppColors.slate800.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: selected
-                  ? const Color(0xFF06B6D4).withValues(alpha: 0.4)
+                  ? AppColors.aqua.withValues(alpha: 0.4)
                   : AppColors.slate700.withValues(alpha: 0.5),
             ),
           ),
@@ -2071,12 +2071,12 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
               Icon(icon,
                   size: 14,
                   color:
-                      selected ? const Color(0xFF06B6D4) : AppColors.slate400),
+                      selected ? AppColors.aqua : AppColors.slate400),
               const SizedBox(width: 6),
               Text(label,
                   style: AppTypography.bodySmall.copyWith(
                     color:
-                        selected ? const Color(0xFF06B6D4) : AppColors.slate400,
+                        selected ? AppColors.aqua : AppColors.slate400,
                     fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                   )),
             ],
@@ -2176,9 +2176,9 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
       builder: (ctx, child) => Theme(
         data: ThemeData.dark().copyWith(
           colorScheme: const ColorScheme.dark(
-            primary: Color(0xFF06B6D4),
+            primary: AppColors.aqua,
             onPrimary: Colors.white,
-            surface: Color(0xFF1E293B),
+            surface: AppColors.slate800,
             onSurface: Colors.white,
           ),
         ),
@@ -2195,9 +2195,9 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
       builder: (ctx, child) => Theme(
         data: ThemeData.dark().copyWith(
           colorScheme: const ColorScheme.dark(
-            primary: Color(0xFF06B6D4),
+            primary: AppColors.aqua,
             onPrimary: Colors.white,
-            surface: Color(0xFF1E293B),
+            surface: AppColors.slate800,
             onSurface: Colors.white,
           ),
         ),

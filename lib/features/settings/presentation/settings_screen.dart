@@ -89,7 +89,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           icon: const Icon(Icons.save),
           label: const Text('Save'),
           backgroundColor: AppColors.govBlue,
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.onAccent,
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
@@ -197,7 +197,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                           child: Row(
                             children: [
                               const Icon(Icons.info_outline_rounded,
-                                  size: 18, color: Color(0xFFFBBF24)),
+                                  size: 18, color: AppColors.amber),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(

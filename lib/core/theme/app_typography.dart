@@ -4,6 +4,12 @@ import 'app_colors.dart';
 class AppTypography {
   static const String fontFamily = 'Inter';
 
+  /// Display serif for headings and screen titles; body text stays in Inter for legibility.
+  static const String headingFamily = 'Playfair';
+
+  /// Playfair defaults to old-style numerals, where 0 reads as a lowercase o; use full-height ones.
+  static const List<FontFeature> _liningFigures = [FontFeature.liningFigures()];
+
   // Base TextStyles
   static const TextStyle _baseInter = TextStyle(
     fontFamily: fontFamily,
@@ -12,6 +18,8 @@ class AppTypography {
 
   // Type Scale
   static TextStyle displayLarge = _baseInter.copyWith(
+    fontFamily: headingFamily,
+    fontFeatures: _liningFigures,
     fontSize: 57,
     fontWeight: FontWeight.w800, // ExtraBold
     height: 1.1,
@@ -19,36 +27,48 @@ class AppTypography {
   );
 
   static TextStyle displayMedium = _baseInter.copyWith(
+    fontFamily: headingFamily,
+    fontFeatures: _liningFigures,
     fontSize: 45,
     fontWeight: FontWeight.w800,
     height: 1.15,
   );
 
   static TextStyle displaySmall = _baseInter.copyWith(
+    fontFamily: headingFamily,
+    fontFeatures: _liningFigures,
     fontSize: 36,
     fontWeight: FontWeight.w700, // Bold
     height: 1.2,
   );
 
   static TextStyle headlineLarge = _baseInter.copyWith(
+    fontFamily: headingFamily,
+    fontFeatures: _liningFigures,
     fontSize: 32,
     fontWeight: FontWeight.w700,
     height: 1.25,
   );
 
   static TextStyle headlineMedium = _baseInter.copyWith(
+    fontFamily: headingFamily,
+    fontFeatures: _liningFigures,
     fontSize: 28,
     fontWeight: FontWeight.w600, // SemiBold
     height: 1.3,
   );
 
   static TextStyle headlineSmall = _baseInter.copyWith(
+    fontFamily: headingFamily,
+    fontFeatures: _liningFigures,
     fontSize: 24,
     fontWeight: FontWeight.w600,
     height: 1.35,
   );
 
   static TextStyle titleLarge = _baseInter.copyWith(
+    fontFamily: headingFamily,
+    fontFeatures: _liningFigures,
     fontSize: 22,
     fontWeight: FontWeight.w500, // Medium
     height: 1.4,

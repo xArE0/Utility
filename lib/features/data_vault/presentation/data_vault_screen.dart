@@ -168,7 +168,7 @@ class _DataVaultPageState extends State<DataVaultPage>
               if (dialogContext.mounted) Navigator.pop(dialogContext);
               if (mounted) AppToast.show(context, 'Deleted ${item.label}');
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: const Text('Delete', style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -243,8 +243,8 @@ class _DataVaultPageState extends State<DataVaultPage>
                 border: outline(fieldBorder),
                 enabledBorder: outline(fieldBorder),
                 focusedBorder: outline(cs.primary, 1.5),
-                errorBorder: outline(Colors.redAccent),
-                focusedErrorBorder: outline(Colors.redAccent, 1.5),
+                errorBorder: outline(AppColors.error),
+                focusedErrorBorder: outline(AppColors.error, 1.5),
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               );
@@ -314,7 +314,7 @@ class _DataVaultPageState extends State<DataVaultPage>
                 constraints: BoxConstraints(
                     maxHeight: MediaQuery.of(context).size.height * 0.92),
                 decoration: const BoxDecoration(
-                  color: Color(0xFF0F172A),
+                  color: AppColors.slate900,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
                   border: Border(top: BorderSide(color: AppColors.slate700)),
                 ),
@@ -513,7 +513,7 @@ class _DataVaultPageState extends State<DataVaultPage>
                                           customFieldControllers
                                               .removeAt(entry.key)),
                                       icon: Icon(Icons.remove_circle_outline,
-                                          color: Colors.redAccent
+                                          color: AppColors.error
                                               .withValues(alpha: 0.85),
                                           size: 20),
                                     ),
@@ -555,7 +555,7 @@ class _DataVaultPageState extends State<DataVaultPage>
                                     fontSize: 16, fontWeight: FontWeight.w600)),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: cs.primary,
-                              foregroundColor: Colors.white,
+                              foregroundColor: AppColors.onAccent,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14)),
@@ -596,7 +596,7 @@ class _DataVaultPageState extends State<DataVaultPage>
       case 'IDs':
         return AppColors.govGold;
       case 'Cards':
-        return const Color(0xFFA78BFA);
+        return AppColors.amethyst;
       case 'Bank Accounts':
         return AppColors.govGreen;
       default:
@@ -810,7 +810,7 @@ class _DataVaultPageState extends State<DataVaultPage>
                             icon: const Icon(Icons.delete_outline, size: 18),
                             label: const Text('Delete'),
                             style: TextButton.styleFrom(
-                                foregroundColor: Colors.redAccent),
+                                foregroundColor: AppColors.error),
                           ),
                         ]),
                       ],
@@ -885,7 +885,7 @@ class _DataVaultPageState extends State<DataVaultPage>
           IconButton(
             tooltip: 'Delete',
             icon: Icon(Icons.delete_outline,
-                size: 16, color: Colors.redAccent.withValues(alpha: 0.7)),
+                size: 16, color: AppColors.error.withValues(alpha: 0.7)),
             onPressed: () {
               showDialog(
                 context: context,
@@ -906,7 +906,7 @@ class _DataVaultPageState extends State<DataVaultPage>
                         if (dialogContext.mounted) Navigator.pop(dialogContext);
                       },
                       child: const Text('Delete',
-                          style: TextStyle(color: Colors.red)),
+                          style: TextStyle(color: AppColors.error)),
                     ),
                   ],
                 ),
@@ -1091,7 +1091,7 @@ class _DataVaultPageState extends State<DataVaultPage>
                         label: const Text('Unlock Vault'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: theme.primaryColor,
-                          foregroundColor: Colors.white,
+                          foregroundColor: AppColors.onAccent,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 24, vertical: 12),
                           shape: RoundedRectangleBorder(
@@ -1159,7 +1159,7 @@ class _DataVaultPageState extends State<DataVaultPage>
                 icon: const Icon(Icons.add),
                 label: const Text('Add Entry'),
                 backgroundColor: theme.primaryColor,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.onAccent,
               )
             : null,
       ),

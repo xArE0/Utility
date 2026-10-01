@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Lit state of the stay-awake button. -->
+<!-- Lit state of the stay-awake button (champagne). -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="oval">
-    <solid android:color="#FBBF24" />
+    <solid android:color="#C8A96A" />
 </shape>

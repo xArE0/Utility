@@ -10,7 +10,7 @@ import '../data/android_volume_repository.dart';
 import '../domain/volume_entities.dart';
 import 'volume_controller.dart';
 
-const _accent = Color(0xFF14B8A6);
+const _accent = AppColors.teal;
 
 /// Week starts on Sunday (Nepal). Values are [DateTime.weekday] numbers.
 const _weekdays = [
@@ -85,7 +85,7 @@ class _VolumeScreenState extends State<VolumeScreen>
             ? null
             : FloatingActionButton.extended(
                 backgroundColor: _accent,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.onAccent,
                 onPressed: () => _openEditor(null),
                 icon: const Icon(Icons.add),
                 label: const Text('Add change'),

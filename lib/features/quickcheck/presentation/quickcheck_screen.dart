@@ -280,7 +280,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.govBlue,
-                          foregroundColor: Colors.white,
+                          foregroundColor: AppColors.onAccent,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
@@ -514,7 +514,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
               "⭐",
               "$perfected",
               "",
-              const Color(0xFFEAB308),
+              AppColors.amber,
             ),
           ),
         ],
@@ -605,7 +605,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
         statusIcon = Icons.check_circle;
         break;
       case PageStatus.perfected:
-        statusColor = const Color(0xFFEAB308);
+        statusColor = AppColors.amber;
         statusIcon = Icons.star_rounded;
         break;
     }
@@ -712,7 +712,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                             backgroundColor: AppColors.slate700,
                             valueColor: AlwaysStoppedAnimation<Color>(
                               page.status == PageStatus.perfected
-                                  ? const Color(0xFFEAB308)
+                                  ? AppColors.amber
                                   : page.status == PageStatus.completed
                                       ? AppColors.govGreen
                                       : page.status == PageStatus.inProgress
@@ -1041,7 +1041,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.govBlue,
-                          foregroundColor: Colors.white,
+                          foregroundColor: AppColors.onAccent,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
@@ -1204,7 +1204,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.govBlue,
-                          foregroundColor: Colors.white,
+                          foregroundColor: AppColors.onAccent,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
@@ -1912,7 +1912,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                         : "Keep Practicing",
                 style: AppTypography.headlineMedium.copyWith(
                   color: isPerfect
-                      ? const Color(0xFFEAB308)
+                      ? AppColors.amber
                       : isGreat
                           ? AppColors.govGreen
                           : AppColors.slate300,
@@ -1963,7 +1963,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                   onPressed: () => _ctrl.endSession(),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.govBlue,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.onAccent,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14)),
                   ),

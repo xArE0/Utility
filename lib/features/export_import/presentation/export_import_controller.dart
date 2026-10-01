@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_colors.dart';
 import 'package:file_picker/file_picker.dart';
 import '../domain/export_import_repository.dart';
 import '../../../core/services/settings_service.dart';
@@ -267,7 +268,7 @@ class ExportImportController extends ChangeNotifier {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Overwrite All', style: TextStyle(color: Colors.white)),
           ),

@@ -188,36 +188,36 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                         IconData icon;
                         switch (type) {
                           case 'birthday':
-                            baseColor = const Color(0xFFE91E63);
+                            baseColor = AppColors.rose;
                             icon = Icons.cake;
                             break;
                           case 'reminder':
-                            baseColor = const Color(0xFF14B8A6);
+                            baseColor = AppColors.teal;
                             icon = Icons.notifications_active;
                             break;
                           case 'exam':
-                            baseColor = const Color(0xFF2563EB);
+                            baseColor = AppColors.sapphire;
                             icon = Icons.school;
                             break;
                           case 'homework':
-                            baseColor = const Color(0xFF8B5CF6);
+                            baseColor = AppColors.amethyst;
                             icon = Icons.assignment;
                             break;
                           case 'festival':
-                            baseColor = Colors.deepOrange;
+                            baseColor = AppColors.coral;
                             icon = Icons.celebration;
                             break;
                           case 'event':
-                            baseColor = const Color(0xFFFFA000);
+                            baseColor = AppColors.amber;
                             icon = Icons.event;
                             break;
                           case 'todo':
-                            baseColor = const Color(0xFF06B6D4);
+                            baseColor = AppColors.aqua;
                             icon = Icons.checklist;
                             break;
                           case 'normal':
                           default:
-                            baseColor = const Color(0xFF10B981);
+                            baseColor = AppColors.jade;
                             icon = Icons.task_alt;
                             break;
                         }
@@ -388,11 +388,13 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                                     Slider(
                                       value: selectedIndex.toDouble(),
                                       min: 0,
-                                      max: (repeatOptions.length - 1).toDouble(),
+                                      max:
+                                          (repeatOptions.length - 1).toDouble(),
                                       divisions: repeatOptions.length - 1,
                                       label: selectedLabel,
                                       onChanged: (value) => setDialogState(() =>
-                                          repeat = repeatOptions[value.round()]),
+                                          repeat =
+                                              repeatOptions[value.round()]),
                                     ),
                                     Row(
                                       mainAxisAlignment:
@@ -562,22 +564,22 @@ class ScheduleScreenState extends State<ScheduleScreen> {
   Color _eventColor(Event event) {
     switch (event.type) {
       case 'birthday':
-        return const Color(0xFFE91E63);
+        return AppColors.rose;
       case 'reminder':
-        return const Color(0xFF14B8A6);
+        return AppColors.teal;
       case 'exam':
-        return const Color(0xFF2563EB);
+        return AppColors.sapphire;
       case 'homework':
-        return const Color(0xFF8B5CF6);
+        return AppColors.amethyst;
       case 'festival':
-        return Colors.deepOrange;
+        return AppColors.coral;
       case 'event':
-        return const Color(0xFFFFA000);
+        return AppColors.amber;
       case 'todo':
-        return const Color(0xFF06B6D4);
+        return AppColors.aqua;
       case 'normal':
       default:
-        return const Color(0xFF10B981);
+        return AppColors.jade;
     }
   }
 
@@ -1035,10 +1037,10 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                                                               ? AppColors
                                                                   .govGreen
                                                               : (isDark
-                                                                  ? const Color(
-                                                                      0xFF7EB8E0)
-                                                                  : const Color(
-                                                                      0xFF4A90B8))),
+                                                                  ? AppColors
+                                                                      .govBlue
+                                                                  : AppColors
+                                                                      .govGold)),
                                                     const SizedBox(height: 4),
                                                     Text(nepaliMonth,
                                                         style: TextStyle(
@@ -1047,10 +1049,10 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                                                               ? AppColors
                                                                   .govGreen
                                                               : (isDark
-                                                                  ? const Color(
-                                                                      0xFF7EB8E0)
-                                                                  : const Color(
-                                                                      0xFF4A90B8)),
+                                                                  ? AppColors
+                                                                      .govBlue
+                                                                  : AppColors
+                                                                      .govGold),
                                                           fontWeight:
                                                               FontWeight.w600,
                                                         )),
@@ -1064,10 +1066,10 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                                                                   : AppColors
                                                                       .slate900)
                                                               : (isDark
-                                                                  ? const Color(
-                                                                      0xFF9DC8E8)
-                                                                  : const Color(
-                                                                      0xFF3A7CA5)),
+                                                                  ? AppColors
+                                                                      .slate100
+                                                                  : AppColors
+                                                                      .slate700),
                                                           fontWeight:
                                                               FontWeight.w400,
                                                         )),
@@ -1130,9 +1132,7 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                     duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: isHighlighted
-                          ? Colors.red.shade600
-                          : Colors.red.shade400,
+                      color: isHighlighted ? AppColors.error : AppColors.error,
                       borderRadius: BorderRadius.circular(50),
                       boxShadow: [
                         BoxShadow(
@@ -1420,8 +1420,8 @@ class ScheduleScreenState extends State<ScheduleScreen> {
       firstOfMonth = DateTime(selected.year, selected.month, 1);
       daysInMonth = DateUtils.getDaysInMonth(selected.year, selected.month);
     }
-    final lastOfMonth = DateTime(
-        firstOfMonth.year, firstOfMonth.month, firstOfMonth.day + daysInMonth - 1);
+    final lastOfMonth = DateTime(firstOfMonth.year, firstOfMonth.month,
+        firstOfMonth.day + daysInMonth - 1);
     final startWeekday = firstOfMonth.weekday % 7;
     final totalCells = startWeekday + daysInMonth;
     final rows = (totalCells / 7).ceil();
@@ -1536,7 +1536,7 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                           style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: Colors.redAccent)))),
+                              color: AppColors.error)))),
               Expanded(
                   child: Center(
                       child: Text("Mon",

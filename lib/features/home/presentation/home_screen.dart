@@ -207,7 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return const Icon(Icons.check_circle,
             color: AppColors.govGreen, size: 22);
       case SyncState.error:
-        return const Icon(Icons.error, color: Colors.orangeAccent, size: 22);
+        return const Icon(Icons.error, color: AppColors.amber, size: 22);
       case SyncState.idle:
       default:
         return const Icon(Icons.cloud_download_outlined,
@@ -362,32 +362,32 @@ class _HomeScreenState extends State<HomeScreen> {
                                 IconData typeIcon;
                                 switch (event.type) {
                                   case 'birthday':
-                                    typeColor = const Color(0xFFE91E63);
+                                    typeColor = AppColors.rose;
                                     typeIcon = Icons.cake;
                                     break;
                                   case 'reminder':
-                                    typeColor = const Color(0xFF14B8A6);
+                                    typeColor = AppColors.teal;
                                     typeIcon = Icons.notifications_active;
                                     break;
                                   case 'exam':
-                                    typeColor = const Color(0xFF2563EB);
+                                    typeColor = AppColors.sapphire;
                                     typeIcon = Icons.school;
                                     break;
                                   case 'homework':
-                                    typeColor = const Color(0xFF8B5CF6);
+                                    typeColor = AppColors.amethyst;
                                     typeIcon = Icons.assignment;
                                     break;
                                   case 'festival':
-                                    typeColor = Colors.deepOrange;
+                                    typeColor = AppColors.coral;
                                     typeIcon = Icons.celebration;
                                     break;
                                   case 'event':
-                                    typeColor = const Color(0xFFFFA000);
+                                    typeColor = AppColors.amber;
                                     typeIcon = Icons.event;
                                     break;
                                   case 'normal':
                                   default:
-                                    typeColor = const Color(0xFF10B981);
+                                    typeColor = AppColors.jade;
                                     typeIcon = Icons.task_alt;
                                     break;
                                 }
@@ -726,7 +726,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: Icons.menu_book,
                           title: "Logbook",
                           route: AppRoutes.logbook,
-                          color: const Color(0xFFF59E0B),
+                          color: AppColors.amber,
                         ),
                       if (SettingsService.instance
                           .isSidebarItemVisible('cooldown'))
@@ -735,7 +735,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: Icons.timer,
                           title: "Cooldown",
                           route: AppRoutes.cooldown,
-                          color: const Color(0xFF06B6D4),
+                          color: AppColors.aqua,
                         ),
                       if (SettingsService.instance
                           .isSidebarItemVisible('quickcheck'))
@@ -744,7 +744,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: Icons.assignment_outlined,
                           title: "MCQ Practice",
                           route: AppRoutes.quickcheck,
-                          color: const Color(0xFFEC4899),
+                          color: AppColors.rose,
                         ),
                       if (SettingsService.instance
                           .isSidebarItemVisible('routine'))
@@ -753,7 +753,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: Icons.repeat_rounded,
                           title: "Routine",
                           route: AppRoutes.routine,
-                          color: const Color(0xFF8B5CF6),
+                          color: AppColors.amethyst,
                         ),
                       if (SettingsService.instance
                           .isSidebarItemVisible('autoclicker'))
@@ -762,7 +762,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: Icons.ads_click,
                           title: "Auto Clicker",
                           route: AppRoutes.autoclicker,
-                          color: const Color(0xFFF97316),
+                          color: AppColors.coral,
                         ),
                       if (SettingsService.instance
                           .isSidebarItemVisible('volume'))
@@ -771,7 +771,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: Icons.volume_up_rounded,
                           title: "Volume Schedule",
                           route: AppRoutes.volume,
-                          color: const Color(0xFF14B8A6),
+                          color: AppColors.teal,
                         ),
                       if (SettingsService.instance
                           .isSidebarItemVisible('importexport'))
@@ -923,7 +923,7 @@ class _SidebarActiveTimerState extends State<_SidebarActiveTimer> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(Icons.timer,
-                      color: Color(0xFF06B6D4), size: 20),
+                      color: AppColors.aqua, size: 20),
                   const SizedBox(width: 8),
                   Text(
                     "$mins:$secs",

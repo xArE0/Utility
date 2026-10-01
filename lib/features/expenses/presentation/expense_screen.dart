@@ -17,7 +17,7 @@ class ExpenseTrackerApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'MoneyCalc',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.govBlue),
         useMaterial3: true,
       ),
       home: const ExpenseTrackerScreen(),
@@ -188,7 +188,7 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
                                       _controller.deletePerson(person);
                                     },
                                     child: const Text('Khatam',
-                                        style: TextStyle(color: Colors.red)),
+                                        style: TextStyle(color: AppColors.error)),
                                   ),
                                 ],
                               ),
@@ -241,7 +241,7 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
                                       .titleLarge
                                       ?.copyWith(
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.blue.shade700,
+                                        color: AppColors.govBlue,
                                         letterSpacing: 1.2,
                                       ),
                                 ),
@@ -253,21 +253,15 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
                                   gradient: LinearGradient(
                                     colors:
                                         _controller.selectedPerson!.balance >= 0
-                                            ? [
-                                                Colors.green.shade400,
-                                                Colors.green.shade700
-                                              ]
-                                            : [
-                                                Colors.red.shade400,
-                                                Colors.red.shade700
-                                              ],
+                                            ? [AppColors.jade, AppColors.teal]
+                                            : [AppColors.error, AppColors.coral],
                                   ),
                                   borderRadius: BorderRadius.circular(30),
                                 ),
                                 child: Text(
                                   'Rs. ${_controller.selectedPerson!.balance.toStringAsFixed(2)}',
                                   style: const TextStyle(
-                                    color: Colors.white,
+                                    color: AppColors.onAccent,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 18,
                                     letterSpacing: 1.1,
@@ -277,7 +271,7 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
                               const SizedBox(width: 12),
                               IconButton(
                                 icon: const Icon(Icons.share,
-                                    color: Colors.deepPurple, size: 28),
+                                    color: AppColors.amethyst, size: 28),
                                 tooltip: 'Share',
                                 onPressed: () => _controller.sharePersonHistory(
                                     _controller.selectedPerson!),
@@ -394,34 +388,35 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
                                             child: _StatPill(
                                               label: stats['opening']!
                                                   .toStringAsFixed(0),
-                                              color: Colors.blueGrey.shade100,
-                                              textColor:
-                                                  Colors.blueGrey.shade800,
+                                              color: AppColors.slate700,
+                                              textColor: AppColors.slate200,
                                             ),
                                           ),
                                           Flexible(
                                             child: _StatPill(
                                               label: stats['closing']!
                                                   .toStringAsFixed(0),
-                                              color: Colors.deepPurple.shade100,
-                                              textColor:
-                                                  Colors.deepPurple.shade800,
+                                              color: AppColors.amethyst
+                                                  .withValues(alpha: 0.18),
+                                              textColor: AppColors.amethyst,
                                             ),
                                           ),
                                           Flexible(
                                             child: _StatPill(
                                               label:
                                                   '+${stats['plus']!.toStringAsFixed(0)}',
-                                              color: Colors.green.shade100,
-                                              textColor: Colors.green.shade800,
+                                              color: AppColors.success
+                                                  .withValues(alpha: 0.18),
+                                              textColor: AppColors.success,
                                             ),
                                           ),
                                           Flexible(
                                             child: _StatPill(
                                               label:
                                                   '-${stats['minus']!.abs().toStringAsFixed(0)}',
-                                              color: Colors.red.shade100,
-                                              textColor: Colors.red.shade800,
+                                              color: AppColors.error
+                                                  .withValues(alpha: 0.18),
+                                              textColor: AppColors.error,
                                             ),
                                           ),
                                           Flexible(
@@ -431,13 +426,15 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
                                                 color: (stats['plus']! +
                                                             stats['minus']!) >=
                                                         0
-                                                    ? Colors.green.shade100
-                                                    : Colors.red.shade100,
+                                                    ? AppColors.success
+                                                        .withValues(alpha: 0.18)
+                                                    : AppColors.error
+                                                        .withValues(alpha: 0.18),
                                                 textColor: (stats['plus']! +
                                                             stats['minus']!) >=
                                                         0
-                                                    ? Colors.green.shade800
-                                                    : Colors.red.shade800),
+                                                    ? AppColors.success
+                                                    : AppColors.error),
                                           ),
                                         ],
                                       ),
@@ -455,8 +452,8 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
                                           'Rs ${tx.amount.toStringAsFixed(2)}',
                                           style: TextStyle(
                                             color: tx.amount >= 0
-                                                ? Colors.green
-                                                : Colors.red,
+                                                ? AppColors.success
+                                                : AppColors.error,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),

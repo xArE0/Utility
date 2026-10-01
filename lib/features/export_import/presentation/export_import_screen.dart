@@ -57,11 +57,11 @@ class _ExportImportsPageState extends State<ExportImportsPage> {
                     leading: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.greenAccent.withValues(alpha: 0.15),
+                        color: AppColors.jade.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(Icons.backup,
-                          color: Colors.greenAccent, size: 22),
+                          color: AppColors.jade, size: 22),
                     ),
                     title: const Text('Export All Databases',
                         style: TextStyle(fontWeight: FontWeight.w600)),
@@ -80,11 +80,11 @@ class _ExportImportsPageState extends State<ExportImportsPage> {
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color:
-                            Colors.orangeAccent.withValues(alpha: 0.15),
+                            AppColors.amber.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(Icons.restore,
-                          color: Colors.orangeAccent, size: 22),
+                          color: AppColors.amber, size: 22),
                     ),
                     title: const Text('Import All Databases',
                         style: TextStyle(fontWeight: FontWeight.w600)),
@@ -135,7 +135,7 @@ class _ExportImportsPageState extends State<ExportImportsPage> {
                       child: _dbCard(
                         name: 'Data Vault',
                         icon: Icons.shield,
-                        color: Colors.amberAccent,
+                        color: AppColors.amber,
                         dbName: dataVaultDbName,
                         isEncrypted: true,
                       ),
@@ -145,7 +145,7 @@ class _ExportImportsPageState extends State<ExportImportsPage> {
                       child: _dbCard(
                         name: 'Cooldown',
                         icon: Icons.timer,
-                        color: Colors.cyanAccent,
+                        color: AppColors.aqua,
                         dbName: cooldownDbName,
                         isEncrypted: false,
                       ),
@@ -155,7 +155,7 @@ class _ExportImportsPageState extends State<ExportImportsPage> {
                       child: _dbCard(
                         name: 'Logbook',
                         icon: Icons.menu_book,
-                        color: Colors.purpleAccent,
+                        color: AppColors.amethyst,
                         dbName: logbookDbName,
                         isEncrypted: false,
                       ),
@@ -165,7 +165,7 @@ class _ExportImportsPageState extends State<ExportImportsPage> {
                       child: _dbCard(
                         name: 'Routine',
                         icon: Icons.repeat_rounded,
-                        color: const Color(0xFF8B5CF6),
+                        color: AppColors.amethyst,
                         dbName: routineDbName,
                         isEncrypted: false,
                       ),
@@ -232,7 +232,7 @@ class _ExportImportsPageState extends State<ExportImportsPage> {
                     child: Container(
                       padding: const EdgeInsets.all(3),
                       decoration: BoxDecoration(
-                        color: Colors.amber.withValues(alpha: 0.9),
+                        color: AppColors.amber,
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(Icons.lock, size: 10, color: Colors.black87),

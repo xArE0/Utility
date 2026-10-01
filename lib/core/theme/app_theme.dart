@@ -15,9 +15,53 @@ class AppTheme {
       // Color Scheme
       colorScheme: const ColorScheme.dark(
         primary: AppColors.govBlue,
-        secondary: AppColors.govGold,
+        onPrimary: AppColors.onAccent,
+        secondary: AppColors.govGreen,
+        onSecondary: AppColors.onAccent,
+        tertiary: AppColors.govGold,
         surface: AppColors.slate800,
+        onSurface: AppColors.slate50,
+        surfaceContainerHighest: AppColors.slate700,
+        outline: AppColors.slate600,
         error: AppColors.error,
+      ),
+
+      // Accent-filled controls carry dark text (champagne is too light for white).
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: AppColors.govBlue,
+        foregroundColor: AppColors.onAccent,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.govBlue,
+          foregroundColor: AppColors.onAccent,
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.govBlue,
+          foregroundColor: AppColors.onAccent,
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(foregroundColor: AppColors.govBlue),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: AppColors.slate800,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: AppColors.slate700),
+        ),
+        titleTextStyle: AppTypography.titleLarge,
+      ),
+      snackBarTheme: const SnackBarThemeData(
+        backgroundColor: AppColors.slate700,
+        contentTextStyle: TextStyle(color: AppColors.slate50),
+      ),
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: AppColors.govBlue,
+        selectionColor: AppColors.govBlue.withValues(alpha: 0.35),
+        selectionHandleColor: AppColors.govBlue,
       ),
 
       // Text Theme

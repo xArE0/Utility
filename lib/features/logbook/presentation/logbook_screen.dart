@@ -20,14 +20,14 @@ class _LogbookScreenState extends State<LogbookScreen> {
   int? _expandedEntryId;
 
   static const List<Color> _accentColors = [
-    Color(0xFFFF6B35),
-    Color(0xFF06B6D4),
-    Color(0xFF8B5CF6),
-    Color(0xFFF43F5E),
-    Color(0xFF10B981),
-    Color(0xFFF59E0B),
-    Color(0xFF3B82F6),
-    Color(0xFFEC4899),
+    AppColors.coral,
+    AppColors.aqua,
+    AppColors.amethyst,
+    AppColors.rose,
+    AppColors.jade,
+    AppColors.amber,
+    AppColors.sapphire,
+    AppColors.rose,
   ];
 
   @override
@@ -475,7 +475,7 @@ class _LogbookScreenState extends State<LogbookScreen> {
                                 _controller.deleteEntry(entry.id!);
                               },
                               child: const Text('Delete',
-                                  style: TextStyle(color: Colors.red)),
+                                  style: TextStyle(color: AppColors.error)),
                             ),
                           ],
                         ),

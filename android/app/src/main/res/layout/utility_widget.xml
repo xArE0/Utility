@@ -49,7 +49,7 @@
         <ImageView
             android:layout_width="2.5dp"
             android:layout_height="match_parent"
-            android:background="#121212" />
+            android:background="#0C0B0A" />
 
         <!-- Buttons and countdown share this space; animateLayoutChanges cross-fades between
              them when the launcher reapplies the views (some launchers redraw without it). -->
@@ -78,7 +78,7 @@
                         android:layout_height="match_parent"
                         android:gravity="center"
                         android:text="5m"
-                        android:textColor="#F8FAFC"
+                        android:textColor="#FAF7F2"
                         android:textSize="14sp"
                         android:textStyle="bold" />
                 </FrameLayout>
@@ -86,7 +86,7 @@
                 <ImageView
                     android:layout_width="2.5dp"
                     android:layout_height="match_parent"
-                    android:background="#121212" />
+                    android:background="#0C0B0A" />
 
                 <FrameLayout
                     android:id="@+id/btn_timer2_root"
@@ -100,7 +100,7 @@
                         android:layout_height="match_parent"
                         android:gravity="center"
                         android:text="15m"
-                        android:textColor="#F8FAFC"
+                        android:textColor="#FAF7F2"
                         android:textSize="14sp"
                         android:textStyle="bold" />
                 </FrameLayout>
@@ -120,7 +120,7 @@
                     android:layout_weight="1"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textColor="#22D3EE"
+                    android:textColor="#C8A96A"
                     android:textSize="17sp"
                     android:textStyle="bold"
                     android:fontFeatureSettings="tnum" />
@@ -140,7 +140,7 @@
         <ImageView
             android:layout_width="2.5dp"
             android:layout_height="match_parent"
-            android:background="#121212" />
+            android:background="#0C0B0A" />
 
         <FrameLayout
             android:id="@+id/btn_awake_root"

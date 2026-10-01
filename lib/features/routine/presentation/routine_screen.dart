@@ -213,7 +213,7 @@ class _RoutineScreenState extends State<RoutineScreen>
                     },
                     style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.govBlue,
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppColors.onAccent,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12))),
                     child: Text(editId == null ? 'Add' : 'Save'),
@@ -242,7 +242,7 @@ class _RoutineScreenState extends State<RoutineScreen>
                       AppToast.show(context, 'Habit deleted');
                     },
                     child: const Text('Delete',
-                        style: TextStyle(color: Colors.red))),
+                        style: TextStyle(color: AppColors.error))),
               ],
             ));
   }
@@ -313,12 +313,12 @@ class _RoutineScreenState extends State<RoutineScreen>
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: done
-            ? const Color(0xFF10B981).withValues(alpha: 0.12)
+            ? AppColors.jade.withValues(alpha: 0.12)
             : AppColors.slate800.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
             color: done
-                ? const Color(0xFF10B981).withValues(alpha: 0.35)
+                ? AppColors.jade.withValues(alpha: 0.35)
                 : AppColors.slate700.withValues(alpha: 0.6)),
       ),
       child: Material(
@@ -338,11 +338,11 @@ class _RoutineScreenState extends State<RoutineScreen>
                     height: 28,
                     decoration: BoxDecoration(
                       color:
-                          done ? const Color(0xFF10B981) : Colors.transparent,
+                          done ? AppColors.jade : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                           color: done
-                              ? const Color(0xFF10B981)
+                              ? AppColors.jade
                               : AppColors.slate500,
                           width: 2),
                     ),
@@ -390,7 +390,7 @@ class _RoutineScreenState extends State<RoutineScreen>
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
                           color: bellOn
-                              ? const Color(0xFFFFA000).withValues(alpha: 0.15)
+                              ? AppColors.amber.withValues(alpha: 0.15)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -400,7 +400,7 @@ class _RoutineScreenState extends State<RoutineScreen>
                                 : Icons.notifications_none,
                             size: 20,
                             color: bellOn
-                                ? const Color(0xFFFFA000)
+                                ? AppColors.amber
                                 : AppColors.slate500),
                       ),
                     ),
@@ -418,7 +418,7 @@ class _RoutineScreenState extends State<RoutineScreen>
                         const SizedBox(width: 4),
                         Text('$streak',
                             style: AppTypography.bodySmall.copyWith(
-                                color: const Color(0xFFFFA000),
+                                color: AppColors.amber,
                                 fontWeight: FontWeight.bold)),
                       ]),
                     ),
@@ -455,9 +455,9 @@ class _RoutineScreenState extends State<RoutineScreen>
                   editTime: habit.scheduledTime);
             }),
         ListTile(
-            leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
+            leading: const Icon(Icons.delete_outline, color: AppColors.error),
             title:
-                const Text('Delete', style: TextStyle(color: Colors.redAccent)),
+                const Text('Delete', style: TextStyle(color: AppColors.error)),
             onTap: () {
               Navigator.pop(ctx);
               _confirmDelete(habit.id!, habit.name);
@@ -528,7 +528,7 @@ class _ProgressRing extends StatelessWidget {
                 Text(progress >= 1.0 ? '🎉 All done!' : 'today',
                     style: AppTypography.bodySmall.copyWith(
                         color: progress >= 1.0
-                            ? const Color(0xFF10B981)
+                            ? AppColors.jade
                             : AppColors.slate400)),
               ]),
             ])));
@@ -555,7 +555,7 @@ class _RingPainter extends CustomPainter {
       final gradient = SweepGradient(
           startAngle: -pi / 2,
           endAngle: -pi / 2 + sweep,
-          colors: const [Color(0xFF06B6D4), Color(0xFF10B981)]);
+          colors: const [AppColors.aqua, AppColors.jade]);
       canvas.drawArc(
           rect,
           -pi / 2,
@@ -635,8 +635,8 @@ class _HeatmapCalendar extends StatelessWidget {
                         decoration: BoxDecoration(
                             color: count == 0
                                 ? AppColors.slate700.withValues(alpha: 0.3)
-                                : Color.lerp(const Color(0xFF065F46),
-                                    const Color(0xFF10B981), intensity),
+                                : Color.lerp(AppColors.jadeDeep,
+                                    AppColors.jade, intensity),
                             borderRadius: BorderRadius.circular(3)))));
           }),
         ]);
@@ -675,7 +675,7 @@ class _HabitHistoryRow extends StatelessWidget {
               child: Text(habit.name,
                   style:
                       AppTypography.titleMedium.copyWith(color: Colors.white))),
-          _badge('🔥', streak, const Color(0xFFFFA000)),
+          _badge('🔥', streak, AppColors.amber),
           const SizedBox(width: 8),
           _badge('⭐', bestStreak, AppColors.govGold),
         ]),
@@ -695,7 +695,7 @@ class _HabitHistoryRow extends StatelessWidget {
                   height: 6,
                   decoration: BoxDecoration(
                       color: done
-                          ? const Color(0xFF10B981)
+                          ? AppColors.jade
                           : AppColors.slate700.withValues(alpha: 0.4),
                       borderRadius: BorderRadius.circular(2)));
             })),

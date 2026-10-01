@@ -13,7 +13,7 @@ class AppToast {
     final overlay = Overlay.of(context);
     final effectiveIcon = icon ??
         (isError ? Icons.error_outline_rounded : Icons.check_circle_rounded);
-    final accentColor = isError ? AppColors.error : const Color(0xFF10B981);
+    final accentColor = isError ? AppColors.error : AppColors.jade;
 
     late final OverlayEntry entry;
     entry = OverlayEntry(

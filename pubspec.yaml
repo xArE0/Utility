@@ -45,7 +45,6 @@ flutter_launcher_icons:
 flutter:
   assets:
     - assets/images/bkgrnd.jpg
-    - assets/fonts/
   fonts:
     - family: Inter
       fonts:
@@ -59,4 +58,11 @@ flutter:
           weight: 700
         - asset: assets/fonts/Inter-ExtraBold.ttf
           weight: 800
+    # Headings (SIL Open Font License, see assets/fonts/OFL-PlayfairDisplay.txt)
+    - family: Playfair
+      fonts:
+        - asset: assets/fonts/PlayfairDisplay-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/PlayfairDisplay-Bold.ttf
+          weight: 700
   uses-material-design: true

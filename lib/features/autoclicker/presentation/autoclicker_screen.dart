@@ -10,7 +10,7 @@ import '../data/android_autoclicker_repository.dart';
 import '../domain/autoclicker_entities.dart';
 import 'autoclicker_controller.dart';
 
-const _accent = Color(0xFFF97316);
+const _accent = AppColors.coral;
 
 const _intervalPresets = [
   (label: '100 ms', ms: 100),
