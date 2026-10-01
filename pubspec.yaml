@@ -31,7 +31,6 @@ dependencies:
   flutter_svg: ^2.2.0
   google_fonts: ^6.3.0
   local_auth: ^3.0.1
-  home_widget: ^0.9.4
   sqflite_sqlcipher: ^3.4.0
   flutter_secure_storage: ^10.0.0
   cryptography: ^2.7.0

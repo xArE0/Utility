@@ -8,7 +8,7 @@ import '../domain/schedule_repository.dart';
 import '../../../services/notification_service.dart';
 import '../../../utils/ics_parser.dart';
 import '../../../utils/api_services.dart';
-import 'package:home_widget/home_widget.dart';
+import '../../../core/services/home_widget_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum ScheduleView { timeline, week, month }
@@ -281,51 +281,19 @@ class ScheduleController extends ChangeNotifier {
     return results;
   }
 
+  /// Pushes today's weather and AQI line to the home screen widget.
   Future<void> updateHomeWidget() async {
-    try {
-      final now = DateTime.now();
+    final todayWeather =
+        weatherMap[DateFormat('yyyy-MM-dd').format(DateTime.now())];
+    final weatherEmoji = todayWeather?['emoji'] ?? '';
 
-      // Date Display
-      final dateStr = DateFormat('EEEE, MMM d').format(now);
-
-      final dateStrForWeather = DateFormat('yyyy-MM-dd').format(now);
-      final todayWeather = weatherMap[dateStrForWeather];
-      final weatherEmoji = todayWeather?['emoji'] ?? '';
-
-      // AQI Display
-      String aqiStr = "Air Quality: --";
-      if (currentAqi != null) {
-        aqiStr = "$weatherEmoji   Air Quality: $currentAqi".trim();
-      } else if (weatherEmoji.isNotEmpty) {
-        aqiStr = weatherEmoji;
-      }
-
-      // Tasks Display
-      String tasksStr = "No tasks scheduled for today. You're free!";
-      final todayEvents = eventsForDate(now);
-      if (todayEvents.isNotEmpty) {
-        tasksStr = todayEvents.map((e) {
-          String time = e.remindTime != null ? "${e.remindTime} - " : "";
-          return "• $time${e.task}";
-        }).join("\n");
-      }
-
-      // Quotes Display
-      final prefs = await SharedPreferences.getInstance();
-      final String? quoteStr = prefs.getString('cached_quote_text');
-
-      await HomeWidget.saveWidgetData<String>('widget_date', dateStr);
-      await HomeWidget.saveWidgetData<String>('widget_aqi', aqiStr);
-      await HomeWidget.saveWidgetData<String>('widget_tasks', tasksStr);
-      await HomeWidget.saveWidgetData<String>('widget_quote', quoteStr ?? "");
-
-      await HomeWidget.updateWidget(
-        name: 'ScheduleWidgetProvider',
-        androidName: 'ScheduleWidgetProvider',
-      );
-    } catch (_) {
-      // Fail silently if widget not ready
+    String aqiStr = "Air Quality: --";
+    if (currentAqi != null) {
+      aqiStr = "$weatherEmoji   Air Quality: $currentAqi".trim();
+    } else if (weatherEmoji.isNotEmpty) {
+      aqiStr = weatherEmoji;
     }
+    await HomeWidgetService.instance.setAqi(aqiStr);
   }
 
   List<Event> eventsForDate(DateTime date) {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:home_widget/home_widget.dart';
+import 'home_widget_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsService extends ChangeNotifier {
@@ -14,7 +14,7 @@ class SettingsService extends ChangeNotifier {
   String _vaultExportPassword = 'super123';
   int _widgetTimer1 = 5;
   int _widgetTimer2 = 15;
-  int _widgetTimer3 = 30;
+  int _widgetAwakeMinutes = 10;
   String _defaultScreen = 'schedule';
 
   String get sidebarName => _sidebarName;
@@ -23,7 +23,7 @@ class SettingsService extends ChangeNotifier {
   String get vaultExportPassword => _vaultExportPassword;
   int get widgetTimer1 => _widgetTimer1;
   int get widgetTimer2 => _widgetTimer2;
-  int get widgetTimer3 => _widgetTimer3;
+  int get widgetAwakeMinutes => _widgetAwakeMinutes;
   String get defaultScreen => _defaultScreen;
 
   Future<void> init() async {
@@ -34,10 +34,14 @@ class SettingsService extends ChangeNotifier {
     _vaultExportPassword = _prefs.getString('vaultExportPassword') ?? 'super123';
     _widgetTimer1 = _prefs.getInt('widgetTimer1') ?? 5;
     _widgetTimer2 = _prefs.getInt('widgetTimer2') ?? 15;
-    _widgetTimer3 = _prefs.getInt('widgetTimer3') ?? 30;
+    _widgetAwakeMinutes = _prefs.getInt('widgetAwakeMinutes') ?? 10;
     _defaultScreen = _prefs.getString('defaultScreen') ?? 'schedule';
     final raw = _prefs.getString('sidebarHiddenItems') ?? '';
     _sidebarHiddenItems = raw.isEmpty ? {} : raw.split(',').toSet();
+
+    // The widget keeps its own copy (it works while the app isn't running); this app's settings
+    // are the source, so push them on every launch. Never throws.
+    await _pushWidgetSettings();
   }
 
   Future<void> updateSidebarName(String value) async {
@@ -64,31 +68,22 @@ class SettingsService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> updateWidgetTimers(int t1, int t2, int t3) async {
+  Future<void> updateWidgetSettings(int t1, int t2, int awakeMinutes) async {
     _widgetTimer1 = t1.clamp(1, 999);
     _widgetTimer2 = t2.clamp(1, 999);
-    _widgetTimer3 = t3.clamp(1, 999);
+    _widgetAwakeMinutes = awakeMinutes.clamp(1, 999);
     await _prefs.setInt('widgetTimer1', _widgetTimer1);
     await _prefs.setInt('widgetTimer2', _widgetTimer2);
-    await _prefs.setInt('widgetTimer3', _widgetTimer3);
-
-    // Push values to the widget's SharedPreferences so Kotlin can read them
-    await HomeWidget.saveWidgetData<int>('widget_timer1', _widgetTimer1);
-    await HomeWidget.saveWidgetData<int>('widget_timer2', _widgetTimer2);
-    await HomeWidget.saveWidgetData<int>('widget_timer3', _widgetTimer3);
-
-    // Also update the button labels on the widget
-    await HomeWidget.saveWidgetData<String>('widget_timer1_label', '${_widgetTimer1}m');
-    await HomeWidget.saveWidgetData<String>('widget_timer2_label', '${_widgetTimer2}m');
-    await HomeWidget.saveWidgetData<String>('widget_timer3_label', '${_widgetTimer3}m');
-
-    // Trigger widget refresh
-    await HomeWidget.updateWidget(
-      name: 'ScheduleWidgetProvider',
-      androidName: 'ScheduleWidgetProvider',
-    );
+    await _prefs.setInt('widgetAwakeMinutes', _widgetAwakeMinutes);
+    await _pushWidgetSettings();
     notifyListeners();
   }
+
+  Future<void> _pushWidgetSettings() => HomeWidgetService.instance.configure(
+        timer1: _widgetTimer1,
+        timer2: _widgetTimer2,
+        awakeMinutes: _widgetAwakeMinutes,
+      );
 
   Future<void> updateDefaultScreen(String value) async {
     _defaultScreen = value;

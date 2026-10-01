@@ -21,6 +21,8 @@ class MainActivity : FlutterFragmentActivity() {
     private var channel: MethodChannel? = null
     private var volumeChannel: MethodChannel? = null
     private var volumeReceiver: BroadcastReceiver? = null
+    private var widgetChannel: MethodChannel? = null
+    private var widgetListener: (() -> Unit)? = null
     private var statusListener: (() -> Unit)? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -41,6 +43,21 @@ class MainActivity : FlutterFragmentActivity() {
 
         // Catch up on changes missed while the app was force-stopped (which also clears alarms).
         VolumeScheduler.sync(applicationContext)
+
+        val widget = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, WIDGET_CHANNEL)
+        widget.setMethodCallHandler { call, result -> handleWidget(call, result) }
+        widgetChannel = widget
+        UtilityWidget.restore(applicationContext, dropExpired = true)
+        val onWidgetChanged: () -> Unit = { widget.invokeMethod("changed", null) }
+        widgetListener = onWidgetChanged
+        UtilityWidget.listener = onWidgetChanged
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Permission granted in Settings meanwhile? Swap the widget's stay-awake button over.
+        UtilityWidget.render(applicationContext)
+        widgetListener?.invoke()
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
@@ -54,6 +71,10 @@ class MainActivity : FlutterFragmentActivity() {
         stopVolumeListening()
         volumeChannel?.setMethodCallHandler(null)
         volumeChannel = null
+        if (UtilityWidget.listener === widgetListener) UtilityWidget.listener = null
+        widgetListener = null
+        widgetChannel?.setMethodCallHandler(null)
+        widgetChannel = null
         super.cleanUpFlutterEngine(flutterEngine)
     }
 
@@ -169,6 +190,40 @@ class MainActivity : FlutterFragmentActivity() {
                 stopVolumeListening()
                 result.success(null)
             }
+
+            else -> result.notImplemented()
+        }
+    }
+
+    private fun handleWidget(call: MethodCall, result: MethodChannel.Result) {
+        val ctx = applicationContext
+        when (call.method) {
+            "getState" -> result.success(UtilityWidget.state(ctx))
+
+            "configure" -> {
+                UtilityWidget.configure(
+                    ctx,
+                    call.argument<Int>("timer1") ?: 5,
+                    call.argument<Int>("timer2") ?: 15,
+                    call.argument<Int>("awakeMinutes") ?: 10,
+                )
+                result.success(null)
+            }
+
+            "setAqi" -> {
+                UtilityWidget.setAqi(ctx, call.argument<String>("text") ?: "")
+                result.success(null)
+            }
+
+            "cancelTimer" -> {
+                UtilityWidget.cancelTimer(ctx)
+                result.success(null)
+            }
+
+            "openWriteSettings" -> openSettings(
+                result,
+                Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:$packageName")),
+            )
 
             else -> result.notImplemented()
         }
@@ -309,6 +364,7 @@ class MainActivity : FlutterFragmentActivity() {
     private companion object {
         const val AUTOCLICKER_CHANNEL = "com.example.utility/autoclicker"
         const val VOLUME_CHANNEL = "com.example.utility/volume"
+        const val WIDGET_CHANNEL = "com.example.utility/widget"
 
         const val MIUI_OP_AUTO_START = 10008
 

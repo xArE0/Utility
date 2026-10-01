@@ -1,3 +1,5 @@
+<!-- Only RemoteViews-safe classes here (LinearLayout, FrameLayout, TextView, ImageView,
+     Chronometer): anything else makes the launcher show "Can't load widget". -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
@@ -17,129 +19,144 @@
         android:paddingStart="16dp"
         android:paddingEnd="12dp">
 
-        <!-- App Launcher Button -->
         <ImageView
             android:id="@+id/btn_launch_app"
             android:layout_width="28dp"
             android:layout_height="28dp"
             android:src="@mipmap/ic_launcher"
             android:layout_marginEnd="10dp"
-            android:clickable="true"
-            android:focusable="true"/>
+            android:contentDescription="Open Utility" />
 
-        <!-- AQI and Weather -->
         <TextView
             android:id="@+id/widget_aqi"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="AQI: --"
+            android:text="Air Quality: --"
             android:textColor="#FFFFFF"
             android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="end" />
     </LinearLayout>
 
-    <!-- RIGHT SECTION: Timers -->
+    <!-- Right Section: timers (two slots) + stay awake -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="45"
         android:orientation="horizontal">
-        
-        <!-- Divider -->
+
         <ImageView
             android:layout_width="2.5dp"
             android:layout_height="match_parent"
             android:background="#121212" />
 
-        <!-- Button Timer 1 -->
+        <!-- Buttons and countdown share this space; animateLayoutChanges cross-fades between
+             them when the launcher reapplies the views (some launchers redraw without it). -->
         <FrameLayout
-            android:id="@+id/btn_timer1_root"
+            android:id="@+id/timer_area"
             android:layout_width="0dp"
-            android:layout_weight="1"
+            android:layout_weight="2"
             android:layout_height="match_parent"
-            android:clickable="true"
-            android:focusable="true">
-            <TextView
-                android:id="@+id/btn_timer1_text"
+            android:animateLayoutChanges="true">
+
+            <LinearLayout
+                android:id="@+id/timer_buttons"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:gravity="center"
-                android:text="5m"
-                android:textColor="#F8FAFC"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-            <ImageView
-                android:id="@+id/btn_timer1_icon"
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:layout_gravity="center"
-                android:src="@drawable/ic_check_white"
-                android:visibility="gone" />
-        </FrameLayout>
+                android:orientation="horizontal">
 
-        <!-- Divider -->
-        <ImageView
-            android:layout_width="2.5dp"
-            android:layout_height="match_parent"
-            android:background="#121212" />
+                <FrameLayout
+                    android:id="@+id/btn_timer1_root"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="match_parent"
+                    android:background="?android:attr/selectableItemBackground">
+                    <TextView
+                        android:id="@+id/btn_timer1_text"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:text="5m"
+                        android:textColor="#F8FAFC"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                </FrameLayout>
 
-        <!-- Button Timer 2 -->
-        <FrameLayout
-            android:id="@+id/btn_timer2_root"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="match_parent"
-            android:clickable="true"
-            android:focusable="true">
-            <TextView
-                android:id="@+id/btn_timer2_text"
+                <ImageView
+                    android:layout_width="2.5dp"
+                    android:layout_height="match_parent"
+                    android:background="#121212" />
+
+                <FrameLayout
+                    android:id="@+id/btn_timer2_root"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="match_parent"
+                    android:background="?android:attr/selectableItemBackground">
+                    <TextView
+                        android:id="@+id/btn_timer2_text"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:text="15m"
+                        android:textColor="#F8FAFC"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                </FrameLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/timer_running"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:gravity="center"
-                android:text="15m"
-                android:textColor="#F8FAFC"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-            <ImageView
-                android:id="@+id/btn_timer2_icon"
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:layout_gravity="center"
-                android:src="@drawable/ic_check_white"
-                android:visibility="gone" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:visibility="gone">
+
+                <Chronometer
+                    android:id="@+id/timer_countdown"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:textColor="#22D3EE"
+                    android:textSize="17sp"
+                    android:textStyle="bold"
+                    android:fontFeatureSettings="tnum" />
+
+                <ImageView
+                    android:id="@+id/btn_timer_cancel"
+                    android:layout_width="36dp"
+                    android:layout_height="match_parent"
+                    android:padding="10dp"
+                    android:scaleType="centerInside"
+                    android:src="@drawable/ic_close_white"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:contentDescription="Cancel timer" />
+            </LinearLayout>
         </FrameLayout>
 
-        <!-- Divider -->
         <ImageView
             android:layout_width="2.5dp"
             android:layout_height="match_parent"
             android:background="#121212" />
 
-        <!-- Button Timer 3 -->
         <FrameLayout
-            android:id="@+id/btn_timer3_root"
+            android:id="@+id/btn_awake_root"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="match_parent"
             android:paddingEnd="8dp"
-            android:clickable="true"
-            android:focusable="true">
-            <TextView
-                android:id="@+id/btn_timer3_text"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:text="30m"
-                android:textColor="#F8FAFC"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+            android:background="?android:attr/selectableItemBackground">
             <ImageView
-                android:id="@+id/btn_timer3_icon"
-                android:layout_width="18dp"
-                android:layout_height="18dp"
+                android:id="@+id/btn_awake_icon"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
                 android:layout_gravity="center"
-                android:src="@drawable/ic_check_white"
-                android:visibility="gone" />
+                android:padding="7dp"
+                android:src="@drawable/ic_awake_off"
+                android:contentDescription="Stay awake" />
         </FrameLayout>
     </LinearLayout>
 

@@ -3,6 +3,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/animated_background.dart';
 import '../../../core/widgets/app_toast.dart';
+import '../../../core/services/home_widget_service.dart';
 import '../../../core/services/settings_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -12,14 +13,15 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen>
+    with WidgetsBindingObserver {
   final _sidebarNameController = TextEditingController();
   final _scheduleNameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _vaultExportPasswordController = TextEditingController();
   final _timer1Controller = TextEditingController();
   final _timer2Controller = TextEditingController();
-  final _timer3Controller = TextEditingController();
+  final _awakeController = TextEditingController();
 
   bool _obscureSecretPassword = true;
   bool _obscureVaultPassword = true;
@@ -38,9 +40,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _vaultExportPasswordController.text = settings.vaultExportPassword;
     _timer1Controller.text = settings.widgetTimer1.toString();
     _timer2Controller.text = settings.widgetTimer2.toString();
-    _timer3Controller.text = settings.widgetTimer3.toString();
+    _awakeController.text = settings.widgetAwakeMinutes.toString();
     _selectedDefaultScreen = settings.defaultScreen;
     _hiddenItems = Set.from(settings.sidebarHiddenItems);
+    WidgetsBinding.instance.addObserver(this);
+    HomeWidgetService.instance.refresh();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Back from the "Modify system settings" screen: re-check the permission.
+    if (state == AppLifecycleState.resumed) HomeWidgetService.instance.refresh();
   }
 
   @override
@@ -51,7 +61,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _vaultExportPasswordController.dispose();
     _timer1Controller.dispose();
     _timer2Controller.dispose();
-    _timer3Controller.dispose();
+    _awakeController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -139,14 +150,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-              _buildSectionTitle('Widget Timers', primaryText),
+              _buildSectionTitle('Home Screen Widget', primaryText),
               _buildCard(
                 cardBg,
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Update the timers on the Home Screen Widget',
+                      'Timer buttons, and how long the screen stays on while ☀ is lit',
                       style: AppTypography.bodySmall
                           .copyWith(color: secondaryText),
                     ),
@@ -169,11 +180,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: _buildTimerField(
-                            controller: _timer3Controller,
-                            label: 'Timer 3',
+                            controller: _awakeController,
+                            label: 'Stay awake',
                           ),
                         ),
                       ],
+                    ),
+                    ListenableBuilder(
+                      listenable: HomeWidgetService.instance,
+                      builder: (context, _) {
+                        if (HomeWidgetService.instance.state.canWriteSettings) {
+                          return const SizedBox.shrink();
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.info_outline_rounded,
+                                  size: 18, color: Color(0xFFFBBF24)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Stay awake needs "Modify system settings"',
+                                  style: AppTypography.bodySmall
+                                      .copyWith(color: secondaryText),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: HomeWidgetService
+                                    .instance.openWriteSettings,
+                                child: const Text('Allow'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -329,11 +370,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await SettingsService.instance.updateSecretPassword(password);
     await SettingsService.instance.updateVaultExportPassword(vaultExportPw);
 
-    // Save widget timer durations
+    // Save widget timer and stay-awake durations
     final t1 = int.tryParse(_timer1Controller.text.trim()) ?? 5;
     final t2 = int.tryParse(_timer2Controller.text.trim()) ?? 15;
-    final t3 = int.tryParse(_timer3Controller.text.trim()) ?? 30;
-    await SettingsService.instance.updateWidgetTimers(t1, t2, t3);
+    final awake = int.tryParse(_awakeController.text.trim()) ?? 10;
+    await SettingsService.instance.updateWidgetSettings(t1, t2, awake);
     await SettingsService.instance.updateDefaultScreen(_selectedDefaultScreen);
     await SettingsService.instance.updateSidebarHiddenItems(_hiddenItems);
 
