@@ -12,6 +12,7 @@ class DataVaultController extends ChangeNotifier {
   final Set<int> _historyExpandedIds = {};
   final Map<int, List<VaultHistory>> _historyCache = {};
   String _searchQuery = '';
+  String? _categoryFilter;
   bool _showAllPasswords = false;
   bool _initialized = false;
 
@@ -20,6 +21,9 @@ class DataVaultController extends ChangeNotifier {
   Set<int> get expandedIds => _expandedIds;
   Set<int> get historyExpandedIds => _historyExpandedIds;
   String get searchQuery => _searchQuery;
+
+  /// The category the list is narrowed to; null shows all, grouped.
+  String? get categoryFilter => _categoryFilter;
   bool get showAllPasswords => _showAllPasswords;
   bool get initialized => _initialized;
 
@@ -31,6 +35,13 @@ class DataVaultController extends ChangeNotifier {
     _searchQuery = value;
     notifyListeners();
   }
+
+  set categoryFilter(String? value) {
+    _categoryFilter = value;
+    notifyListeners();
+  }
+
+  int countFor(String category) => _items.where((i) => i.category == category).length;
 
   Future<void> init() async {
     await _repository.init();
@@ -59,8 +70,8 @@ class DataVaultController extends ChangeNotifier {
       _expandedIds.remove(id);
       _visibleIds.remove(id);
     } else {
+      // Opened with the password still masked; the eye reveals it.
       _expandedIds.add(id);
-      _visibleIds.add(id);
     }
     notifyListeners();
   }
@@ -184,23 +195,33 @@ class DataVaultController extends ChangeNotifier {
   }
 
   List<VaultItem> get filteredItems {
+    final inCategory = _categoryFilter == null
+        ? _items
+        : _items.where((i) => i.category == _categoryFilter).toList();
     final rawQuery = _searchQuery.toLowerCase().trim();
-    if (rawQuery.isEmpty) return List.of(_items);
+    if (rawQuery.isEmpty) return List.of(inCategory);
 
     // When query starts with '#', search tags only
     if (rawQuery.startsWith('#')) {
       final tagQuery = rawQuery.substring(1).trim();
-      if (tagQuery.isEmpty) return List.of(_items);
-      return _items.where((item) {
+      if (tagQuery.isEmpty) return List.of(inCategory);
+      return inCategory.where((item) {
         return item.tags.toLowerCase().contains(tagQuery);
       }).toList();
     }
 
-    return _items.where((item) {
-      final label = item.label.toLowerCase();
-      final category = item.category.toLowerCase();
-      final tags = item.tags.toLowerCase();
-      return label.contains(rawQuery) || category.contains(rawQuery) || tags.contains(rawQuery);
+    // Everything visible on an entry except the secrets themselves.
+    return inCategory.where((item) {
+      final haystack = [
+        item.label,
+        item.category,
+        item.tags,
+        item.username,
+        item.website,
+        item.note,
+        for (final f in item.customFields) f.name,
+      ].join('\n').toLowerCase();
+      return haystack.contains(rawQuery);
     }).toList();
   }
 
