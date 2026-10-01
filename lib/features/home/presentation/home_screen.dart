@@ -10,7 +10,6 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/animated_background.dart';
 import '../../../utils/api_services.dart';
 import 'dart:async';
-import 'dart:ui';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:home_widget/home_widget.dart';
 import '../../../services/notification_service.dart';
@@ -56,6 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'quickcheck': AppRoutes.quickcheck,
       'routine': AppRoutes.routine,
       'autoclicker': AppRoutes.autoclicker,
+      'volume': AppRoutes.volume,
     };
 
     final route = routeMap[screen];
@@ -720,6 +720,15 @@ class _HomeScreenState extends State<HomeScreen> {
                           title: "Auto Clicker",
                           route: AppRoutes.autoclicker,
                           color: const Color(0xFFF97316),
+                        ),
+                      if (SettingsService.instance
+                          .isSidebarItemVisible('volume'))
+                        _buildDrawerItem(
+                          context,
+                          icon: Icons.volume_up_rounded,
+                          title: "Volume Schedule",
+                          route: AppRoutes.volume,
+                          color: const Color(0xFF14B8A6),
                         ),
                       if (SettingsService.instance
                           .isSidebarItemVisible('importexport'))

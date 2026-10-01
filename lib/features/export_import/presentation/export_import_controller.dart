@@ -129,9 +129,9 @@ class ExportImportController extends ChangeNotifier {
     if (password == null || password.isEmpty) return;
 
     // Pick file BEFORE showing the loading dialog to avoid InheritedWidget crash
-    final result = await FilePicker.platform.pickFiles(type: FileType.any);
-    if (result == null || result.files.single.path == null) return;
-    final filePath = result.files.single.path!;
+    final result = await FilePicker.pickFiles(type: FileType.any);
+    if (result.isEmpty || result.single.path == null) return;
+    final filePath = result.single.path!;
 
     if (!context.mounted) return;
     showDialog(
@@ -221,9 +221,9 @@ class ExportImportController extends ChangeNotifier {
     if (password == null || password.isEmpty) return;
 
     // Pick file BEFORE showing the loading dialog
-    final result = await FilePicker.platform.pickFiles(type: FileType.any);
-    if (result == null || result.files.single.path == null) return;
-    final filePath = result.files.single.path!;
+    final result = await FilePicker.pickFiles(type: FileType.any);
+    if (result.isEmpty || result.single.path == null) return;
+    final filePath = result.single.path!;
 
     if (!context.mounted) return;
     showDialog(

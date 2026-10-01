@@ -16,19 +16,22 @@ dependencies:
   path: ^1.8.3
   intl: ^0.18.1
   cupertino_icons: ^1.0.8
-  share_plus: ^7.2.1
+  share_plus: ^13.2.0
   path_provider: ^2.1.2
-  file_picker: ^10.3.10
+  file_picker: ^12.3.0
   nepali_utils: ^3.0.8
   flutter_local_notifications: ^17.2.1+2
   timezone: ^0.9.4
-  shared_preferences: ^2.5.3
+  shared_preferences: ^2.5.5
+  # Kept explicit until shared_preferences raises its endorsement lower bound.
+  # 2.4.24+ is required for Android built-in Kotlin support.
+  shared_preferences_android: ^2.4.24
   flutter_animate: ^4.5.2
   fl_chart: ^0.71.0
   flutter_svg: ^2.2.0
   google_fonts: ^6.3.0
   local_auth: ^3.0.1
-  home_widget: ^0.9.0
+  home_widget: ^0.9.4
   sqflite_sqlcipher: ^3.4.0
   flutter_secure_storage: ^10.0.0
   cryptography: ^2.7.0

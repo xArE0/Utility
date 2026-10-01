@@ -50,9 +50,9 @@ class LocalExportImportRepository implements IExportImportRepository {
   @override
   Future<bool> importDatabase(String dbName) async {
     try {
-      final result = await FilePicker.platform.pickFiles(type: FileType.any);
-      if (result != null && result.files.single.path != null) {
-        final pickedFile = File(result.files.single.path!);
+      final result = await FilePicker.pickFiles(type: FileType.any);
+      if (result.isNotEmpty && result.single.path != null) {
+        final pickedFile = File(result.single.path!);
         final dbPath = await _getDbPath(dbName);
         await pickedFile.copy(dbPath);
         return true;
@@ -120,10 +120,10 @@ class LocalExportImportRepository implements IExportImportRepository {
   @override
   Future<bool> importEncryptedVault(String dbName, String password) async {
     try {
-      final result = await FilePicker.platform.pickFiles(type: FileType.any);
-      if (result == null || result.files.single.path == null) return false;
+      final result = await FilePicker.pickFiles(type: FileType.any);
+      if (result.isEmpty || result.single.path == null) return false;
 
-      final pickedFile = File(result.files.single.path!);
+      final pickedFile = File(result.single.path!);
       return await _importVaultFromFile(pickedFile, dbName, password);
     } catch (e) {
       return false;
@@ -334,10 +334,10 @@ class LocalExportImportRepository implements IExportImportRepository {
   Future<bool> importAllDatabases(List<String> plainDbNames, String vaultDbName,
       String vaultPassword) async {
     try {
-      final result = await FilePicker.platform.pickFiles(type: FileType.any);
-      if (result == null || result.files.single.path == null) return false;
+      final result = await FilePicker.pickFiles(type: FileType.any);
+      if (result.isEmpty || result.single.path == null) return false;
 
-      final pickedFile = File(result.files.single.path!);
+      final pickedFile = File(result.single.path!);
       final bytes = await pickedFile.readAsBytes();
       final archive = ZipDecoder().decodeBytes(bytes);
 

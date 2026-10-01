@@ -55,6 +55,8 @@ class CooldownScreen extends StatefulWidget {
 class _CooldownScreenState extends State<CooldownScreen>
     with TickerProviderStateMixin {
   late final CooldownController _controller;
+  int? _selectedCategoryId;
+  bool _showUncategorized = false;
 
   @override
   void initState() {
@@ -171,9 +173,21 @@ class _CooldownScreenState extends State<CooldownScreen>
 
   Widget _buildContent() {
     final allCats = _controller.allCategories;
-    final uncategorized =
-        _controller.items.where((i) => i.categoryId == null).toList();
     final hasCategories = allCats.isNotEmpty;
+    CooldownCategory? selectedCategory;
+    for (final category in allCats) {
+      if (category.id == _selectedCategoryId) {
+        selectedCategory = category;
+        break;
+      }
+    }
+    final visibleItems = _showUncategorized
+        ? _controller.items.where((item) => item.categoryId == null).toList()
+        : selectedCategory == null
+            ? _controller.items
+            : _controller.items
+                .where((item) => item.categoryId == selectedCategory!.id)
+                .toList();
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
@@ -184,23 +198,80 @@ class _CooldownScreenState extends State<CooldownScreen>
         ),
         const SizedBox(height: 20),
         if (hasCategories) ...[
-          // Grouped by category
-          for (final cat in allCats) ...[
-            _buildCategoryGroupHeader(cat),
-            ..._buildCategoryGroupItems(cat),
-            const SizedBox(height: 16),
-          ],
-          // Uncategorized items
-          if (uncategorized.isNotEmpty) ...[
-            _buildUncategorizedHeader(),
-            ..._buildItemList(uncategorized),
-            const SizedBox(height: 16),
+          _buildCategoryTabs(allCats),
+          const SizedBox(height: 16),
+          if (selectedCategory != null && !_showUncategorized) ...[
+            _buildCategoryGroupHeader(selectedCategory),
+            ..._buildCategoryGroupItems(selectedCategory),
+          ] else ...[
+            ..._buildItemList(visibleItems),
           ],
         ] else ...[
           // No categories — flat list
           ..._buildFlatList(),
         ],
       ],
+    );
+  }
+
+  Widget _buildCategoryTabs(List<CooldownCategory> categories) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _buildCategoryTab(label: 'All', icon: Icons.apps_outlined),
+          ...categories.map((category) => _buildCategoryTab(
+                label: category.name,
+                icon: _getCategoryIcon(category.iconCodePoint),
+                categoryId: category.id,
+                color: _accentColors[
+                    category.colorIndex % _accentColors.length],
+              )),
+          if (_controller.items.any((item) => item.categoryId == null))
+            _buildCategoryTab(
+              label: 'Uncategorized',
+              icon: Icons.inbox_outlined,
+              isUncategorized: true,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryTab({
+    required String label,
+    required IconData icon,
+    int? categoryId,
+    Color? color,
+    bool isUncategorized = false,
+  }) {
+    final isSelected = isUncategorized
+        ? _showUncategorized
+        : !_showUncategorized && _selectedCategoryId == categoryId;
+    final accent = color ?? const Color(0xFF06B6D4);
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        selected: isSelected,
+        onSelected: (_) => setState(() {
+          _showUncategorized = isUncategorized;
+          _selectedCategoryId = isUncategorized ? null : categoryId;
+        }),
+        avatar: Icon(icon,
+            size: 16, color: isSelected ? accent : AppColors.slate400),
+        label: Text(label),
+        labelStyle: AppTypography.bodySmall.copyWith(
+          color: isSelected ? accent : AppColors.slate300,
+          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+        ),
+        selectedColor: accent.withValues(alpha: 0.16),
+        backgroundColor: AppColors.slate800.withValues(alpha: 0.45),
+        side: BorderSide(
+          color: isSelected
+              ? accent.withValues(alpha: 0.65)
+              : AppColors.slate700.withValues(alpha: 0.55),
+        ),
+      ),
     );
   }
 
@@ -318,40 +389,6 @@ class _CooldownScreenState extends State<CooldownScreen>
       ];
     }
     return _buildItemList(itemsInCat);
-  }
-
-  Widget _buildUncategorizedHeader() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8, top: 4),
-      child: Row(
-        children: [
-          Icon(Icons.inbox_outlined, size: 16, color: AppColors.slate500),
-          const SizedBox(width: 8),
-          Text(
-            'UNCATEGORIZED',
-            style: AppTypography.labelLarge.copyWith(
-              color: AppColors.slate500,
-              letterSpacing: 1.5,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Container(
-              height: 1,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.slate600.withValues(alpha: 0.4),
-                    Colors.transparent
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   List<Widget> _buildFlatList() {
@@ -784,9 +821,7 @@ class _CooldownScreenState extends State<CooldownScreen>
                       _popupItem(
                           'cooldown',
                           Icons.timer,
-                          hasCat
-                              ? 'Cooldown (${cat.readableDuration})'
-                              : 'Start Cooldown',
+                          'Cooldown',
                           const Color(0xFF06B6D4)),
                       _popupItem(
                           'edit', Icons.edit, 'Edit', AppColors.slate300),
@@ -1849,7 +1884,7 @@ class _AddEditSheetState extends State<_AddEditSheet> {
 //  Cooldown Picker Sheet (unchanged from original)
 // ─────────────────────────────────────────────
 
-enum _PickMode { dateOnly, timeOnly, dateAndTime }
+enum _PickMode { dateOnly, timeOnly, dateAndTime, duration }
 
 class _CooldownPickerSheet extends StatefulWidget {
   final String itemName;
@@ -1863,6 +1898,14 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
   _PickMode _mode = _PickMode.dateAndTime;
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
   TimeOfDay _selectedTime = TimeOfDay.now();
+  final TextEditingController _durationController =
+      TextEditingController(text: '30m');
+
+  @override
+  void dispose() {
+    _durationController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1879,10 +1922,11 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
         ),
         child: Container(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               Center(
                 child: Container(
                   width: 40,
@@ -1900,31 +1944,54 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
                   style: AppTypography.bodyMedium
                       .copyWith(color: AppColors.slate400)),
               const SizedBox(height: 20),
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                   _buildModeChip(
                       'Date', _PickMode.dateOnly, Icons.calendar_today),
-                  const SizedBox(width: 8),
                   _buildModeChip('Time', _PickMode.timeOnly, Icons.access_time),
-                  const SizedBox(width: 8),
                   _buildModeChip(
                       'Both', _PickMode.dateAndTime, Icons.date_range),
+                  _buildModeChip(
+                      'Duration', _PickMode.duration, Icons.timelapse),
                 ],
               ),
               const SizedBox(height: 20),
-              if (_mode != _PickMode.timeOnly)
+              if (_mode == _PickMode.dateOnly ||
+                  _mode == _PickMode.dateAndTime)
                 _buildPickerButton(
                   icon: Icons.calendar_today,
                   label: DateFormat('EEE, MMM d, yyyy').format(_selectedDate),
                   onTap: _pickDate,
                 ),
               if (_mode == _PickMode.dateAndTime) const SizedBox(height: 12),
-              if (_mode != _PickMode.dateOnly)
+              if (_mode == _PickMode.timeOnly ||
+                  _mode == _PickMode.dateAndTime)
                 _buildPickerButton(
                   icon: Icons.access_time,
                   label: _selectedTime.format(context),
                   onTap: _pickTime,
                 ),
+              if (_mode == _PickMode.duration) ...[
+                TextField(
+                  controller: _durationController,
+                  keyboardType: TextInputType.text,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    labelText: 'Duration',
+                    hintText: 'e.g. 36d 4h 3m',
+                    helperText: 'Enter days (d), hours (h), and minutes (m)',
+                    prefixIcon: const Icon(Icons.timelapse),
+                    filled: true,
+                    fillColor: AppColors.slate800.withValues(alpha: 0.6),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               const SizedBox(height: 12),
               Container(
                 width: double.infinity,
@@ -1970,7 +2037,8 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
                           .copyWith(color: Colors.white)),
                 ),
               ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -1979,7 +2047,8 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
 
   Widget _buildModeChip(String label, _PickMode mode, IconData icon) {
     final selected = _mode == mode;
-    return Expanded(
+    return SizedBox(
+      width: (MediaQuery.sizeOf(context).width - 80) / 2,
       child: GestureDetector(
         onTap: () => setState(() => _mode = mode),
         child: AnimatedContainer(
@@ -2064,7 +2133,38 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
       case _PickMode.dateAndTime:
         return DateTime(_selectedDate.year, _selectedDate.month,
             _selectedDate.day, _selectedTime.hour, _selectedTime.minute);
+      case _PickMode.duration:
+        return DateTime.now().add(_parseDuration() ?? Duration.zero);
     }
+  }
+
+  Duration? _parseDuration() {
+    final input = _durationController.text;
+    final matches = RegExp(r'(\d+)\s*([dhm])', caseSensitive: false)
+        .allMatches(input)
+        .toList();
+    if (matches.isEmpty ||
+        matches.map((match) => match.group(0)).join().replaceAll(' ', '').toLowerCase() !=
+            input.replaceAll(' ', '').toLowerCase()) {
+      return null;
+    }
+
+    var totalMinutes = 0;
+    for (final match in matches) {
+      final value = int.parse(match.group(1)!);
+      switch (match.group(2)!.toLowerCase()) {
+        case 'd':
+          totalMinutes += value * 24 * 60;
+          break;
+        case 'h':
+          totalMinutes += value * 60;
+          break;
+        case 'm':
+          totalMinutes += value;
+          break;
+      }
+    }
+    return totalMinutes > 0 ? Duration(minutes: totalMinutes) : null;
   }
 
   Future<void> _pickDate() async {
@@ -2108,6 +2208,10 @@ class _CooldownPickerSheetState extends State<_CooldownPickerSheet> {
   }
 
   void _confirm() {
+    if (_mode == _PickMode.duration && _parseDuration() == null) {
+      AppToast.show(context, 'Enter a duration like 36d 4h 3m', isError: true);
+      return;
+    }
     final dt = _buildDateTime();
     if (dt.isBefore(DateTime.now())) {
       AppToast.show(context, 'Please pick a future date/time', isError: true);

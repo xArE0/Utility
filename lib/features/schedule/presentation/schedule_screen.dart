@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:nepali_utils/nepali_utils.dart';
 import '../../../services/notification_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/glass_card.dart';
@@ -96,20 +97,24 @@ class ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  void _showAddEventDialog() {
-    final taskController = TextEditingController();
-    DateTime chosenDate = _controller.selectedDate;
-    String selectedType = 'normal';
+  Future<void> _showEventDialog([Event? editingEvent]) async {
+    final isEditing = editingEvent != null;
+    final taskController =
+        TextEditingController(text: editingEvent?.task ?? '');
+    DateTime chosenDate = isEditing
+        ? DateTime.parse(editingEvent.date)
+        : _controller.selectedDate;
+    String selectedType = editingEvent?.type ?? 'normal';
 
-    bool remindMe = false;
-    int remindDaysBefore = 0;
-    TimeOfDay? remindTime;
+    bool remindMe = editingEvent?.remindMe ?? false;
+    int remindDaysBefore = editingEvent?.remindDaysBefore ?? 0;
+    TimeOfDay? remindTime = _timeOfDayFromStored(editingEvent?.remindTime);
 
-    String repeat = "none";
-    int repeatInterval = 1;
-    int durationDays = 1;
+    String repeat = editingEvent?.repeat ?? 'none';
+    int repeatInterval = editingEvent?.repeatInterval ?? 1;
+    int durationDays = editingEvent?.durationDays ?? 1;
 
-    showDialog(
+    await showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
@@ -126,7 +131,7 @@ class ScheduleScreenState extends State<ScheduleScreen> {
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             backgroundColor: cs.surface.withValues(alpha: 0.95),
-            title: const Text("Add Schedule"),
+            title: Text(isEditing ? "Edit Schedule" : "Add Schedule"),
             insetPadding:
                 const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
             contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -356,44 +361,60 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                                       fontSize: 13,
                                       fontWeight: FontWeight.w500)),
                               const SizedBox(height: 4),
-                              Wrap(
-                                spacing: 6,
-                                runSpacing: 6,
-                                children: [
-                                  "none",
-                                  "daily",
-                                  "weekly",
-                                  "monthly",
-                                  "yearly",
-                                  "custom"
-                                ].map((r) {
-                                  final isSelected = repeat == r;
-                                  final labelText = r == "custom"
-                                      ? "Custom..."
-                                      : (r[0].toUpperCase() + r.substring(1));
-                                  return ChoiceChip(
-                                    label: Text(labelText,
+                              Builder(builder: (context) {
+                                const repeatOptions = [
+                                  'none',
+                                  'daily',
+                                  'weekly',
+                                  'monthly',
+                                  'yearly',
+                                  'custom',
+                                ];
+                                final optionIndex =
+                                    repeatOptions.indexOf(repeat);
+                                final selectedIndex =
+                                    optionIndex < 0 ? 0 : optionIndex;
+                                final selectedLabel = repeat == 'custom'
+                                    ? 'Custom'
+                                    : '${repeat[0].toUpperCase()}${repeat.substring(1)}';
+
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(selectedLabel,
                                         style: TextStyle(
-                                            fontWeight: isSelected
-                                                ? FontWeight.bold
-                                                : FontWeight.normal)),
-                                    selected: isSelected,
-                                    selectedColor:
-                                        cs.primary.withValues(alpha: 0.15),
-                                    checkmarkColor: cs.primary,
-                                    backgroundColor: inputFill,
-                                    side: BorderSide(
-                                        color: isSelected
-                                            ? cs.primary
-                                            : cs.primary
-                                                .withValues(alpha: 0.15),
-                                        width: isSelected ? 1.5 : 1),
-                                    onSelected: (b) {
-                                      if (b) setDialogState(() => repeat = r);
-                                    },
-                                  );
-                                }).toList(),
-                              ),
+                                            color: cs.primary,
+                                            fontWeight: FontWeight.w700)),
+                                    Slider(
+                                      value: selectedIndex.toDouble(),
+                                      min: 0,
+                                      max: (repeatOptions.length - 1).toDouble(),
+                                      divisions: repeatOptions.length - 1,
+                                      label: selectedLabel,
+                                      onChanged: (value) => setDialogState(() =>
+                                          repeat = repeatOptions[value.round()]),
+                                    ),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: const [
+                                        Text('None',
+                                            style: TextStyle(fontSize: 11)),
+                                        Text('Daily',
+                                            style: TextStyle(fontSize: 11)),
+                                        Text('Weekly',
+                                            style: TextStyle(fontSize: 11)),
+                                        Text('Monthly',
+                                            style: TextStyle(fontSize: 11)),
+                                        Text('Yearly',
+                                            style: TextStyle(fontSize: 11)),
+                                        Text('Custom',
+                                            style: TextStyle(fontSize: 11)),
+                                      ],
+                                    ),
+                                  ],
+                                );
+                              }),
                               if (repeat == "custom") ...[
                                 const SizedBox(height: 12),
                                 Row(
@@ -493,7 +514,8 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                       await NotificationService().requestPermission();
                     }
 
-                    final newEvent = Event(
+                    final updatedEvent = Event(
+                      id: editingEvent?.id,
                       date: ScheduleController.dateFormat.format(chosenDate),
                       task: task,
                       type: selectedType,
@@ -506,19 +528,35 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                       repeatInterval:
                           repeat == "custom" ? repeatInterval : null,
                       durationDays: durationDays > 1 ? durationDays : null,
+                      done: editingEvent?.done ?? false,
                     );
 
-                    await _controller.addEvent(newEvent, context);
+                    if (isEditing) {
+                      await _controller.updateEvent(updatedEvent);
+                    } else {
+                      await _controller.addEvent(updatedEvent, context);
+                    }
                     if (mounted) Navigator.pop(context);
                   }
                 },
-                child: const Text("Add"),
+                child: Text(isEditing ? "Save" : "Add"),
               ),
             ],
           );
         },
       ),
     );
+    taskController.dispose();
+  }
+
+  TimeOfDay? _timeOfDayFromStored(String? value) {
+    if (value == null || value.isEmpty) return null;
+    try {
+      final parsed = DateFormat.jm().parse(value);
+      return TimeOfDay(hour: parsed.hour, minute: parsed.minute);
+    } on FormatException {
+      return null;
+    }
   }
 
   Color _eventColor(Event event) {
@@ -773,7 +811,10 @@ class ScheduleScreenState extends State<ScheduleScreen> {
       ),
       onDragStarted: () => _controller.isDragging = true,
       onDragEnd: (details) => _controller.isDragging = false,
-      child: container,
+      child: GestureDetector(
+        onDoubleTap: () => _showEventDialog(event),
+        child: container,
+      ),
     );
   }
 
@@ -1171,7 +1212,7 @@ class ScheduleScreenState extends State<ScheduleScreen> {
           ],
         ),
         child: IconButton(
-            onPressed: _showAddEventDialog,
+            onPressed: _showEventDialog,
             icon: const Icon(Icons.add),
             color: AppColors.govGreen,
             iconSize: 30),
@@ -1361,10 +1402,26 @@ class ScheduleScreenState extends State<ScheduleScreen> {
 
   Widget _buildMonthView(
       ColorScheme cs, bool isDark, DateTime today, String todayKey) {
-    final firstOfMonth = DateTime(
-        _controller.selectedDate.year, _controller.selectedDate.month, 1);
-    final daysInMonth = DateUtils.getDaysInMonth(
-        _controller.selectedDate.year, _controller.selectedDate.month);
+    final selected = _controller.selectedDate;
+    final nepaliLayout = _controller.monthNepaliLayout;
+
+    // In Nepali layout the grid spans one Nepali month; otherwise one English month
+    DateTime firstOfMonth;
+    int daysInMonth;
+    NepaliDateTime? nepaliSelected;
+    if (nepaliLayout) {
+      nepaliSelected = selected.toNepaliDateTime();
+      final nepaliFirst =
+          NepaliDateTime(nepaliSelected.year, nepaliSelected.month, 1);
+      final first = nepaliFirst.toDateTime();
+      firstOfMonth = DateTime(first.year, first.month, first.day);
+      daysInMonth = nepaliFirst.totalDays;
+    } else {
+      firstOfMonth = DateTime(selected.year, selected.month, 1);
+      daysInMonth = DateUtils.getDaysInMonth(selected.year, selected.month);
+    }
+    final lastOfMonth = DateTime(
+        firstOfMonth.year, firstOfMonth.month, firstOfMonth.day + daysInMonth - 1);
     final startWeekday = firstOfMonth.weekday % 7;
     final totalCells = startWeekday + daysInMonth;
     final rows = (totalCells / 7).ceil();
@@ -1372,10 +1429,30 @@ class ScheduleScreenState extends State<ScheduleScreen> {
 
     // Fill all cells with actual dates, including prev/next month
     final dates = List<DateTime>.generate(cells, (i) {
-      final dayNum = i - startWeekday + 1;
-      return DateTime(_controller.selectedDate.year,
-          _controller.selectedDate.month, dayNum);
+      return DateTime(firstOfMonth.year, firstOfMonth.month,
+          firstOfMonth.day + i - startWeekday);
     });
+
+    void shiftMonth(int delta) {
+      if (nepaliSelected != null) {
+        var year = nepaliSelected.year;
+        var month = nepaliSelected.month + delta;
+        if (month < 1) {
+          month = 12;
+          year--;
+        } else if (month > 12) {
+          month = 1;
+          year++;
+        }
+        final target = NepaliDateTime(year, month, 1);
+        final day = nepaliSelected.day.clamp(1, target.totalDays);
+        final d = NepaliDateTime(year, month, day).toDateTime();
+        _controller.selectedDate = DateTime(d.year, d.month, d.day);
+      } else {
+        _controller.selectedDate =
+            DateTime(selected.year, selected.month + delta, selected.day);
+      }
+    }
 
     return Column(
       children: [
@@ -1385,46 +1462,63 @@ class ScheduleScreenState extends State<ScheduleScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Builder(builder: (context) {
-                String englishMonth =
-                    DateFormat('MMMM yyyy').format(_controller.selectedDate);
-                String nepaliMonth = '';
-                final infoStart = _controller.getNepaliDateInfo(firstOfMonth);
-                final lastOfMonth = DateTime(_controller.selectedDate.year,
-                    _controller.selectedDate.month, daysInMonth);
-                final infoEnd = _controller.getNepaliDateInfo(lastOfMonth);
-
-                final m1 = infoStart['month'] ?? '';
-                final m2 = infoEnd['month'] ?? '';
-
-                if (m1.isNotEmpty && m2.isNotEmpty && m1 != m2) {
-                  nepaliMonth = "$m1/$m2";
+              Flexible(child: Builder(builder: (context) {
+                String title;
+                if (nepaliSelected != null) {
+                  final nepaliMonth = NepaliUnicode.convert(
+                      NepaliDateFormat('MMMM yyyy').format(nepaliSelected));
+                  final e1 = DateFormat('MMM').format(firstOfMonth);
+                  final e2 = DateFormat('MMM').format(lastOfMonth);
+                  final englishMonths = e1 == e2 ? e1 : "$e1/$e2";
+                  title =
+                      "$nepaliMonth ($englishMonths ${DateFormat('yyyy').format(lastOfMonth)})";
                 } else {
-                  nepaliMonth = m1.isNotEmpty ? m1 : m2;
+                  final englishMonth = DateFormat('MMMM yyyy').format(selected);
+                  final m1 =
+                      _controller.getNepaliDateInfo(firstOfMonth)['month'] ??
+                          '';
+                  final m2 =
+                      _controller.getNepaliDateInfo(lastOfMonth)['month'] ?? '';
+                  String nepaliMonth;
+                  if (m1.isNotEmpty && m2.isNotEmpty && m1 != m2) {
+                    nepaliMonth = "$m1/$m2";
+                  } else {
+                    nepaliMonth = m1.isNotEmpty ? m1 : m2;
+                  }
+                  title = nepaliMonth.isEmpty
+                      ? englishMonth
+                      : "$englishMonth ($nepaliMonth)";
                 }
-                return Text(
-                    nepaliMonth.isEmpty
-                        ? englishMonth
-                        : "$englishMonth ($nepaliMonth)",
+                return Text(title,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                         color: isDark ? AppColors.slate200 : AppColors.slate800,
                         fontWeight: FontWeight.w700));
-              }),
+              })),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
+                  TextButton(
+                      onPressed: _controller.toggleMonthNepaliLayout,
+                      style: TextButton.styleFrom(
+                          minimumSize: const Size(40, 32),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          backgroundColor: nepaliLayout
+                              ? cs.primary.withValues(alpha: 0.15)
+                              : null,
+                          foregroundColor: nepaliLayout
+                              ? cs.primary
+                              : cs.onSurface.withValues(alpha: 0.6)),
+                      child: const Text("BS",
+                          style: TextStyle(
+                              fontSize: 12, fontWeight: FontWeight.w700))),
                   IconButton(
                       tooltip: "Previous month",
-                      onPressed: () => _controller.selectedDate = DateTime(
-                          _controller.selectedDate.year,
-                          _controller.selectedDate.month - 1,
-                          _controller.selectedDate.day),
+                      onPressed: () => shiftMonth(-1),
                       icon: const Icon(Icons.chevron_left, size: 20)),
                   IconButton(
                       tooltip: "Next month",
-                      onPressed: () => _controller.selectedDate = DateTime(
-                          _controller.selectedDate.year,
-                          _controller.selectedDate.month + 1,
-                          _controller.selectedDate.day),
+                      onPressed: () => shiftMonth(1),
                       icon: const Icon(Icons.chevron_right, size: 20)),
                 ],
               )
@@ -1488,8 +1582,7 @@ class ScheduleScreenState extends State<ScheduleScreen> {
             itemBuilder: (context, i) {
               final date = dates[i];
               final isCurrentMonth =
-                  date.month == _controller.selectedDate.month &&
-                      date.year == _controller.selectedDate.year;
+                  i >= startWeekday && i < startWeekday + daysInMonth;
               final key = ScheduleController.dateFormat.format(date);
               final isToday = key == todayKey;
               final events = _controller.eventsForDate(date);
@@ -1540,7 +1633,10 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(DateFormat('d').format(date),
+                            Text(
+                                nepaliLayout
+                                    ? nepaliDay
+                                    : DateFormat('d').format(date),
                                 style: TextStyle(
                                     fontWeight: FontWeight.w700,
                                     color: isToday && isCurrentMonth
@@ -1554,9 +1650,12 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                             ]
                           ],
                         ),
-                        if (nepaliDay.isNotEmpty) ...[
+                        if (nepaliLayout || nepaliDay.isNotEmpty) ...[
                           const SizedBox(height: 1),
-                          Text(nepaliDay,
+                          Text(
+                              nepaliLayout
+                                  ? DateFormat('d').format(date)
+                                  : nepaliDay,
                               style: TextStyle(
                                   fontSize: 9,
                                   color: cs.onSurface.withValues(alpha: 0.5),

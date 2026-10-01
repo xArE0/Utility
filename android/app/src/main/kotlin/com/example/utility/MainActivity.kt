@@ -1,8 +1,12 @@
 package com.example.utility
 
 import android.content.ActivityNotFoundException
+import android.content.BroadcastReceiver
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -15,6 +19,8 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterFragmentActivity() {
 
     private var channel: MethodChannel? = null
+    private var volumeChannel: MethodChannel? = null
+    private var volumeReceiver: BroadcastReceiver? = null
     private var statusListener: (() -> Unit)? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -28,6 +34,13 @@ class MainActivity : FlutterFragmentActivity() {
         val listener: () -> Unit = { ch.invokeMethod("status", status()) }
         statusListener = listener
         ClickAccessibilityService.statusListener = listener
+
+        val volume = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, VOLUME_CHANNEL)
+        volume.setMethodCallHandler { call, result -> handleVolume(call, result) }
+        volumeChannel = volume
+
+        // Catch up on changes missed while the app was force-stopped (which also clears alarms).
+        VolumeScheduler.sync(applicationContext)
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
@@ -38,6 +51,9 @@ class MainActivity : FlutterFragmentActivity() {
         statusListener = null
         channel?.setMethodCallHandler(null)
         channel = null
+        stopVolumeListening()
+        volumeChannel?.setMethodCallHandler(null)
+        volumeChannel = null
         super.cleanUpFlutterEngine(flutterEngine)
     }
 
@@ -106,35 +122,112 @@ class MainActivity : FlutterFragmentActivity() {
                 Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null)),
             )
 
-            "openAutostartSettings" -> {
-                val opened = AUTOSTART_ACTIVITIES.any { (pkg, cls) ->
-                    try {
-                        startActivity(
-                            Intent().apply {
-                                component = ComponentName(pkg, cls)
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            },
-                        )
-                        true
-                    } catch (_: ActivityNotFoundException) {
-                        false
-                    } catch (_: SecurityException) {
-                        false
-                    }
-                }
-                if (opened) {
+            "openAutostartSettings" -> openAutostartSettings(result)
+
+            else -> result.notImplemented()
+        }
+    }
+
+    private fun handleVolume(call: MethodCall, result: MethodChannel.Result) {
+        val ctx = applicationContext
+        when (call.method) {
+            "getRules" -> result.success(VolumeScheduler.getRulesJson(ctx))
+
+            "saveRules" -> {
+                try {
+                    VolumeScheduler.saveRules(ctx, call.argument<String>("json") ?: "[]")
                     result.success(null)
-                } else {
-                    result.error(
-                        "AUTOSTART_UNAVAILABLE",
-                        "Couldn't find the Autostart screen. Open the Security app manually: " +
-                            "Permissions → Autostart → Utility.",
-                        null,
-                    )
+                } catch (e: Exception) {
+                    result.error("SAVE_FAILED", e.message ?: "Couldn't save the volume schedule.", null)
                 }
             }
 
+            "applyNow" -> {
+                val problem = VolumeScheduler.applyRuleNow(ctx, call.argument<String>("id") ?: "")
+                if (problem != null) result.error("APPLY_FAILED", problem, null) else result.success(null)
+            }
+
+            "getState" -> result.success(
+                mapOf(
+                    "streams" to VolumeScheduler.streamInfo(ctx),
+                    "ringerMode" to VolumeScheduler.ringerMode(ctx),
+                    "nextChangeMs" to VolumeScheduler.nextChangeMs(ctx),
+                    "log" to VolumeScheduler.getLogJson(ctx),
+                    "isXiaomi" to isXiaomiFamily(),
+                    "autostart" to autostartState(),
+                ),
+            )
+
+            "openAutostartSettings" -> openAutostartSettings(result)
+
+            "startListening" -> {
+                startVolumeListening()
+                result.success(null)
+            }
+
+            "stopListening" -> {
+                stopVolumeListening()
+                result.success(null)
+            }
+
             else -> result.notImplemented()
+        }
+    }
+
+    /**
+     * Pushes "changed" to Dart on any volume or ringer mode change, so the Volume Schedule screen
+     * stays live. Registered only while that screen is visible.
+     */
+    private fun startVolumeListening() {
+        if (volumeReceiver != null) return
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                volumeChannel?.invokeMethod("changed", null)
+            }
+        }
+        val filter = IntentFilter().apply {
+            addAction(VOLUME_CHANGED_ACTION)
+            addAction(AudioManager.RINGER_MODE_CHANGED_ACTION)
+        }
+        // System broadcasts still arrive with NOT_EXPORTED; the flag is mandatory on API 34+.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(receiver, filter)
+        }
+        volumeReceiver = receiver
+    }
+
+    private fun stopVolumeListening() {
+        volumeReceiver?.let { unregisterReceiver(it) }
+        volumeReceiver = null
+    }
+
+    private fun openAutostartSettings(result: MethodChannel.Result) {
+        val opened = AUTOSTART_ACTIVITIES.any { (pkg, cls) ->
+            try {
+                startActivity(
+                    Intent().apply {
+                        component = ComponentName(pkg, cls)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    },
+                )
+                true
+            } catch (_: ActivityNotFoundException) {
+                false
+            } catch (_: SecurityException) {
+                false
+            }
+        }
+        if (opened) {
+            result.success(null)
+        } else {
+            result.error(
+                "AUTOSTART_UNAVAILABLE",
+                "Couldn't find the Autostart screen. Open the Security app manually: " +
+                    "Permissions → Autostart → Utility.",
+                null,
+            )
         }
     }
 
@@ -178,6 +271,28 @@ class MainActivity : FlutterFragmentActivity() {
         return brand.contains("xiaomi") || brand.contains("redmi") || brand.contains("poco")
     }
 
+    /**
+     * MIUI/HyperOS keeps Autostart as a private app-op (10008) with no public API. Reading it via
+     * reflection is the only way to know; returns "allowed", "denied", or "unknown" (not Xiaomi,
+     * or the ROM changed and the check failed).
+     */
+    private fun autostartState(): String {
+        if (!isXiaomiFamily()) return "unknown"
+        return try {
+            val appOps = getSystemService(android.app.AppOpsManager::class.java)
+            val method = android.app.AppOpsManager::class.java.getMethod(
+                "checkOpNoThrow",
+                Int::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+                String::class.java,
+            )
+            val mode = method.invoke(appOps, MIUI_OP_AUTO_START, applicationInfo.uid, packageName) as Int
+            if (mode == android.app.AppOpsManager.MODE_ALLOWED) "allowed" else "denied"
+        } catch (_: Exception) {
+            "unknown"
+        }
+    }
+
     /** True if the user has switched the service on in Settings (it may not have connected yet). */
     private fun isServiceEnabledInSettings(): Boolean {
         val expected = ComponentName(this, ClickAccessibilityService::class.java)
@@ -193,6 +308,12 @@ class MainActivity : FlutterFragmentActivity() {
 
     private companion object {
         const val AUTOCLICKER_CHANNEL = "com.example.utility/autoclicker"
+        const val VOLUME_CHANNEL = "com.example.utility/volume"
+
+        const val MIUI_OP_AUTO_START = 10008
+
+        /** Not in the public SDK, but sent by every Android version on any stream volume change. */
+        const val VOLUME_CHANGED_ACTION = "android.media.VOLUME_CHANGED_ACTION"
 
         /** When started from this app, wait for it to finish leaving the screen before the first tap. */
         const val APP_START_DELAY_MS = 1500L

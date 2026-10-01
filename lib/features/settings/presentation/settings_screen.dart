@@ -186,25 +186,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // — Default screen —
-                    Text(
-                      'Launch screen',
-                      style: AppTypography.labelLarge
-                          .copyWith(color: secondaryText),
-                    ),
-                    const SizedBox(height: 10),
-                    _buildDefaultScreenPicker(),
-                    const SizedBox(height: 24),
-                    Divider(color: AppColors.slate700.withValues(alpha: 0.5)),
-                    const SizedBox(height: 16),
-                    // — Sidebar visibility —
                     Row(
                       children: [
-                        const Icon(Icons.view_sidebar_outlined,
+                        const Icon(Icons.apps_outlined,
                             size: 16, color: AppColors.govBlue),
                         const SizedBox(width: 6),
                         Text(
-                          'Sidebar items',
+                          'Screens & sidebar',
                           style: AppTypography.labelLarge
                               .copyWith(color: secondaryText),
                         ),
@@ -218,8 +206,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Select the screen that opens at launch, then choose which screens appear in the sidebar.',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: secondaryText,
+                      ),
+                    ),
                     const SizedBox(height: 10),
-                    _buildSidebarVisibilityGrid(),
+                    _buildScreenAccessList(),
                   ],
                 ),
               ),
@@ -364,135 +359,103 @@ class _SettingsScreenState extends State<SettingsScreen> {
     {'key': 'routine', 'label': 'Routine', 'icon': Icons.repeat_rounded},
     {'key': 'autoclicker', 'label': 'Auto Clicker', 'icon': Icons.ads_click},
     {
+      'key': 'volume',
+      'label': 'Volume Schedule',
+      'icon': Icons.volume_up_rounded
+    },
+    {
       'key': 'importexport',
       'label': 'Import/Export',
       'icon': Icons.import_export_sharp
     },
   ];
 
-  // ── Default screen picker ────────────────────────────────────────────────
+  // ── Unified launch screen and sidebar visibility controls ────────────────
 
-  Widget _buildDefaultScreenPicker() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: _screenOptions.map((opt) {
+  Widget _buildScreenAccessList() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: Column(
+        children: _screenOptions.map((opt) {
         final key = opt['key'] as String;
         final label = opt['label'] as String;
         final icon = opt['icon'] as IconData;
-        final isSelected = _selectedDefaultScreen == key;
-
-        return GestureDetector(
-          onTap: () => setState(() => _selectedDefaultScreen = key),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? AppColors.govBlue.withValues(alpha: 0.15)
-                  : AppColors.slate800.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected
-                    ? AppColors.govBlue.withValues(alpha: 0.6)
-                    : AppColors.slate700.withValues(alpha: 0.5),
-                width: isSelected ? 1.5 : 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon,
-                    size: 16,
-                    color: isSelected ? AppColors.govBlue : AppColors.slate400),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    color: isSelected ? AppColors.govBlue : AppColors.slate300,
-                  ),
-                ),
-                if (isSelected) ...[
-                  const SizedBox(width: 4),
-                  Icon(Icons.check_circle, size: 14, color: AppColors.govBlue),
-                ],
-              ],
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  // ── Sidebar visibility grid ──────────────────────────────────────────────
-
-  Widget _buildSidebarVisibilityGrid() {
-    // Skip 'schedule' — it's the home screen root, always shown.
-    final sidebarItems =
-        _screenOptions.where((o) => o['key'] != 'schedule').toList();
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: sidebarItems.map((opt) {
-        final key = opt['key'] as String;
-        final label = opt['label'] as String;
-        final icon = opt['icon'] as IconData;
+        final isLaunchScreen = _selectedDefaultScreen == key;
         final isVisible = !_hiddenItems.contains(key);
+        final isSchedule = key == 'schedule';
 
-        return GestureDetector(
-          onTap: () => setState(() {
-            if (isVisible) {
-              _hiddenItems.add(key);
-            } else {
-              _hiddenItems.remove(key);
-            }
-          }),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: isVisible
-                  ? AppColors.govGreen.withValues(alpha: 0.12)
-                  : AppColors.slate800.withValues(alpha: 0.35),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isVisible
-                    ? AppColors.govGreen.withValues(alpha: 0.55)
-                    : AppColors.slate700.withValues(alpha: 0.35),
-                width: isVisible ? 1.5 : 1,
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          decoration: BoxDecoration(
+            color: isLaunchScreen
+                ? AppColors.govBlue.withValues(alpha: 0.12)
+                : (isVisible
+                    ? AppColors.govGreen.withValues(alpha: 0.07)
+                    : AppColors.slate800.withValues(alpha: 0.28)),
+            border: Border(
+              bottom: BorderSide(
+                color: AppColors.slate700.withValues(alpha: 0.35),
               ),
             ),
-            child: Row(
+          ),
+          child: ListTile(
+            dense: true,
+            contentPadding: const EdgeInsets.only(left: 8, right: 4),
+            leading: Icon(
+              icon,
+              color: isVisible ? AppColors.govGreen : AppColors.slate600,
+            ),
+            title: Text(
+              label,
+              style: TextStyle(
+                fontWeight: isLaunchScreen ? FontWeight.w700 : FontWeight.w500,
+                color: isVisible ? AppColors.slate200 : AppColors.slate600,
+                decoration: isVisible ? null : TextDecoration.lineThrough,
+              ),
+            ),
+            subtitle: isLaunchScreen || isSchedule
+                ? Text(
+                    isLaunchScreen ? 'Launch screen' : 'Always available',
+                    style: AppTypography.bodySmall.copyWith(
+                        color: isLaunchScreen
+                            ? AppColors.govBlue
+                            : AppColors.slate500),
+                  )
+                : null,
+            onTap: () => setState(() => _selectedDefaultScreen = key),
+            trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 180),
-                  child: Icon(
-                    isVisible ? icon : Icons.visibility_off_outlined,
-                    key: ValueKey(isVisible),
-                    size: 16,
-                    color: isVisible ? AppColors.govGreen : AppColors.slate600,
-                  ),
+                Radio<String>(
+                  value: key,
+                  groupValue: _selectedDefaultScreen,
+                  activeColor: AppColors.govBlue,
+                  onChanged: (value) =>
+                      setState(() => _selectedDefaultScreen = value!),
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: isVisible ? FontWeight.w500 : FontWeight.w400,
-                    color: isVisible ? AppColors.slate200 : AppColors.slate600,
-                    decoration: isVisible ? null : TextDecoration.lineThrough,
-                    decorationColor: AppColors.slate600,
+                if (isSchedule)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 10),
+                    child: Icon(Icons.visibility, size: 20),
+                  )
+                else
+                  Switch(
+                    value: isVisible,
+                    activeThumbColor: AppColors.govGreen,
+                    onChanged: (visible) => setState(() {
+                      if (visible) {
+                        _hiddenItems.remove(key);
+                      } else {
+                        _hiddenItems.add(key);
+                      }
+                    }),
                   ),
-                ),
               ],
             ),
           ),
         );
       }).toList(),
+      ),
     );
   }
 }

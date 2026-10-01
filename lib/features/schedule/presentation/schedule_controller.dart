@@ -17,6 +17,8 @@ class ScheduleController extends ChangeNotifier {
   final IScheduleRepository _repository;
 
   ScheduleView _viewMode = ScheduleView.timeline;
+  bool _monthNepaliLayout = false;
+  static const String _monthNepaliLayoutKey = 'schedule_month_nepali_layout';
   late final DateTime _baseDate;
 
   static const int initialIndex = 10000;
@@ -30,11 +32,11 @@ class ScheduleController extends ChangeNotifier {
   List<Event> _allEvents = [];
   List<Event> _allBirthdays = [];
   List<Event> _allExams = [];
-  List<Event> _repeatingEvents = []; 
+  List<Event> _repeatingEvents = [];
   List<Event> _multiDayEvents = [];
   Set<String> _eventDates = {};
   Map<String, List<Event>> _eventsByDate = {};
-  
+
   late DateTime _selectedDate;
   bool _isDragging = false;
 
@@ -42,10 +44,10 @@ class ScheduleController extends ChangeNotifier {
   final Map<String, NepaliDateTime> _nepaliDateCache = {};
   final Map<String, String> _nepaliMonthCache = {};
   final Map<String, String> _nepaliDayCache = {};
-  
+
   // Memoization cache for _eventsForDate to prevent recalculation
   final Map<String, List<Event>> _eventsForDateCache = {};
-  
+
   Map<String, Map<String, String>> weatherMap = {};
   int? currentAqi;
 
@@ -62,6 +64,7 @@ class ScheduleController extends ChangeNotifier {
   // Getters
 
   ScheduleView get viewMode => _viewMode;
+  bool get monthNepaliLayout => _monthNepaliLayout;
   DateTime get selectedDate => _selectedDate;
   bool get isDragging => _isDragging;
   bool get isLoadingNepaliDates => _isLoadingNepaliDates;
@@ -70,7 +73,6 @@ class ScheduleController extends ChangeNotifier {
   List<Event> get allEvents => _allEvents;
 
   // Setters
-
 
   set viewMode(ScheduleView value) {
     if (_viewMode != value) {
@@ -85,6 +87,13 @@ class ScheduleController extends ChangeNotifier {
       }
       notifyListeners();
     }
+  }
+
+  void toggleMonthNepaliLayout() {
+    _monthNepaliLayout = !_monthNepaliLayout;
+    notifyListeners();
+    SharedPreferences.getInstance()
+        .then((prefs) => prefs.setBool(_monthNepaliLayoutKey, _monthNepaliLayout));
   }
 
   set selectedDate(DateTime value) {
@@ -107,9 +116,11 @@ class ScheduleController extends ChangeNotifier {
 
   Future<void> init() async {
     await _repository.init();
+    final prefs = await SharedPreferences.getInstance();
+    _monthNepaliLayout = prefs.getBool(_monthNepaliLayoutKey) ?? false;
     await preloadEvents();
     precomputeNepaliDates(_selectedDate);
-    
+
     // Fetch weather asynchronously so it doesn't block UI
     ApiServices.fetchKathmanduWeather().then((fetched) {
       if (fetched.isNotEmpty) {
@@ -138,17 +149,16 @@ class ScheduleController extends ChangeNotifier {
     _allEvents = await _repository.getAllEvents();
     _allBirthdays = _allEvents.where((e) => e.type == 'birthday').toList();
     _allExams = _allEvents.where((e) => e.type == 'exam').toList();
-    
+
     _repeatingEvents = _allEvents.where((e) => 
       e.type != 'birthday' && 
       e.type != 'exam' && 
       e.repeat != null && 
       e.repeat != "none"
     ).toList();
-    
+
     _multiDayEvents = _allEvents.where((e) => 
       e.type != 'birthday' && 
-      e.type != 'exam' && 
       (e.repeat == null || e.repeat == "none") &&
       e.durationDays != null && 
       e.durationDays! > 1
@@ -161,13 +171,13 @@ class ScheduleController extends ChangeNotifier {
 
     _eventsByDate = {};
     for (var event in _allEvents) {
-      if (event.type == 'birthday' || 
-          event.type == 'exam' || 
+      if (event.type == 'birthday' ||
+          event.type == 'exam' ||
           (event.repeat != null && event.repeat != "none") ||
           (event.durationDays != null && event.durationDays! > 1)) {
         continue;
       }
-      
+
       final dateStr = event.date;
       if (!_eventsByDate.containsKey(dateStr)) {
         _eventsByDate[dateStr] = [];
@@ -191,7 +201,6 @@ class ScheduleController extends ChangeNotifier {
   }
 
   Map<String, String> getNepaliDateInfo(DateTime date) {
-
     final dateKey = dateFormat.format(date);
 
     if (!_nepaliMonthCache.containsKey(dateKey) || !_nepaliDayCache.containsKey(dateKey)) {
@@ -222,11 +231,11 @@ class ScheduleController extends ChangeNotifier {
       }
     }
   }
-  
+
   Future<void> precomputeNepaliDates(DateTime centerDate) async {
     _isLoadingNepaliDates = true;
     notifyListeners();
-    
+
     try {
       final datesToCompute = <String>[];
       for (int i = -30; i <= 30; i++) {
@@ -236,10 +245,10 @@ class ScheduleController extends ChangeNotifier {
           datesToCompute.add(key);
         }
       }
-      
+
       if (datesToCompute.isNotEmpty) {
         final results = await compute(_computeNepaliDatesBatch, datesToCompute);
-        
+
         for (final entry in results.entries) {
           _nepaliMonthCache[entry.key] = entry.value['month']!;
           _nepaliDayCache[entry.key] = entry.value['day']!;
@@ -252,10 +261,10 @@ class ScheduleController extends ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
   static Map<String, Map<String, String>> _computeNepaliDatesBatch(List<String> dateKeys) {
     final results = <String, Map<String, String>>{};
-    
+
     for (final key in dateKeys) {
       try {
         final date = DateTime.parse(key);
@@ -268,17 +277,17 @@ class ScheduleController extends ChangeNotifier {
         results[key] = {'month': '', 'day': ''};
       }
     }
-    
+
     return results;
   }
 
   Future<void> updateHomeWidget() async {
     try {
       final now = DateTime.now();
-      
+
       // Date Display
       final dateStr = DateFormat('EEEE, MMM d').format(now);
-      
+
       final dateStrForWeather = DateFormat('yyyy-MM-dd').format(now);
       final todayWeather = weatherMap[dateStrForWeather];
       final weatherEmoji = todayWeather?['emoji'] ?? '';
@@ -297,7 +306,7 @@ class ScheduleController extends ChangeNotifier {
       if (todayEvents.isNotEmpty) {
         tasksStr = todayEvents.map((e) {
           String time = e.remindTime != null ? "${e.remindTime} - " : "";
-           return "• $time${e.task}";
+          return "• $time${e.task}";
         }).join("\n");
       }
 
@@ -309,7 +318,7 @@ class ScheduleController extends ChangeNotifier {
       await HomeWidget.saveWidgetData<String>('widget_aqi', aqiStr);
       await HomeWidget.saveWidgetData<String>('widget_tasks', tasksStr);
       await HomeWidget.saveWidgetData<String>('widget_quote', quoteStr ?? "");
-      
+
       await HomeWidget.updateWidget(
         name: 'ScheduleWidgetProvider',
         androidName: 'ScheduleWidgetProvider',
@@ -332,7 +341,7 @@ class ScheduleController extends ChangeNotifier {
     if (_eventsByDate.containsKey(dateKey)) {
       events.addAll(_eventsByDate[dateKey]!);
     }
-    
+
     events.addAll(_multiDayEvents.where((e) {
       return e.spansDate(date);
     }));
@@ -362,7 +371,10 @@ class ScheduleController extends ChangeNotifier {
       return d.month == date.month && d.day == date.day;
     }).toList();
 
-    final exams = _allExams.where((e) => e.date == dateKey).toList();
+    final exams = _allExams
+        .where((e) =>
+            e.date == dateKey && (e.durationDays == null || e.durationDays! <= 1))
+        .toList();
 
     final result = [...events, ...bdays, ...exams];
     _eventsForDateCache[dateKey] = result;
@@ -471,13 +483,13 @@ class ScheduleController extends ChangeNotifier {
     if (event.id != null) {
       await NotificationService().cancelEventNotification(event.id!);
     }
-    
+
     await preloadEvents();
   }
 
   Future<void> addEvent(Event newEvent, BuildContext context) async {
     final eventId = await _repository.insertEvent(newEvent);
-    
+
     if (newEvent.remindMe && newEvent.remindTime != null) {
       final eventWithId = Event(
         id: eventId,
@@ -493,9 +505,24 @@ class ScheduleController extends ChangeNotifier {
       );
       await NotificationService().scheduleEventNotification(eventWithId);
     }
-    
+
     await preloadEvents();
     _selectedDate = DateTime.parse(newEvent.date);
+    notifyListeners();
+  }
+
+  Future<void> updateEvent(Event updatedEvent) async {
+    if (updatedEvent.id == null) return;
+
+    await NotificationService().cancelEventNotification(updatedEvent.id!);
+    await _repository.updateEvent(updatedEvent);
+
+    if (updatedEvent.remindMe && updatedEvent.remindTime != null) {
+      await NotificationService().scheduleEventNotification(updatedEvent);
+    }
+
+    await preloadEvents();
+    _selectedDate = DateTime.parse(updatedEvent.date);
     notifyListeners();
   }
 
@@ -531,7 +558,7 @@ class ScheduleController extends ChangeNotifier {
         weatherMap = fetchedWeather;
         notifyListeners();
       }
-      
+
       if (fetchedAqi != null) {
         currentAqi = fetchedAqi;
         notifyListeners();
@@ -552,7 +579,7 @@ class ScheduleController extends ChangeNotifier {
         if (_eventsByDate.containsKey(holiday.date)) {
           exists = _eventsByDate[holiday.date]!.any((e) => e.task == holiday.task);
         }
-        
+
         if (!exists) {
           await _repository.insertEvent(holiday);
           addedCount++;
