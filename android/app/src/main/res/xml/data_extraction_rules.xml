@@ -1,18 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Android 12+: nothing goes to cloud backup or device-to-device transfer. -->
+<!-- Android 12+: everything is backed up / transferred except Keystore-bound data (see manifest). -->
 <data-extraction-rules>
     <cloud-backup>
-        <exclude domain="root" />
-        <exclude domain="file" />
-        <exclude domain="database" />
-        <exclude domain="sharedpref" />
-        <exclude domain="external" />
+        <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+        <exclude domain="sharedpref" path="FlutterSecureStorageConfiguration.xml" />
+        <exclude domain="database" path="datavault.db" />
+        <exclude domain="database" path="datavault.db-journal" />
+        <exclude domain="database" path="datavault.db-wal" />
+        <exclude domain="database" path="datavault.db-shm" />
     </cloud-backup>
     <device-transfer>
-        <exclude domain="root" />
-        <exclude domain="file" />
-        <exclude domain="database" />
-        <exclude domain="sharedpref" />
-        <exclude domain="external" />
+        <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+        <exclude domain="sharedpref" path="FlutterSecureStorageConfiguration.xml" />
+        <exclude domain="database" path="datavault.db" />
+        <exclude domain="database" path="datavault.db-journal" />
+        <exclude domain="database" path="datavault.db-wal" />
+        <exclude domain="database" path="datavault.db-shm" />
     </device-transfer>
 </data-extraction-rules>

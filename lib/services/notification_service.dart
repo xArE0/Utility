@@ -2,6 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../core/services/system_service.dart';
 import '../features/schedule/data/local_schedule_repository.dart';
 import '../features/schedule/domain/schedule_entities.dart';
@@ -91,8 +92,7 @@ class NotificationService {
   }
 
   /// Request exact alarm permission (Android 12+), only when it is actually missing (USE_EXACT_ALARM
-  /// normally grants it). Exact alarms fire on time without exempting the app from battery
-  /// optimisation, so no such exemption is requested.
+  /// normally grants it).
   Future<bool> requestExactAlarmPermission() async {
     final android = _notifications.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
@@ -102,6 +102,21 @@ class NotificationService {
     final granted = await android.requestExactAlarmsPermission();
     debugPrint('Exact alarm permission granted: $granted');
     return granted ?? false;
+  }
+
+  /// Check and request battery optimization exemption so that
+  /// the OS doesn't kill the app and prevent alarms from firing.
+  /// This is especially important on OEM devices (Xiaomi, Samsung, etc.)
+  Future<bool> requestBatteryOptimizationExemption() async {
+    final status = await Permission.ignoreBatteryOptimizations.status;
+    if (status.isGranted) {
+      debugPrint('Battery optimization already exempted');
+      return true;
+    }
+
+    final result = await Permission.ignoreBatteryOptimizations.request();
+    debugPrint('Battery optimization exemption: $result');
+    return result.isGranted;
   }
 
   /// Schedule a notification for an event

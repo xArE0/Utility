@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 and older: same exclusions as data_extraction_rules.xml. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+    <exclude domain="sharedpref" path="FlutterSecureStorageConfiguration.xml" />
+    <exclude domain="database" path="datavault.db" />
+    <exclude domain="database" path="datavault.db-journal" />
+    <exclude domain="database" path="datavault.db-wal" />
+    <exclude domain="database" path="datavault.db-shm" />
+</full-backup-content>

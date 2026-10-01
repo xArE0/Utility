@@ -4,13 +4,14 @@
         android:label="Utility"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:allowBackup="false"
-        android:fullBackupContent="false"
+        android:allowBackup="true"
+        android:fullBackupContent="@xml/backup_rules"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:usesCleartextTraffic="false"
         tools:targetApi="31">
-        <!-- No automatic backups: app data (databases, settings) would otherwise be copied to the
-             cloud or out over adb/device transfer. Use Import/Export for backups. HTTPS only. -->
+        <!-- Backups and phone-to-phone transfer stay on, minus what is tied to this device's
+             Keystore (secure storage and the vault DB): it can't be decrypted on another phone and
+             would only break there. Move the vault with Import/Export. HTTPS only. -->
 
 
         <activity
@@ -124,6 +125,8 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Keeps alarms, the volume schedule and the auto clicker alive on aggressive OEM ROMs. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     <!-- Widget stay-awake toggle changes the screen-off timeout (user grants "Modify system settings"). -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS"
