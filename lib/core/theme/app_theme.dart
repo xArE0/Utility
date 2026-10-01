@@ -56,7 +56,29 @@ class AppTheme {
       ),
       snackBarTheme: const SnackBarThemeData(
         backgroundColor: AppColors.slate700,
-        contentTextStyle: TextStyle(color: AppColors.slate50),
+        contentTextStyle: TextStyle(
+            fontFamily: AppTypography.fontFamily, color: AppColors.slate50),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: AppColors.slate800,
+        selectedColor: AppColors.govBlue.withValues(alpha: 0.18),
+        side: const BorderSide(color: AppColors.slate600),
+        labelStyle: const TextStyle(
+            fontFamily: AppTypography.fontFamily,
+            color: AppColors.slate200,
+            fontWeight: FontWeight.w500),
+        secondaryLabelStyle: const TextStyle(
+            fontFamily: AppTypography.fontFamily,
+            color: AppColors.govBlue,
+            fontWeight: FontWeight.w600),
+        checkmarkColor: AppColors.govBlue,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      tabBarTheme: const TabBarThemeData(
+        labelColor: AppColors.slate50,
+        unselectedLabelColor: AppColors.slate400,
+        indicatorColor: AppColors.govBlue,
+        dividerColor: AppColors.slate700,
       ),
       textSelectionTheme: TextSelectionThemeData(
         cursorColor: AppColors.govBlue,

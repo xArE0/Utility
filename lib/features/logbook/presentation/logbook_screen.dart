@@ -49,12 +49,56 @@ class _LogbookScreenState extends State<LogbookScreen> {
     super.dispose();
   }
 
+  /// Colours saved before the Onyx theme, mapped to their muted counterparts so old entries
+  /// match new ones.
+  static const Map<String, Color> _legacyColors = {
+    'FF6B35': AppColors.coral,
+    '06B6D4': AppColors.aqua,
+    '8B5CF6': AppColors.amethyst,
+    'F43F5E': AppColors.rose,
+    '10B981': AppColors.jade,
+    'F59E0B': AppColors.amber,
+    '3B82F6': AppColors.sapphire,
+    'EC4899': AppColors.rose,
+  };
+
   Color _parseColor(String hex) {
+    final key = hex.replaceFirst('#', '').toUpperCase();
+    final legacy = _legacyColors[key];
+    if (legacy != null) return legacy;
     try {
-      return Color(int.parse(hex.replaceFirst('#', '0xFF')));
+      return Color(int.parse('0xFF$key'));
     } catch (_) {
       return _accentColors[0];
     }
+  }
+
+  void _confirmDelete(LogEntry entry) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.slate800,
+        title:
+            Text('Delete "${entry.title}"?', style: AppTypography.titleLarge),
+        content: Text('This will remove the entry and all its checkpoints.',
+            style:
+                AppTypography.bodyMedium.copyWith(color: AppColors.slate300)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel', style: TextStyle(color: AppColors.slate400)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _controller.deleteEntry(entry.id!);
+            },
+            child:
+                const Text('Delete', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
   }
 
   // ─── Add / Edit Entry Dialog ───────────────────────────
@@ -348,14 +392,15 @@ class _LogbookScreenState extends State<LogbookScreen> {
               });
             },
             onLongPress: () => _showEntryDialog(existing: entry),
-            child: Padding(
-              padding: const EdgeInsets.all(0),
+            child: IntrinsicHeight(
+              // Stretch so the accent bar runs the card's full height.
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Accent bar
                   Container(
                     width: 5,
-                    height: 80,
+                    constraints: const BoxConstraints(minHeight: 80),
                     decoration: BoxDecoration(
                       color: accent,
                       borderRadius: const BorderRadius.only(
@@ -406,6 +451,7 @@ class _LogbookScreenState extends State<LogbookScreen> {
                   // Title + meta
                   Expanded(
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
@@ -449,41 +495,6 @@ class _LogbookScreenState extends State<LogbookScreen> {
                     onPressed: () => _showCheckpointDialog(entry),
                     tooltip: 'Checkpoint',
                     icon: Icon(Icons.flag_outlined, color: accent, size: 22),
-                  ),
-                  // Delete button
-                  IconButton(
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          backgroundColor: AppColors.slate800,
-                          title: Text('Delete "${entry.title}"?',
-                              style: AppTypography.titleLarge),
-                          content: Text(
-                              'This will remove the entry and all its checkpoints.',
-                              style: AppTypography.bodyMedium
-                                  .copyWith(color: AppColors.slate300)),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx),
-                              child: Text('Cancel',
-                                  style: TextStyle(color: AppColors.slate400)),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pop(ctx);
-                                _controller.deleteEntry(entry.id!);
-                              },
-                              child: const Text('Delete',
-                                  style: TextStyle(color: AppColors.error)),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                    tooltip: 'Delete',
-                    icon: Icon(Icons.delete_outline,
-                        color: AppColors.slate500, size: 20),
                   ),
                   const SizedBox(width: 4),
                 ],
@@ -643,6 +654,26 @@ class _LogbookScreenState extends State<LogbookScreen> {
                         ),
                       ],
                     ),
+                  ),
+                  // Actions (kept here so a stray tap on the list can't delete anything)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => _showEntryDialog(existing: entry),
+                        icon: const Icon(Icons.edit_outlined, size: 18),
+                        label: const Text('Edit'),
+                        style: TextButton.styleFrom(
+                            foregroundColor: AppColors.govGold),
+                      ),
+                      TextButton.icon(
+                        onPressed: () => _confirmDelete(entry),
+                        icon: const Icon(Icons.delete_outline, size: 18),
+                        label: const Text('Delete'),
+                        style: TextButton.styleFrom(
+                            foregroundColor: AppColors.error),
+                      ),
+                    ],
                   ),
                 ],
               ),

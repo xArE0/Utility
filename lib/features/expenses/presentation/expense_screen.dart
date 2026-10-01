@@ -6,6 +6,7 @@ import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/animated_background.dart';
 import '../../../core/widgets/app_toast.dart';
 import 'expense_controller.dart';
+import '../domain/expense_entities.dart';
 import '../data/local_expense_repository.dart';
 
 class ExpenseTrackerApp extends StatelessWidget {
@@ -101,6 +102,206 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
         isError: true);
   }
 
+  static const _avatarColors = [
+    AppColors.govBlue,
+    AppColors.sapphire,
+    AppColors.jade,
+    AppColors.rose,
+    AppColors.amethyst,
+    AppColors.aqua,
+    AppColors.coral,
+  ];
+
+  void _confirmDeletePerson(Person person) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.slate800,
+        title: Text('Delete ${person.name}?', style: AppTypography.titleLarge),
+        content: Text('Deal Khatam??', style: AppTypography.bodyMedium),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Nope'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _controller.deletePerson(person);
+            },
+            child:
+                const Text('Khatam', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Totals up top, then one compact row per person (tap to open, long-press to delete).
+  Widget _buildPeopleList() {
+    final people = _controller.people;
+    if (people.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.people_outline,
+                  size: 56, color: AppColors.slate500),
+              const SizedBox(height: 14),
+              Text('No one here yet', style: AppTypography.titleMedium),
+              const SizedBox(height: 6),
+              Text('Add a person to start tracking who owes whom.',
+                  textAlign: TextAlign.center,
+                  style: AppTypography.bodySmall
+                      .copyWith(color: AppColors.slate400)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final owedToYou = people
+        .where((p) => p.balance > 0)
+        .fold<double>(0, (s, p) => s + p.balance);
+    final youOwe = people
+        .where((p) => p.balance < 0)
+        .fold<double>(0, (s, p) => s - p.balance);
+
+    Widget total(String label, double amount, Color color) => Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label.toUpperCase(),
+                  style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.slate400,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1)),
+              const SizedBox(height: 4),
+              Text('Rs. ${amount.toStringAsFixed(0)}',
+                  style: AppTypography.titleMedium
+                      .copyWith(color: color, fontWeight: FontWeight.w700)),
+            ],
+          ),
+        );
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+      children: [
+        GlassCard(
+          borderRadius: BorderRadius.circular(16),
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              total('Owed to you', owedToYou, AppColors.success),
+              total('You owe', youOwe, AppColors.error),
+              total('Net', owedToYou - youOwe,
+                  owedToYou >= youOwe ? AppColors.success : AppColors.error),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        for (final person in people)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _buildPersonRow(person),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildPersonRow(Person person) {
+    final color =
+        _avatarColors[person.name.hashCode.abs() % _avatarColors.length];
+    final balance = person.balance;
+    final last = person.transactions.isEmpty
+        ? null
+        : person.transactions
+            .reduce((a, b) => a.dateTime.isAfter(b.dateTime) ? a : b);
+    return Material(
+      color: AppColors.slate800.withValues(alpha: 0.72),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: AppColors.slate700.withValues(alpha: 0.7)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _controller.selectedPerson = person,
+        onLongPress: () => _confirmDeletePerson(person),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  person.name.isEmpty
+                      ? '?'
+                      : person.name.characters.first.toUpperCase(),
+                  style: TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w700, color: color),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(person.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.titleMedium
+                            .copyWith(fontWeight: FontWeight.w600)),
+                    Text(
+                      last == null
+                          ? 'No entries yet'
+                          : '${last.note.isEmpty ? 'Entry' : last.note} · ${_controller.timeAgo(last.dateTime)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.bodySmall
+                          .copyWith(color: AppColors.slate400),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'Rs. ${balance.abs().toStringAsFixed(0)}',
+                    style: AppTypography.titleMedium.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: balance == 0
+                          ? AppColors.slate300
+                          : (balance > 0 ? AppColors.success : AppColors.error),
+                    ),
+                  ),
+                  Text(
+                    balance == 0
+                        ? 'settled'
+                        : (balance > 0 ? 'owes you' : 'you owe'),
+                    style: AppTypography.bodySmall
+                        .copyWith(color: AppColors.slate500, fontSize: 11),
+                  ),
+                ],
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.slate500),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBackground(
@@ -117,110 +318,18 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
               ),
           ],
         ),
+        floatingActionButton:
+            _controller.initialized && _controller.selectedPerson == null
+                ? FloatingActionButton.extended(
+                    onPressed: () => _showAddPersonDialog(context),
+                    icon: const Icon(Icons.person_add_alt_1),
+                    label: const Text('Add Person'),
+                  )
+                : null,
         body: !_controller.initialized
             ? const Center(child: CircularProgressIndicator())
             : _controller.selectedPerson == null
-                ? GridView.builder(
-                    padding: const EdgeInsets.all(16),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 1,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                    ),
-                    itemCount: _controller.people.length + 1,
-                    itemBuilder: (context, index) {
-                      if (index == _controller.people.length) {
-                        return GlassCard(
-                          borderRadius: BorderRadius.circular(16),
-                          onTap: () => _showAddPersonDialog(context),
-                          child: const Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.add_circle_outline,
-                                  size: 40, color: AppColors.slate200),
-                              SizedBox(height: 8),
-                              Text(
-                                "Add Person",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: AppColors.slate200,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      final person = _controller.people[index];
-                      return GlassCard(
-                        borderRadius: BorderRadius.circular(16),
-                        gradientColors: [
-                          _controller
-                              .getRandomPastelColor()
-                              .withValues(alpha: 0.3),
-                          _controller
-                              .getRandomPastelColor()
-                              .withValues(alpha: 0.1),
-                        ],
-                        child: InkWell(
-                          onTap: () => _controller.selectedPerson = person,
-                          onLongPress: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                backgroundColor: AppColors.slate800,
-                                title: Text('Delete ${person.name}?',
-                                    style: AppTypography.titleLarge),
-                                content: Text('Deal Khatam??',
-                                    style: AppTypography.bodyMedium),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: const Text('Nope'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                      _controller.deletePerson(person);
-                                    },
-                                    child: const Text('Khatam',
-                                        style: TextStyle(color: AppColors.error)),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                person.name,
-                                style: AppTypography.titleLarge.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Rs. ${person.balance.toStringAsFixed(2)}',
-                                style: AppTypography.titleMedium.copyWith(
-                                  color: person.balance >= 0
-                                      ? AppColors.govGreen
-                                      : AppColors.error,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  )
+                ? _buildPeopleList()
                 : Column(
                     children: [
                       Card(
@@ -254,7 +363,10 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
                                     colors:
                                         _controller.selectedPerson!.balance >= 0
                                             ? [AppColors.jade, AppColors.teal]
-                                            : [AppColors.error, AppColors.coral],
+                                            : [
+                                                AppColors.error,
+                                                AppColors.coral
+                                              ],
                                   ),
                                   borderRadius: BorderRadius.circular(30),
                                 ),
@@ -429,7 +541,8 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
                                                     ? AppColors.success
                                                         .withValues(alpha: 0.18)
                                                     : AppColors.error
-                                                        .withValues(alpha: 0.18),
+                                                        .withValues(
+                                                            alpha: 0.18),
                                                 textColor: (stats['plus']! +
                                                             stats['minus']!) >=
                                                         0
@@ -512,12 +625,21 @@ class _QuickActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Tinted by direction so + and − read apart at a glance.
+    final color = amount >= 0 ? AppColors.success : AppColors.error;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: ElevatedButton(
+      child: OutlinedButton(
         onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: color,
+          backgroundColor: color.withValues(alpha: 0.12),
+          side: BorderSide(color: color.withValues(alpha: 0.4)),
+          shape: const StadiumBorder(),
+        ),
         child: Text(
-            amount >= 0 ? '+Rs.${amount.toInt()}' : '-Rs.${(-amount).toInt()}'),
+            amount >= 0 ? '+Rs.${amount.toInt()}' : '-Rs.${(-amount).toInt()}',
+            style: const TextStyle(fontWeight: FontWeight.w600)),
       ),
     );
   }

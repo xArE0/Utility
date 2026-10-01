@@ -497,6 +497,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
               "$completed",
               "/$total",
               AppColors.govBlue,
+              'Completed',
             ),
           ),
           const SizedBox(width: 12),
@@ -506,6 +507,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
               (accuracy * 100).toStringAsFixed(0),
               "%",
               accuracy >= 0.8 ? AppColors.govGreen : AppColors.govGold,
+              'Accuracy',
             ),
           ),
           const SizedBox(width: 12),
@@ -515,6 +517,7 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
               "$perfected",
               "",
               AppColors.amber,
+              'Perfect',
             ),
           ),
         ],
@@ -522,7 +525,8 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
     );
   }
 
-  Widget _statCard(String emoji, String value, String suffix, Color color) {
+  Widget _statCard(
+      String emoji, String value, String suffix, Color color, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       decoration: BoxDecoration(
@@ -569,6 +573,14 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
               ],
             ),
           ),
+          Text(
+            label,
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.slate400,
+              fontSize: 11,
+              letterSpacing: 0.4,
+            ),
+          ),
         ],
       ),
     );
@@ -581,7 +593,8 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
         crossAxisCount: 2,
         mainAxisSpacing: 16,
         crossAxisSpacing: 16,
-        childAspectRatio: 0.85,
+        // Wide enough that a 2-line title, the count and the progress row fill the card.
+        childAspectRatio: 1.15,
       ),
       itemCount: pages.length,
       itemBuilder: (context, i) => _buildPageCard(pages[i]),
@@ -665,14 +678,23 @@ class _QuickCheckScreenState extends State<QuickCheckScreen>
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          page.answerKey.displayName,
-                          style: AppTypography.headlineSmall.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          softWrap: true,
-                          maxLines: 4,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                page.answerKey.displayName,
+                                style: AppTypography.headlineSmall.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Icon(statusIcon, size: 18, color: statusColor),
+                          ],
                         ),
                         const SizedBox(height: 3),
                         Row(

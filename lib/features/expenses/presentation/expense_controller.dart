@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -277,16 +276,6 @@ class ExpenseController extends ChangeNotifier {
 
     return Map.fromEntries(
         grouped.entries.toList()..sort((a, b) => b.key.compareTo(a.key))
-    );
-  }
-
-  Color getRandomPastelColor() {
-    final random = math.Random();
-    return Color.fromRGBO(
-      200 + random.nextInt(56),
-      200 + random.nextInt(56),
-      200 + random.nextInt(56),
-      0.9,
     );
   }
 
