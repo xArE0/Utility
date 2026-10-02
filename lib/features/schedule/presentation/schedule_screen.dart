@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:nepali_utils/nepali_utils.dart';
 import '../../../services/notification_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../domain/schedule_entities.dart';
 import '../data/local_schedule_repository.dart';
@@ -627,7 +628,36 @@ class ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  Widget _buildEventContainer(Event event, DateTime currentDate) {
+  Future<void> _moveEventTo(Event event, DateTime date) async {
+    await _controller.moveEvent(event, date);
+    if (mounted) {
+      AppToast.show(
+          context, 'Moved to ${DateFormat('EEE, MMM d').format(date)}');
+    }
+  }
+
+  /// Deletes right away, with a few seconds to take it back.
+  Future<void> _deleteWithUndo(Event event) async {
+    await _controller.deleteEvent(event);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text('Deleted "${event.task}"'),
+        duration: const Duration(seconds: 5),
+        behavior: SnackBarBehavior.floating,
+        action: SnackBarAction(
+          label: 'Undo',
+          textColor: AppColors.govBlue,
+          onPressed: () => _controller.restoreEvent(event),
+        ),
+      ));
+  }
+
+  /// [longPressToDrag]: in scrollable lists (month/week) a drag only starts after a long press,
+  /// so an ordinary swipe over an event scrolls the list instead of picking the event up.
+  Widget _buildEventContainer(Event event, DateTime currentDate,
+      {bool longPressToDrag = false}) {
     final theme = Theme.of(context);
     final bool isDark = theme.brightness == Brightness.dark;
     final base = _eventColor(event);
@@ -795,28 +825,43 @@ class ScheduleScreenState extends State<ScheduleScreen> {
         event.type == 'reminder' ||
         event.type == 'todo';
 
-    return Draggable<Map<String, dynamic>>(
-      data: {
-        'event': event,
-        'sourceDate': currentDate,
-        'canMove': canMove,
-      },
-      feedback: feedbackContainer,
-      childWhenDragging: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: bg.withValues(alpha: 0.35),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Opacity(opacity: 0.0, child: container),
+    final data = {
+      'event': event,
+      'sourceDate': currentDate,
+      'canMove': canMove,
+    };
+    final placeholder = Container(
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: bg.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(8),
       ),
+      child: Opacity(opacity: 0.0, child: container),
+    );
+    final child = GestureDetector(
+      onDoubleTap: () => _showEventDialog(event),
+      child: container,
+    );
+
+    if (longPressToDrag) {
+      return LongPressDraggable<Map<String, dynamic>>(
+        data: data,
+        feedback: feedbackContainer,
+        childWhenDragging: placeholder,
+        hapticFeedbackOnStart: true,
+        onDragStarted: () => _controller.isDragging = true,
+        onDragEnd: (details) => _controller.isDragging = false,
+        child: child,
+      );
+    }
+    return Draggable<Map<String, dynamic>>(
+      data: data,
+      feedback: feedbackContainer,
+      childWhenDragging: placeholder,
       onDragStarted: () => _controller.isDragging = true,
       onDragEnd: (details) => _controller.isDragging = false,
-      child: GestureDetector(
-        onDoubleTap: () => _showEventDialog(event),
-        child: container,
-      ),
+      child: child,
     );
   }
 
@@ -1116,37 +1161,6 @@ class ScheduleScreenState extends State<ScheduleScreen> {
                       : _buildMonthView(cs, isDark, today, todayKey)),
             ),
           ),
-          if (_controller.isDragging)
-            Positioned(
-              left: 16,
-              bottom: 110,
-              child: DragTarget<Map<String, dynamic>>(
-                onWillAcceptWithDetails: (details) => true,
-                onAcceptWithDetails: (details) async {
-                  final event = details.data['event'] as Event;
-                  await _controller.deleteEvent(event);
-                },
-                builder: (context, candidateData, rejectedData) {
-                  final isHighlighted = candidateData.isNotEmpty;
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: isHighlighted ? AppColors.error : AppColors.error,
-                      borderRadius: BorderRadius.circular(50),
-                      boxShadow: [
-                        BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2))
-                      ],
-                    ),
-                    child: Icon(Icons.delete,
-                        color: Colors.white, size: isHighlighted ? 32 : 24),
-                  );
-                },
-              ),
-            ),
           Positioned(
             left: 14,
             bottom: 24,
@@ -1194,6 +1208,54 @@ class ScheduleScreenState extends State<ScheduleScreen> {
               ),
             ),
           ),
+          // While dragging, a wide delete bar covers the nav bar (which can't be used mid-drag).
+          if (_controller.isDragging)
+            Positioned(
+              left: 14,
+              right: 92, // clear of the + button
+              bottom: 24,
+              child: DragTarget<Map<String, dynamic>>(
+                onAcceptWithDetails: (details) =>
+                    _deleteWithUndo(details.data['event'] as Event),
+                builder: (context, candidateData, rejectedData) {
+                  final hovering = candidateData.isNotEmpty;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: hovering
+                          ? AppColors.error
+                          : AppColors.slate800.withValues(alpha: 0.95),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                          color: AppColors.error
+                              .withValues(alpha: hovering ? 1 : 0.6),
+                          width: 1.5),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.delete_outline,
+                            color:
+                                hovering ? AppColors.onAccent : AppColors.error,
+                            size: hovering ? 26 : 22),
+                        const SizedBox(width: 8),
+                        Text(
+                          hovering
+                              ? 'Release to delete'
+                              : 'Drop here to delete',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color:
+                                hovering ? AppColors.onAccent : AppColors.error,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
         ],
       ),
       floatingActionButton: Container(
@@ -1252,16 +1314,15 @@ class ScheduleScreenState extends State<ScheduleScreen> {
           child: Text("No events",
               style: TextStyle(color: cs.onSurface.withValues(alpha: 0.6))));
     }
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: List.generate(
-            events.length,
-            (i) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child:
-                    _buildEventContainer(events[i], _controller.selectedDate))),
-      ),
+    return ListView.builder(
+      // Clear of the floating nav bar and + button, so the last event can be scrolled into view.
+      padding: const EdgeInsets.only(bottom: 110),
+      physics: const AlwaysScrollableScrollPhysics(),
+      itemCount: events.length,
+      itemBuilder: (context, i) => Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: _buildEventContainer(events[i], _controller.selectedDate,
+              longPressToDrag: true)),
     );
   }
 
@@ -1454,242 +1515,276 @@ class ScheduleScreenState extends State<ScheduleScreen> {
       }
     }
 
-    return Column(
-      children: [
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(child: Builder(builder: (context) {
-                String title;
-                if (nepaliSelected != null) {
-                  final nepaliMonth = NepaliUnicode.convert(
-                      NepaliDateFormat('MMMM yyyy').format(nepaliSelected));
-                  final e1 = DateFormat('MMM').format(firstOfMonth);
-                  final e2 = DateFormat('MMM').format(lastOfMonth);
-                  final englishMonths = e1 == e2 ? e1 : "$e1/$e2";
-                  title =
-                      "$nepaliMonth ($englishMonths ${DateFormat('yyyy').format(lastOfMonth)})";
-                } else {
-                  final englishMonth = DateFormat('MMMM yyyy').format(selected);
-                  final m1 =
-                      _controller.getNepaliDateInfo(firstOfMonth)['month'] ??
-                          '';
-                  final m2 =
-                      _controller.getNepaliDateInfo(lastOfMonth)['month'] ?? '';
-                  String nepaliMonth;
-                  if (m1.isNotEmpty && m2.isNotEmpty && m1 != m2) {
-                    nepaliMonth = "$m1/$m2";
-                  } else {
-                    nepaliMonth = m1.isNotEmpty ? m1 : m2;
-                  }
-                  title = nepaliMonth.isEmpty
-                      ? englishMonth
-                      : "$englishMonth ($nepaliMonth)";
-                }
-                return Text(title,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        color: isDark ? AppColors.slate200 : AppColors.slate800,
-                        fontWeight: FontWeight.w700));
-              })),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextButton(
-                      onPressed: _controller.toggleMonthNepaliLayout,
-                      style: TextButton.styleFrom(
-                          minimumSize: const Size(40, 32),
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          backgroundColor: nepaliLayout
-                              ? cs.primary.withValues(alpha: 0.15)
-                              : null,
-                          foregroundColor: nepaliLayout
-                              ? cs.primary
-                              : cs.onSurface.withValues(alpha: 0.6)),
-                      child: const Text("BS",
-                          style: TextStyle(
-                              fontSize: 12, fontWeight: FontWeight.w700))),
-                  IconButton(
-                      tooltip: "Previous month",
-                      onPressed: () => shiftMonth(-1),
-                      icon: const Icon(Icons.chevron_left, size: 20)),
-                  IconButton(
-                      tooltip: "Next month",
-                      onPressed: () => shiftMonth(1),
-                      icon: const Icon(Icons.chevron_right, size: 20)),
-                ],
-              )
-            ],
-          ),
-        ),
-        // Day-of-week headers aligned with the grid below
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            children: const [
-              Expanded(
-                  child: Center(
-                      child: Text("Sun",
-                          style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.error)))),
-              Expanded(
-                  child: Center(
-                      child: Text("Mon",
-                          style: TextStyle(
-                              fontSize: 11, fontWeight: FontWeight.w600)))),
-              Expanded(
-                  child: Center(
-                      child: Text("Tue",
-                          style: TextStyle(
-                              fontSize: 11, fontWeight: FontWeight.w600)))),
-              Expanded(
-                  child: Center(
-                      child: Text("Wed",
-                          style: TextStyle(
-                              fontSize: 11, fontWeight: FontWeight.w600)))),
-              Expanded(
-                  child: Center(
-                      child: Text("Thu",
-                          style: TextStyle(
-                              fontSize: 11, fontWeight: FontWeight.w600)))),
-              Expanded(
-                  child: Center(
-                      child: Text("Fri",
-                          style: TextStyle(
-                              fontSize: 11, fontWeight: FontWeight.w600)))),
-              Expanded(
-                  child: Center(
-                      child: Text("Sat",
-                          style: TextStyle(
-                              fontSize: 11, fontWeight: FontWeight.w600)))),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        Expanded(
-          flex: 3,
-          child: GridView.builder(
+    return LayoutBuilder(builder: (context, box) {
+      // The grid takes the height its rows need (capped, so the list always keeps room); the
+      // selected day's events get everything else.
+      final cellWidth = (box.maxWidth - 24) / 7;
+      final gridHeight = rows * cellWidth / 0.75;
+      final maxGridHeight = box.maxHeight * 0.62;
+      final gridFits = gridHeight <= maxGridHeight;
+
+      return Column(
+        children: [
+          const SizedBox(height: 12),
+          Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: cells,
-            physics: const BouncingScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 7, childAspectRatio: 0.75),
-            itemBuilder: (context, i) {
-              final date = dates[i];
-              final isCurrentMonth =
-                  i >= startWeekday && i < startWeekday + daysInMonth;
-              final key = ScheduleController.dateFormat.format(date);
-              final isToday = key == todayKey;
-              final events = _controller.eventsForDate(date);
-              final isSelected =
-                  _controller.isSameDay(_controller.selectedDate, date);
-
-              String nepaliDay = '';
-              final nepaliInfo = _controller.getNepaliDateInfo(date);
-              nepaliDay = nepaliInfo['day'] ?? '';
-
-              // Opacity for other-month tiles
-              final double tileOpacity = isCurrentMonth ? 1.0 : 0.35;
-
-              return GestureDetector(
-                onTap: () {
-                  if (!isCurrentMonth) {
-                    // Navigate to that month when tapping an other-month date
-                    _controller.selectedDate = date;
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(child: Builder(builder: (context) {
+                  String title;
+                  if (nepaliSelected != null) {
+                    final nepaliMonth = NepaliUnicode.convert(
+                        NepaliDateFormat('MMMM yyyy').format(nepaliSelected));
+                    final e1 = DateFormat('MMM').format(firstOfMonth);
+                    final e2 = DateFormat('MMM').format(lastOfMonth);
+                    final englishMonths = e1 == e2 ? e1 : "$e1/$e2";
+                    title =
+                        "$nepaliMonth ($englishMonths ${DateFormat('yyyy').format(lastOfMonth)})";
                   } else {
-                    _controller.selectedDate = date;
+                    final englishMonth =
+                        DateFormat('MMMM yyyy').format(selected);
+                    final m1 =
+                        _controller.getNepaliDateInfo(firstOfMonth)['month'] ??
+                            '';
+                    final m2 =
+                        _controller.getNepaliDateInfo(lastOfMonth)['month'] ??
+                            '';
+                    String nepaliMonth;
+                    if (m1.isNotEmpty && m2.isNotEmpty && m1 != m2) {
+                      nepaliMonth = "$m1/$m2";
+                    } else {
+                      nepaliMonth = m1.isNotEmpty ? m1 : m2;
+                    }
+                    title = nepaliMonth.isEmpty
+                        ? englishMonth
+                        : "$englishMonth ($nepaliMonth)";
                   }
-                },
-                child: Opacity(
-                  opacity: tileOpacity,
-                  child: Container(
-                    margin: const EdgeInsets.all(3),
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: isSelected && isCurrentMonth
-                          ? cs.primary.withValues(alpha: 0.15)
-                          : (isToday
-                              ? cs.primary.withValues(alpha: 0.08)
-                              : cs.surface.withValues(
-                                  alpha: isCurrentMonth ? 0.4 : 0.15)),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: isToday && isCurrentMonth
-                            ? AppColors.govGreen
-                            : cs.outline
-                                .withValues(alpha: isCurrentMonth ? 0.4 : 0.15),
-                        width: isSelected && isCurrentMonth ? 1.2 : 0.8,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                                nepaliLayout
-                                    ? nepaliDay
-                                    : DateFormat('d').format(date),
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    color: isToday && isCurrentMonth
-                                        ? AppColors.govGreen
-                                        : cs.onSurface,
-                                    fontSize: 12)),
-                            if (isToday && isCurrentMonth) ...[
-                              const SizedBox(width: 2),
-                              Icon(Icons.circle,
-                                  size: 4, color: AppColors.govGreen)
-                            ]
-                          ],
-                        ),
-                        if (nepaliLayout || nepaliDay.isNotEmpty) ...[
-                          const SizedBox(height: 1),
-                          Text(
-                              nepaliLayout
-                                  ? DateFormat('d').format(date)
-                                  : nepaliDay,
-                              style: TextStyle(
-                                  fontSize: 9,
-                                  color: cs.onSurface.withValues(alpha: 0.5),
-                                  fontWeight: FontWeight.w600)),
-                        ],
-                        const SizedBox(height: 3),
-                        if (events.isNotEmpty)
-                          Wrap(
-                              spacing: 2,
-                              runSpacing: 1,
-                              children: events
-                                  .take(3)
-                                  .map((e) => Container(
-                                      width: 5,
-                                      height: 5,
-                                      decoration: BoxDecoration(
-                                          color: _eventColor(e),
-                                          shape: BoxShape.circle)))
-                                  .toList()),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
+                  return Text(title,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color:
+                              isDark ? AppColors.slate200 : AppColors.slate800,
+                          fontWeight: FontWeight.w700));
+                })),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextButton(
+                        onPressed: _controller.toggleMonthNepaliLayout,
+                        style: TextButton.styleFrom(
+                            minimumSize: const Size(40, 32),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            backgroundColor: nepaliLayout
+                                ? cs.primary.withValues(alpha: 0.15)
+                                : null,
+                            foregroundColor: nepaliLayout
+                                ? cs.primary
+                                : cs.onSurface.withValues(alpha: 0.6)),
+                        child: const Text("BS",
+                            style: TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.w700))),
+                    IconButton(
+                        tooltip: "Previous month",
+                        onPressed: () => shiftMonth(-1),
+                        icon: const Icon(Icons.chevron_left, size: 20)),
+                    IconButton(
+                        tooltip: "Next month",
+                        onPressed: () => shiftMonth(1),
+                        icon: const Icon(Icons.chevron_right, size: 20)),
+                  ],
+                )
+              ],
+            ),
           ),
-        ),
-        const Divider(height: 1),
-        Expanded(
-            flex: 2,
-            child: Padding(
-                padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 0),
-                child: _buildEventsListForSelected(cs))),
-      ],
-    );
+          // Day-of-week headers aligned with the grid below
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: const [
+                Expanded(
+                    child: Center(
+                        child: Text("Sun",
+                            style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.error)))),
+                Expanded(
+                    child: Center(
+                        child: Text("Mon",
+                            style: TextStyle(
+                                fontSize: 11, fontWeight: FontWeight.w600)))),
+                Expanded(
+                    child: Center(
+                        child: Text("Tue",
+                            style: TextStyle(
+                                fontSize: 11, fontWeight: FontWeight.w600)))),
+                Expanded(
+                    child: Center(
+                        child: Text("Wed",
+                            style: TextStyle(
+                                fontSize: 11, fontWeight: FontWeight.w600)))),
+                Expanded(
+                    child: Center(
+                        child: Text("Thu",
+                            style: TextStyle(
+                                fontSize: 11, fontWeight: FontWeight.w600)))),
+                Expanded(
+                    child: Center(
+                        child: Text("Fri",
+                            style: TextStyle(
+                                fontSize: 11, fontWeight: FontWeight.w600)))),
+                Expanded(
+                    child: Center(
+                        child: Text("Sat",
+                            style: TextStyle(
+                                fontSize: 11, fontWeight: FontWeight.w600)))),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: gridFits ? gridHeight : maxGridHeight,
+            child: GridView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              itemCount: cells,
+              physics: gridFits
+                  ? const NeverScrollableScrollPhysics()
+                  : const BouncingScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 7, childAspectRatio: 0.75),
+              itemBuilder: (context, i) {
+                final date = dates[i];
+                final isCurrentMonth =
+                    i >= startWeekday && i < startWeekday + daysInMonth;
+                final key = ScheduleController.dateFormat.format(date);
+                final isToday = key == todayKey;
+                final events = _controller.eventsForDate(date);
+                final isSelected =
+                    _controller.isSameDay(_controller.selectedDate, date);
+
+                String nepaliDay = '';
+                final nepaliInfo = _controller.getNepaliDateInfo(date);
+                nepaliDay = nepaliInfo['day'] ?? '';
+
+                // Drop an event (long-pressed in the list below) here to move it to this day.
+                return DragTarget<Map<String, dynamic>>(
+                  onWillAcceptWithDetails: (details) =>
+                      details.data['canMove'] == true &&
+                      !_controller.isSameDay(
+                          details.data['sourceDate'] as DateTime, date),
+                  onAcceptWithDetails: (details) =>
+                      _moveEventTo(details.data['event'] as Event, date),
+                  builder: (context, candidateData, rejectedData) {
+                    final hovering = candidateData.isNotEmpty;
+                    // Opacity for other-month tiles
+                    final double tileOpacity =
+                        isCurrentMonth || hovering ? 1.0 : 0.35;
+
+                    return GestureDetector(
+                      onTap: () {
+                        if (!isCurrentMonth) {
+                          // Navigate to that month when tapping an other-month date
+                          _controller.selectedDate = date;
+                        } else {
+                          _controller.selectedDate = date;
+                        }
+                      },
+                      child: Opacity(
+                        opacity: tileOpacity,
+                        child: Container(
+                          margin: const EdgeInsets.all(3),
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: hovering
+                                ? cs.primary.withValues(alpha: 0.3)
+                                : isSelected && isCurrentMonth
+                                    ? cs.primary.withValues(alpha: 0.15)
+                                    : (isToday
+                                        ? cs.primary.withValues(alpha: 0.08)
+                                        : cs.surface.withValues(
+                                            alpha:
+                                                isCurrentMonth ? 0.4 : 0.15)),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: hovering
+                                  ? cs.primary
+                                  : isToday && isCurrentMonth
+                                      ? AppColors.govGreen
+                                      : cs.outline.withValues(
+                                          alpha: isCurrentMonth ? 0.4 : 0.15),
+                              width: hovering
+                                  ? 2
+                                  : (isSelected && isCurrentMonth ? 1.2 : 0.8),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                      nepaliLayout
+                                          ? nepaliDay
+                                          : DateFormat('d').format(date),
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          color: isToday && isCurrentMonth
+                                              ? AppColors.govGreen
+                                              : cs.onSurface,
+                                          fontSize: 12)),
+                                  if (isToday && isCurrentMonth) ...[
+                                    const SizedBox(width: 2),
+                                    Icon(Icons.circle,
+                                        size: 4, color: AppColors.govGreen)
+                                  ]
+                                ],
+                              ),
+                              if (nepaliLayout || nepaliDay.isNotEmpty) ...[
+                                const SizedBox(height: 1),
+                                Text(
+                                    nepaliLayout
+                                        ? DateFormat('d').format(date)
+                                        : nepaliDay,
+                                    style: TextStyle(
+                                        fontSize: 9,
+                                        color:
+                                            cs.onSurface.withValues(alpha: 0.5),
+                                        fontWeight: FontWeight.w600)),
+                              ],
+                              const SizedBox(height: 3),
+                              if (events.isNotEmpty)
+                                Wrap(
+                                    spacing: 2,
+                                    runSpacing: 1,
+                                    children: events
+                                        .take(3)
+                                        .map((e) => Container(
+                                            width: 5,
+                                            height: 5,
+                                            decoration: BoxDecoration(
+                                                color: _eventColor(e),
+                                                shape: BoxShape.circle)))
+                                        .toList()),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+              child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 0),
+                  child: _buildEventsListForSelected(cs))),
+        ],
+      );
+    });
   }
 }

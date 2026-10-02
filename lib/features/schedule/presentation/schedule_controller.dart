@@ -462,6 +462,15 @@ class ScheduleController extends ChangeNotifier {
     await preloadEvents();
   }
 
+  /// Puts back an event removed by [deleteEvent] (undo), with its id and reminder.
+  Future<void> restoreEvent(Event event) async {
+    await _repository.insertEvent(event);
+    if (event.remindMe && event.remindTime != null) {
+      await NotificationService().scheduleEventNotification(event);
+    }
+    await preloadEvents();
+  }
+
   Future<void> addEvent(Event newEvent, BuildContext context) async {
     final eventId = await _repository.insertEvent(newEvent);
 
