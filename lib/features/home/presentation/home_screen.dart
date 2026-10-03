@@ -612,8 +612,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     padding: EdgeInsets.zero,
                     children: [
                       DrawerHeader(
-                        decoration: const BoxDecoration(
-                          gradient: AppColors.primaryGradient,
+                        // Navy with a gold glow: light text stays readable, gold stays the accent.
+                        decoration: BoxDecoration(
+                          gradient: const RadialGradient(
+                            center: Alignment(-1.0, -1.0),
+                            radius: 1.6,
+                            colors: [Color(0x40FFC24D), Color(0x00FFC24D)],
+                          ),
+                          color: AppColors.slate800,
+                          border: Border(
+                            bottom: BorderSide(
+                              color: AppColors.govBlue.withValues(alpha: 0.5),
+                            ),
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -622,7 +633,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Text(
                               SettingsService.instance.sidebarName,
                               style: AppTypography.headlineSmall
-                                  .copyWith(color: Colors.white),
+                                  .copyWith(color: AppColors.govBlue),
                             ),
                             const SizedBox(height: 8),
                             GestureDetector(
@@ -630,7 +641,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: Text(
                                 DateFormat('hh:mm a').format(DateTime.now()),
                                 style: AppTypography.titleMedium
-                                    .copyWith(color: AppColors.slate200),
+                                    .copyWith(color: AppColors.slate50),
                               ),
                             ),
                             Text(

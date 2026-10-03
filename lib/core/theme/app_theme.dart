@@ -26,7 +26,7 @@ class AppTheme {
         error: AppColors.error,
       ),
 
-      // Accent-filled controls carry dark text (champagne is too light for white).
+      // Accent-filled controls carry dark text (gold is too light for white).
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: AppColors.govBlue,
         foregroundColor: AppColors.onAccent,

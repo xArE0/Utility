@@ -164,7 +164,7 @@ class _CustomButtonState extends State<CustomButton>
 
     switch (widget.variant) {
       case ButtonVariant.primary:
-        return AppColors.onAccent; // on the champagne→copper gradient
+        return AppColors.onAccent; // on the gold→tangerine gradient
       case ButtonVariant.secondary:
         return AppColors.slate50;
       case ButtonVariant.outline:
