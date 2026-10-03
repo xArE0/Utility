@@ -1377,76 +1377,93 @@ class ScheduleScreenState extends State<ScheduleScreen> {
               final nepaliInfo = _controller.getNepaliDateInfo(date);
               nepaliDay = nepaliInfo['day'] ?? '';
 
+              // Drop an event (long-pressed in the list below) here to move it to this day.
               return Expanded(
-                child: GestureDetector(
-                  onTap: () => _controller.selectedDate = date,
-                  child: Container(
-                    margin:
-                        const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? cs.primary.withValues(alpha: 0.15)
-                          : (isToday
-                              ? cs.primary.withValues(alpha: 0.08)
-                              : cs.surface.withValues(alpha: 0.5)),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color: isToday
-                              ? AppColors.govGreen
-                              : cs.outline.withValues(alpha: 0.4),
-                          width: isSelected ? 1.5 : 1),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(DateFormat('E').format(date),
-                            style: TextStyle(
-                                color: cs.onSurface.withValues(alpha: 0.7),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 3),
-                        Text(DateFormat('d').format(date),
-                            style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: isToday
-                                    ? AppColors.govGreen
-                                    : cs.onSurface)),
-                        if (nepaliDay.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(nepaliDay,
-                              style: TextStyle(
-                                  fontSize: 10,
-                                  color: cs.onSurface.withValues(alpha: 0.6),
-                                  fontWeight: FontWeight.w600)),
-                        ],
-                        const SizedBox(height: 4),
-                        SizedBox(
-                          height: 20,
-                          child: events.isNotEmpty
-                              ? Wrap(
-                                  spacing: 2,
-                                  runSpacing: 2,
-                                  alignment: WrapAlignment.center,
-                                  children: events
-                                      .take(2)
-                                      .map((e) => Container(
-                                          width: 6,
-                                          height: 6,
-                                          decoration: BoxDecoration(
-                                              color: _eventColor(e),
-                                              shape: BoxShape.circle)))
-                                      .toList())
-                              : Center(
-                                  child: Opacity(
-                                      opacity: 0.3,
-                                      child: Icon(Icons.event_note,
-                                          size: 14, color: cs.onSurface))),
+                child: DragTarget<Map<String, dynamic>>(
+                  onWillAcceptWithDetails: (details) =>
+                      details.data['canMove'] == true &&
+                      !_controller.isSameDay(
+                          details.data['sourceDate'] as DateTime, date),
+                  onAcceptWithDetails: (details) =>
+                      _moveEventTo(details.data['event'] as Event, date),
+                  builder: (context, candidateData, rejectedData) {
+                    final hovering = candidateData.isNotEmpty;
+                    return GestureDetector(
+                      onTap: () => _controller.selectedDate = date,
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 4, vertical: 8),
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: hovering
+                              ? cs.primary.withValues(alpha: 0.3)
+                              : isSelected
+                                  ? cs.primary.withValues(alpha: 0.15)
+                                  : (isToday
+                                      ? cs.primary.withValues(alpha: 0.08)
+                                      : cs.surface.withValues(alpha: 0.5)),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color: hovering
+                                  ? cs.primary
+                                  : isToday
+                                      ? AppColors.govGreen
+                                      : cs.outline.withValues(alpha: 0.4),
+                              width: hovering ? 2 : (isSelected ? 1.5 : 1)),
                         ),
-                      ],
-                    ),
-                  ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(DateFormat('E').format(date),
+                                style: TextStyle(
+                                    color: cs.onSurface.withValues(alpha: 0.7),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 3),
+                            Text(DateFormat('d').format(date),
+                                style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: isToday
+                                        ? AppColors.govGreen
+                                        : cs.onSurface)),
+                            if (nepaliDay.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(nepaliDay,
+                                  style: TextStyle(
+                                      fontSize: 10,
+                                      color:
+                                          cs.onSurface.withValues(alpha: 0.6),
+                                      fontWeight: FontWeight.w600)),
+                            ],
+                            const SizedBox(height: 4),
+                            SizedBox(
+                              height: 20,
+                              child: events.isNotEmpty
+                                  ? Wrap(
+                                      spacing: 2,
+                                      runSpacing: 2,
+                                      alignment: WrapAlignment.center,
+                                      children: events
+                                          .take(2)
+                                          .map((e) => Container(
+                                              width: 6,
+                                              height: 6,
+                                              decoration: BoxDecoration(
+                                                  color: _eventColor(e),
+                                                  shape: BoxShape.circle)))
+                                          .toList())
+                                  : Center(
+                                      child: Opacity(
+                                          opacity: 0.3,
+                                          child: Icon(Icons.event_note,
+                                              size: 14, color: cs.onSurface))),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
               );
             }).toList(),
