@@ -12,12 +12,18 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import kotlin.math.min
 
-private val COLOR_IDLE = Color.parseColor("#3B82F6")
-private val COLOR_RUNNING = Color.parseColor("#10B981")
-private val COLOR_STOP = Color.parseColor("#EF4444")
-private val COLOR_MUTED = Color.parseColor("#94A3B8")
+// Onyx & Champagne, matching the app.
+private val COLOR_IDLE = Color.parseColor("#C8A96A")
+private val COLOR_RUNNING = Color.parseColor("#8FA98C")
+private val COLOR_STOP = Color.parseColor("#D2625A")
+private val COLOR_MUTED = Color.parseColor("#9C9488")
+private val COLOR_PANEL = Color.argb(230, 23, 21, 19)
 
-private fun ringColor(running: Boolean) = if (running) COLOR_RUNNING else COLOR_IDLE
+private fun ringColor(running: Boolean, recording: Boolean = false) = when {
+    recording -> COLOR_STOP
+    running -> COLOR_RUNNING
+    else -> COLOR_IDLE
+}
 
 /**
  * Small translucent ring marking where taps land; its centre is the tap point. The view is larger
@@ -74,6 +80,11 @@ class BubbleView(context: Context) : View(context) {
             field = value
             invalidate()
         }
+    var recording: Boolean = false
+        set(value) {
+            field = value
+            invalidate()
+        }
 
     /** Drawn as a dark disc when collapsed; bare when it sits inside the expanded pill. */
     var showDisc: Boolean = true
@@ -85,7 +96,7 @@ class BubbleView(context: Context) : View(context) {
     private val d = resources.displayMetrics.density
     private val disc = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
-        color = Color.argb(200, 15, 23, 42)
+        color = COLOR_PANEL
     }
     private val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
@@ -100,16 +111,17 @@ class BubbleView(context: Context) : View(context) {
     override fun onDraw(canvas: Canvas) {
         val cx = width / 2f
         val cy = height / 2f
-        val color = ringColor(running)
+        val color = ringColor(running, recording)
         ring.color = color
         dot.color = color
         if (showDisc) canvas.drawCircle(cx, cy, 15f * d, disc)
         canvas.drawCircle(cx, cy, 6.5f * d, ring)
-        canvas.drawCircle(cx, cy, 1.8f * d, dot)
+        // Recording: a filled dot, like a camera's record light.
+        canvas.drawCircle(cx, cy, if (recording) 4f * d else 1.8f * d, dot)
     }
 }
 
-enum class Glyph { PLAY, STOP, CLOSE }
+enum class Glyph { PLAY, STOP, CLOSE, RECORD }
 
 /** Small icon button drawn with paths, so it looks the same on every device and font. */
 class GlyphView(context: Context, glyph: Glyph, tint: Int) : View(context) {
@@ -147,6 +159,10 @@ class GlyphView(context: Context, glyph: Glyph, tint: Int) : View(context) {
                 paint.style = Paint.Style.FILL
                 canvas.drawRoundRect(cx - s, cy - s, cx + s, cy + s, s * 0.25f, s * 0.25f, paint)
             }
+            Glyph.RECORD -> {
+                paint.style = Paint.Style.FILL
+                canvas.drawCircle(cx, cy, s * 0.9f, paint)
+            }
             Glyph.CLOSE -> {
                 paint.style = Paint.Style.STROKE
                 paint.strokeWidth = 2f * d
@@ -160,14 +176,17 @@ class GlyphView(context: Context, glyph: Glyph, tint: Int) : View(context) {
 
 /**
  * Floating controls. Collapsed it is just a small [BubbleView]; tapping the bubble expands it into
- * a pill: [bubble] [start/stop] [tap counter] [close]. The bubble is the drag handle in both states.
+ * a pill: [bubble] [start/stop] [record] [counter] [close]. The bubble is the drag handle in both
+ * states. While recording, start/stop stops the recording and the counter counts recorded touches.
  */
 class PanelView(context: Context) : LinearLayout(context) {
     private val d = resources.displayMetrics.density
 
     val handle = BubbleView(context)
     val toggle = GlyphView(context, Glyph.PLAY, COLOR_RUNNING)
+    val record = GlyphView(context, Glyph.RECORD, COLOR_STOP)
     val close = GlyphView(context, Glyph.CLOSE, COLOR_MUTED)
+    private var showRecord = true
     private val counter = TextView(context)
 
     var expanded: Boolean = false
@@ -180,10 +199,11 @@ class PanelView(context: Context) : LinearLayout(context) {
         orientation = HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
 
-        toggle.contentDescription = "Start or stop clicking"
+        toggle.contentDescription = "Start or stop"
+        record.contentDescription = "Record touches"
         close.contentDescription = "Close auto clicker"
         counter.apply {
-            setTextColor(Color.parseColor("#E2E8F0"))
+            setTextColor(Color.parseColor("#E3DCCF"))
             textSize = 12f
             gravity = Gravity.CENTER
             minWidth = (28f * d).toInt()
@@ -192,30 +212,38 @@ class PanelView(context: Context) : LinearLayout(context) {
 
         addView(handle, LayoutParams(dp(40), dp(40)))
         addView(toggle, LayoutParams(dp(40), dp(40)))
+        addView(record, LayoutParams(dp(36), dp(40)))
         addView(counter, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
         addView(close, LayoutParams(dp(36), dp(40)))
         applyExpanded()
         render(running = false, taps = 0)
     }
 
-    fun render(running: Boolean, taps: Int) {
+    fun render(running: Boolean, taps: Int, recording: Boolean = false) {
         handle.running = running
-        toggle.glyph = if (running) Glyph.STOP else Glyph.PLAY
-        toggle.tint = if (running) COLOR_STOP else COLOR_RUNNING
+        handle.recording = recording
+        val busy = running || recording
+        toggle.glyph = if (busy) Glyph.STOP else Glyph.PLAY
+        toggle.tint = if (busy) COLOR_STOP else COLOR_RUNNING
         counter.text = taps.toString()
+        counter.setTextColor(if (recording) COLOR_STOP else Color.parseColor("#E3DCCF"))
+        // Record only while idle.
+        showRecord = !busy
+        applyExpanded()
     }
 
     private fun applyExpanded() {
         val vis = if (expanded) VISIBLE else GONE
         toggle.visibility = vis
+        record.visibility = if (expanded && showRecord) VISIBLE else GONE
         counter.visibility = vis
         close.visibility = vis
         handle.showDisc = !expanded
         if (expanded) {
             background = GradientDrawable().apply {
-                setColor(Color.argb(224, 15, 23, 42))
+                setColor(COLOR_PANEL)
                 cornerRadius = 22f * d
-                setStroke((1f * d).toInt(), Color.parseColor("#334155"))
+                setStroke((1f * d).toInt(), Color.parseColor("#3E3A34"))
             }
             setPadding(0, 0, dp(4), 0)
         } else {

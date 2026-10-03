@@ -8,6 +8,11 @@ class AndroidAutoClickerRepository implements IAutoClickerRepository {
   static const _channel = MethodChannel('com.example.utility/autoclicker');
   static const _intervalKey = 'autoclicker_interval_ms';
   static const _maxClicksKey = 'autoclicker_max_clicks';
+  static const _modeKey = 'autoclicker_mode';
+  static const _directionKey = 'autoclicker_scroll_direction';
+  static const _distanceKey = 'autoclicker_scroll_distance';
+  static const _swipeKey = 'autoclicker_swipe_ms';
+  static const _recordingKey = 'autoclicker_recording_id';
 
   final _statusController = StreamController<AutoClickerStatus>.broadcast();
 
@@ -26,8 +31,13 @@ class AndroidAutoClickerRepository implements IAutoClickerRepository {
   Future<AutoClickerConfig> loadConfig() async {
     final prefs = await SharedPreferences.getInstance();
     return const AutoClickerConfig().copyWith(
+      mode: AutoClickerMode.fromKey(prefs.getString(_modeKey)),
       intervalMs: prefs.getInt(_intervalKey),
       maxClicks: prefs.getInt(_maxClicksKey),
+      scrollDirection: ScrollDirection.fromKey(prefs.getString(_directionKey)),
+      scrollDistancePct: prefs.getInt(_distanceKey),
+      swipeMs: prefs.getInt(_swipeKey),
+      recordingId: prefs.getString(_recordingKey),
     );
   }
 
@@ -36,6 +46,15 @@ class AndroidAutoClickerRepository implements IAutoClickerRepository {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_intervalKey, config.intervalMs);
     await prefs.setInt(_maxClicksKey, config.maxClicks);
+    await prefs.setString(_modeKey, config.mode.key);
+    await prefs.setString(_directionKey, config.scrollDirection.key);
+    await prefs.setInt(_distanceKey, config.scrollDistancePct);
+    await prefs.setInt(_swipeKey, config.swipeMs);
+    if (config.recordingId == null) {
+      await prefs.remove(_recordingKey);
+    } else {
+      await prefs.setString(_recordingKey, config.recordingId!);
+    }
   }
 
   @override
@@ -60,6 +79,26 @@ class AndroidAutoClickerRepository implements IAutoClickerRepository {
   Future<void> updateConfig(AutoClickerConfig config) => _invoke('updateConfig', _args(config));
 
   @override
+  Future<void> startRecording() => _invoke('startRecording');
+
+  @override
+  Future<void> stopRecording() => _invoke('stopRecording');
+
+  @override
+  Future<List<AutoClickerRecording>> getRecordings() async {
+    final list = await _invoke<List<Object?>>('getRecordings') ?? const [];
+    return list.whereType<Map<Object?, Object?>>().map(AutoClickerRecording.fromMap).toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  }
+
+  @override
+  Future<void> renameRecording(String id, String name) =>
+      _invoke('renameRecording', {'id': id, 'name': name});
+
+  @override
+  Future<void> deleteRecording(String id) => _invoke('deleteRecording', {'id': id});
+
+  @override
   Future<void> openAccessibilitySettings() => _invoke('openAccessibilitySettings');
 
   @override
@@ -77,9 +116,14 @@ class AndroidAutoClickerRepository implements IAutoClickerRepository {
     await _statusController.close();
   }
 
-  Map<String, Object> _args(AutoClickerConfig c) => {
+  Map<String, Object?> _args(AutoClickerConfig c) => {
         'intervalMs': c.intervalMs,
         'maxClicks': c.maxClicks,
+        'mode': c.mode.key,
+        'scrollDirection': c.scrollDirection.key,
+        'scrollDistancePct': c.scrollDistancePct,
+        'swipeMs': c.swipeMs,
+        'recordingId': c.recordingId,
       };
 
   /// Native failures keep their message so the UI can show exactly what went wrong.

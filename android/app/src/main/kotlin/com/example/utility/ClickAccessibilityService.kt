@@ -35,8 +35,12 @@ import kotlin.math.max
  *
  * Two overlay windows are drawn with TYPE_ACCESSIBILITY_OVERLAY (needs no "draw over other apps"
  * permission): a small draggable [TargetView] marking where taps land, and a [PanelView] that is a
- * tiny bubble until tapped, then expands to start/stop/close. The notification offers the same
- * start/stop/close. The taps themselves are injected with [dispatchGesture].
+ * tiny bubble until tapped, then expands to start/stop/record/close. The notification offers the
+ * same start/stop/close. Touches are injected with [dispatchGesture].
+ *
+ * Modes: click (tap the ring), scroll (swipe through the ring) and play (replay a [Recording]).
+ * Recording puts a full-screen [CaptureView] over everything; each touch it catches is stored and
+ * immediately replayed to the app underneath, so the app still reacts.
  *
  * Runs in the same process as MainActivity, so the activity talks to it directly through [instance]
  * instead of broadcasts.
@@ -72,9 +76,32 @@ class ClickAccessibilityService : AccessibilityService() {
         var instance: ClickAccessibilityService? = null
             private set
 
+        const val MODE_CLICK = "click"
+        const val MODE_SCROLL = "scroll"
+        const val MODE_PLAY = "play"
+
         var intervalMs: Long = 500L
-        /** 0 means keep going until stopped. */
+        /** 0 means keep going until stopped. Counts taps, swipes, or replay loops, by mode. */
         var maxClicks: Int = 0
+        var mode: String = MODE_CLICK
+
+        /** Which way the finger moves: "up" scrolls content down (next item), like a reel swipe. */
+        var scrollDirection: String = "up"
+        /** Swipe length as a share of the screen's height (or width, sideways). */
+        var scrollDistancePct: Int = 50
+        var swipeMs: Long = 350L
+
+        /** The recording play mode replays. */
+        var recordingId: String? = null
+        /** Bumped whenever a recording is saved, so the app knows to reload its list. */
+        var recordingsVersion: Int = 0
+
+        /** Recordings start counting from the first touch, so a slow start isn't replayed. */
+        private const val FIRST_STEP_MAX_DELAY_MS = 1500L
+        /** Pause between replay loops, so the end of one and the start of the next stay distinct. */
+        private const val LOOP_GAP_MS = 500L
+        /** Time for Android to apply "not touchable" before a touch is replayed through the layer. */
+        private const val PASS_THROUGH_DELAY_MS = 80L
 
         /** Fired on the main thread whenever overlay/run state or the tap count changes. */
         var statusListener: (() -> Unit)? = null
@@ -82,13 +109,27 @@ class ClickAccessibilityService : AccessibilityService() {
 
     private val wm: WindowManager by lazy { getSystemService(Context.WINDOW_SERVICE) as WindowManager }
     private val handler = Handler(Looper.getMainLooper())
-    private val tick = Runnable { performTap() }
+    private val tick = Runnable { performStep() }
     private val density get() = resources.displayMetrics.density
 
     private var target: TargetView? = null
     private var panel: PanelView? = null
     private var targetLp: WindowManager.LayoutParams? = null
     private var panelLp: WindowManager.LayoutParams? = null
+
+    private var capture: CaptureView? = null
+    private var captureLp: WindowManager.LayoutParams? = null
+    private val recordedSteps = ArrayList<RecordedStep>()
+    private var recordStartAt = 0L
+    private var lastStepAt = 0L
+    private var recordSize = Point()
+    /** A recorded touch is being replayed through the capture layer; anything it catches now is ignored. */
+    private var passingThrough = false
+
+    private var playing: Recording? = null
+    private var playIndex = 0
+    private var playScaleX = 1f
+    private var playScaleY = 1f
 
     private var cancelStreak = 0
     private var lastNotifyAt = 0L
@@ -100,6 +141,9 @@ class ClickAccessibilityService : AccessibilityService() {
         private set
     var tapCount = 0
         private set
+    var isRecording = false
+        private set
+    val recordedCount: Int get() = recordedSteps.size
     val overlayVisible: Boolean get() = target != null
 
     // ── Lifecycle ──────────────────────────────────────────────────────────
@@ -180,16 +224,22 @@ class ClickAccessibilityService : AccessibilityService() {
         }
         p.close.setOnClickListener { hideOverlay() }
 
+        p.record.setOnClickListener {
+            startRecording()?.let { toast(it) } ?: setExpanded(false)
+        }
+
         target = t
         panel = p
         targetLp = tlp
         panelLp = plp
+        updateTargetVisibility()
         Log.i(TAG, "overlay shown: screen=${screen.x}x${screen.y} target=(${tlp.x},${tlp.y}) panel=(${plp.x},${plp.y})")
         postNotification()
         notifyStatus()
     }
 
     fun hideOverlay() {
+        stopRecording(save = true)
         stopClicking(null)
         target?.let { runCatching { wm.removeView(it) } }
         panel?.let { runCatching { wm.removeView(it) } }
@@ -309,10 +359,14 @@ class ClickAccessibilityService : AccessibilityService() {
         runCatching { wm.updateViewLayout(t, lp) }
     }
 
-    // ── Tapping ────────────────────────────────────────────────────────────
+    // ── Running: click / scroll / play ─────────────────────────────────────
 
-    /** Starts or stops clicking (panel and notification share this). True if this call started it. */
+    /** Starts or stops (panel and notification share this). True if this call started something. */
     fun toggleClicking(graceMs: Long = START_GRACE_MS): Boolean {
+        if (isRecording) {
+            stopRecording(save = true)
+            return false
+        }
         if (isRunning) {
             stopClicking(null)
             return false
@@ -323,29 +377,43 @@ class ClickAccessibilityService : AccessibilityService() {
     }
 
     /**
-     * Starts tapping after [graceMs]. Returns a user-facing reason if it can't start, else null.
-     * A longer grace is used when started from the app, so it has left the screen before tap one.
+     * Starts the current [mode] after [graceMs]. Returns a user-facing reason if it can't, else null.
+     * A longer grace is used when started from the app, so it has left the screen before step one.
      */
     fun startClicking(graceMs: Long = START_GRACE_MS): String? {
         val t = target ?: return "Show the floating controls first."
         if (isRunning) return null
+        if (isRecording) return "Stop recording first."
 
-        // The panel stays touchable, so a target hidden beneath it would tap the panel itself.
-        val at = tapPoint(t)
-        panel?.let { p ->
-            val pad = (8 * density).toInt()
-            val rect = screenRect(p).apply { inset(-pad, -pad) }
-            if (rect.contains(at.x, at.y)) return "Move the bubble away from the ring first."
+        if (mode == MODE_PLAY) {
+            val rec = RecordingStore.get(this, recordingId) ?: return "Choose a recording to replay first."
+            if (rec.steps.isEmpty()) return "That recording is empty."
+            // Recorded on a different screen size (or the other way round): scale the touches to fit.
+            val screen = screenSize()
+            playScaleX = if (rec.width > 0) screen.x.toFloat() / rec.width else 1f
+            playScaleY = if (rec.height > 0) screen.y.toFloat() / rec.height else 1f
+            playing = rec
+            playIndex = 0
+            Log.i(TAG, "play: ${rec.name} steps=${rec.steps.size} loops=$maxClicks grace=${graceMs}ms")
+        } else {
+            // The panel stays touchable, so a target hidden beneath it would touch the panel itself.
+            val at = tapPoint(t)
+            panel?.let { p ->
+                val pad = (8 * density).toInt()
+                val rect = screenRect(p).apply { inset(-pad, -pad) }
+                if (rect.contains(at.x, at.y)) return "Move the bubble away from the ring first."
+            }
+            Log.i(TAG, "start $mode: at=(${at.x},${at.y}) interval=${intervalMs}ms max=$maxClicks grace=${graceMs}ms")
         }
 
-        Log.i(TAG, "start: tap=(${at.x},${at.y}) interval=${intervalMs}ms max=$maxClicks grace=${graceMs}ms")
         isRunning = true
         runId++
         tapCount = 0
         cancelStreak = 0
-        // Non-touchable, so the injected taps pass through the marker to the app underneath.
+        // Non-touchable, so the injected touches pass through the marker to the app underneath.
         setTargetTouchable(false)
         t.running = true
+        updateTargetVisibility()
         panel?.render(running = true, taps = 0)
         postNotification()
         notifyStatus()
@@ -355,57 +423,78 @@ class ClickAccessibilityService : AccessibilityService() {
 
     fun stopClicking(reason: String?) {
         if (!isRunning) return
-        Log.i(TAG, "stop: taps=$tapCount reason=${reason ?: "user"}")
+        Log.i(TAG, "stop: count=$tapCount reason=${reason ?: "user"}")
         isRunning = false
+        playing = null
         handler.removeCallbacks(tick)
-        setTargetTouchable(true)
         target?.running = false
+        updateTargetVisibility()
         panel?.render(running = false, taps = tapCount)
         if (target != null) postNotification()
         notifyStatus()
         if (reason != null) toast(reason, long = true)
     }
 
-    private fun performTap() {
-        if (!isRunning) return
-        val t = target ?: return stopClicking(null)
-
-        // Read the marker's real on-screen centre instead of trusting layout params, so the tap
-        // lands exactly under the crosshair whatever the status bar, cutout or density.
-        val at = tapPoint(t)
-        val path = Path().apply { moveTo(at.x.toFloat(), at.y.toFloat()) }
-        val gesture = GestureDescription.Builder()
-            .addStroke(GestureDescription.StrokeDescription(path, 0L, TAP_DURATION_MS))
-            .build()
-
-        val startedAt = SystemClock.uptimeMillis()
-        val thisRun = runId
-        val accepted = dispatchGesture(gesture, object : GestureResultCallback() {
-            override fun onCompleted(gestureDescription: GestureDescription?) =
-                onTapFinished(thisRun, startedAt, true)
-
-            override fun onCancelled(gestureDescription: GestureDescription?) =
-                onTapFinished(thisRun, startedAt, false)
-        }, handler)
-
-        if (!accepted) Log.w(TAG, "dispatchGesture refused at (${at.x},${at.y})")
-        if (!accepted) {
-            stopClicking("Android refused the tap. Turn the accessibility service off and on, then try again.")
-        }
+    /** Called after the app changes settings; the ring only shows in modes that use it. */
+    fun onConfigChanged() {
+        if (!isRunning) updateTargetVisibility()
+        if (target != null) postNotification()
+        notifyStatus()
     }
 
-    /** Schedules the next tap only once the previous one has finished, so taps never overlap. */
-    private fun onTapFinished(run: Int, startedAt: Long, completed: Boolean) {
+    private fun performStep() {
+        if (!isRunning) return
+        if (playing != null) return playStep()
+        val t = target ?: return stopClicking(null)
+
+        // Read the marker's real on-screen centre instead of trusting layout params, so the touch
+        // lands exactly under the crosshair whatever the status bar, cutout or density.
+        val at = tapPoint(t)
+        val stroke = if (mode == MODE_SCROLL) {
+            swipeThrough(at)
+        } else {
+            GestureDescription.StrokeDescription(
+                Path().apply { moveTo(at.x.toFloat(), at.y.toFloat()) }, 0L, TAP_DURATION_MS,
+            )
+        }
+        val startedAt = SystemClock.uptimeMillis()
+        val thisRun = runId
+        dispatch(stroke) { completed -> onStepFinished(thisRun, startedAt, completed) }
+    }
+
+    /** A straight swipe centred on [at], [scrollDistancePct] of the screen long, kept off the edges. */
+    private fun swipeThrough(at: Point): GestureDescription.StrokeDescription {
+        val screen = screenSize()
+        val margin = 24 * density
+        val vertical = scrollDirection == "up" || scrollDirection == "down"
+        val half = (if (vertical) screen.y else screen.x) * scrollDistancePct.coerceIn(10, 90) / 200f
+        val (dx, dy) = when (scrollDirection) {
+            "up" -> 0f to -half
+            "down" -> 0f to half
+            "left" -> -half to 0f
+            else -> half to 0f
+        }
+        fun cx(v: Float) = v.coerceIn(margin, screen.x - margin)
+        fun cy(v: Float) = v.coerceIn(margin, screen.y - margin)
+        val path = Path().apply {
+            moveTo(cx(at.x - dx), cy(at.y - dy))
+            lineTo(cx(at.x + dx), cy(at.y + dy))
+        }
+        return GestureDescription.StrokeDescription(path, 0L, swipeMs.coerceIn(50L, 3000L))
+    }
+
+    /** Schedules the next step only once the previous one has finished, so they never overlap. */
+    private fun onStepFinished(run: Int, startedAt: Long, completed: Boolean) {
         if (!isRunning || run != runId) return
-        // Log the first few taps and then every 50th, so logcat shows it working without flooding.
+        // Log the first few and then every 50th, so logcat shows it working without flooding.
         if (tapCount < 3 || tapCount % 50 == 0 || !completed) {
-            Log.d(TAG, "tap #${tapCount + 1} ${if (completed) "completed" else "CANCELLED"}")
+            Log.d(TAG, "$mode #${tapCount + 1} ${if (completed) "completed" else "CANCELLED"}")
         }
         if (completed) {
             tapCount++
             cancelStreak = 0
         } else if (++cancelStreak >= MAX_CONSECUTIVE_CANCELS) {
-            stopClicking("Taps keep getting cancelled. Is something else touching the screen?")
+            stopClicking("Touches keep getting cancelled. Is something else touching the screen?")
             return
         }
         panel?.render(running = true, taps = tapCount)
@@ -413,12 +502,209 @@ class ClickAccessibilityService : AccessibilityService() {
 
         if (maxClicks > 0 && tapCount >= maxClicks) {
             // You're in another app by now, so say it's finished.
-            stopClicking("Auto Clicker done: $tapCount taps")
+            stopClicking("Auto Clicker done: $tapCount ${if (mode == MODE_SCROLL) "swipes" else "taps"}")
             return
         }
-        val nextAt = startedAt + max(intervalMs, MIN_INTERVAL_MS)
+        // A swipe needs to finish (plus a moment for the list to settle) before the next one.
+        val minGap = if (mode == MODE_SCROLL) swipeMs + 150L else MIN_INTERVAL_MS
+        val nextAt = startedAt + max(intervalMs, minGap)
         handler.removeCallbacks(tick)
         handler.postDelayed(tick, max(0L, nextAt - SystemClock.uptimeMillis()))
+    }
+
+    // ── Replay ─────────────────────────────────────────────────────────────
+
+    private fun playStep() {
+        val rec = playing ?: return
+        val step = rec.steps[playIndex]
+        val startedAt = SystemClock.uptimeMillis()
+        val thisRun = runId
+        dispatch(strokeFor(step.points, step.durationMs, playScaleX, playScaleY)) { completed ->
+            onPlayStepFinished(thisRun, startedAt, completed)
+        }
+    }
+
+    /** Next touch at its recorded offset from this one's start; after the last, loop or finish. */
+    private fun onPlayStepFinished(run: Int, startedAt: Long, completed: Boolean) {
+        if (!isRunning || run != runId) return
+        val rec = playing ?: return
+        if (completed) {
+            cancelStreak = 0
+        } else if (++cancelStreak >= MAX_CONSECUTIVE_CANCELS) {
+            stopClicking("Replay keeps getting interrupted. Is something else touching the screen?")
+            return
+        }
+        val next = playIndex + 1
+        val nextAt: Long
+        if (next < rec.steps.size) {
+            playIndex = next
+            nextAt = startedAt + rec.steps[next].delayMs
+        } else {
+            tapCount++ // one full loop
+            panel?.render(running = true, taps = tapCount)
+            notifyStatus(force = false)
+            if (maxClicks > 0 && tapCount >= maxClicks) {
+                stopClicking("Replay done: ${rec.name}, $tapCount ${if (tapCount == 1) "time" else "times"}")
+                return
+            }
+            playIndex = 0
+            nextAt = SystemClock.uptimeMillis() + max(LOOP_GAP_MS, rec.steps[0].delayMs)
+        }
+        handler.removeCallbacks(tick)
+        handler.postDelayed(tick, max(0L, nextAt - SystemClock.uptimeMillis()))
+    }
+
+    // ── Recording ──────────────────────────────────────────────────────────
+
+    /** Starts catching touches after [graceMs] (so the tap that started it isn't recorded). */
+    fun startRecording(graceMs: Long = START_GRACE_MS): String? {
+        if (target == null) return "Show the floating controls first."
+        if (isRecording) return null
+        stopClicking(null)
+
+        val view = CaptureView(this) { down, up, points -> onRecordedStroke(down, up, points) }
+        val lp = overlayParams(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
+        isRecording = true
+        recordedSteps.clear()
+        recordSize = screenSize()
+        passingThrough = false
+        capture = view
+        captureLp = lp
+        updateTargetVisibility()
+        panel?.render(running = false, taps = 0, recording = true)
+        postNotification()
+        notifyStatus()
+
+        handler.postDelayed({
+            if (!isRecording || capture !== view) return@postDelayed
+            try {
+                wm.addView(view, lp)
+                raisePanel() // the controls must stay above the capture layer, or Stop can't be tapped
+            } catch (e: Exception) {
+                Log.w(TAG, "capture layer refused", e)
+                capture = null
+                isRecording = false
+                updateTargetVisibility()
+                panel?.render(running = false, taps = 0)
+                notifyStatus()
+                toast("Couldn't start recording: ${e.message}")
+                return@postDelayed
+            }
+            recordStartAt = SystemClock.uptimeMillis()
+            Log.i(TAG, "recording started")
+        }, graceMs)
+        return null
+    }
+
+    /** Ends recording; with [save] and at least one touch, stores it and selects it for replay. */
+    fun stopRecording(save: Boolean) {
+        if (!isRecording) return
+        isRecording = false
+        passingThrough = false
+        capture?.let { runCatching { wm.removeView(it) } }
+        capture = null
+        captureLp = null
+        val steps = recordedSteps.toList()
+        recordedSteps.clear()
+        if (save && steps.isNotEmpty()) {
+            val rec = RecordingStore.add(this, steps, recordSize.x, recordSize.y)
+            recordingId = rec.id
+            mode = MODE_PLAY // so ▶ replays what was just recorded
+            recordingsVersion++
+            Log.i(TAG, "recording saved: ${rec.name} steps=${steps.size}")
+            toast("Saved ${rec.name} · ${steps.size} ${if (steps.size == 1) "touch" else "touches"}. Tap ▶ to replay.", long = true)
+        } else if (save) {
+            toast("Nothing was recorded.")
+        }
+        updateTargetVisibility()
+        panel?.render(running = false, taps = 0)
+        if (target != null) postNotification()
+        notifyStatus()
+    }
+
+    private fun onRecordedStroke(downAt: Long, upAt: Long, points: FloatArray) {
+        if (!isRecording || passingThrough || points.isEmpty()) return
+        val delay = if (recordedSteps.isEmpty()) {
+            (downAt - recordStartAt).coerceIn(0L, FIRST_STEP_MAX_DELAY_MS)
+        } else {
+            downAt - lastStepAt
+        }
+        lastStepAt = downAt
+        val duration = (upAt - downAt).coerceAtLeast(1L)
+        recordedSteps.add(RecordedStep(delay, duration, points))
+        panel?.render(running = false, taps = recordedSteps.size, recording = true)
+        notifyStatus(force = false)
+
+        // Hand the touch on: let it through the capture layer, replay it, then catch the next one.
+        passingThrough = true
+        setCaptureTouchable(false)
+        handler.postDelayed({
+            if (!isRecording) return@postDelayed
+            dispatch(strokeFor(points, duration, 1f, 1f)) {
+                passingThrough = false
+                setCaptureTouchable(true)
+            }
+        }, PASS_THROUGH_DELAY_MS)
+    }
+
+    private fun setCaptureTouchable(touchable: Boolean) {
+        val v = capture ?: return
+        val lp = captureLp ?: return
+        lp.flags = if (touchable) {
+            lp.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()
+        } else {
+            lp.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+        }
+        runCatching { wm.updateViewLayout(v, lp) }
+    }
+
+    /** Re-adds the panel window so it sits above windows added after it. */
+    private fun raisePanel() {
+        val p = panel ?: return
+        val lp = panelLp ?: return
+        runCatching { wm.removeView(p) }
+        runCatching { wm.addView(p, lp) }
+    }
+
+    // ── Gestures ───────────────────────────────────────────────────────────
+
+    /** A one-finger stroke through [points] (x,y pairs), scaled, lasting [durationMs]. */
+    private fun strokeFor(points: FloatArray, durationMs: Long, sx: Float, sy: Float): GestureDescription.StrokeDescription {
+        val path = Path().apply {
+            moveTo(points[0] * sx, points[1] * sy)
+            var i = 2
+            while (i + 1 < points.size) {
+                lineTo(points[i] * sx, points[i + 1] * sy)
+                i += 2
+            }
+        }
+        val max = GestureDescription.getMaxGestureDuration()
+        return GestureDescription.StrokeDescription(path, 0L, durationMs.coerceIn(1L, max))
+    }
+
+    /** Dispatches [stroke]; [done] gets whether it completed. A refused dispatch stops everything. */
+    private fun dispatch(stroke: GestureDescription.StrokeDescription, done: (Boolean) -> Unit) {
+        val gesture = GestureDescription.Builder().addStroke(stroke).build()
+        val accepted = dispatchGesture(gesture, object : GestureResultCallback() {
+            override fun onCompleted(gestureDescription: GestureDescription?) = done(true)
+            override fun onCancelled(gestureDescription: GestureDescription?) = done(false)
+        }, handler)
+        if (!accepted) {
+            Log.w(TAG, "dispatchGesture refused")
+            if (isRecording) {
+                passingThrough = false
+                setCaptureTouchable(true)
+            }
+            stopClicking("Android refused the touch. Turn the accessibility service off and on, then try again.")
+        }
+    }
+
+    /** The ring is only shown (and only grabs touches) in modes that use it. */
+    private fun updateTargetVisibility() {
+        val t = target ?: return
+        val visible = !isRecording && mode != MODE_PLAY
+        t.visibility = if (visible) View.VISIBLE else View.GONE
+        setTargetTouchable(visible && !isRunning)
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────
@@ -482,9 +768,9 @@ class ClickAccessibilityService : AccessibilityService() {
             val channel = NotificationChannel(CHANNEL_ID, "Auto Clicker", NotificationManager.IMPORTANCE_LOW)
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
-        val toggle = if (isRunning) {
+        val toggle = if (isRunning || isRecording) {
             NotificationCompat.Action(
-                android.R.drawable.ic_media_pause, "Stop",
+                android.R.drawable.ic_media_pause, if (isRecording) "Stop recording" else "Stop",
                 actionIntent(AutoClickActionReceiver.ACTION_TOGGLE, 1),
             )
         } else {
@@ -496,7 +782,7 @@ class ClickAccessibilityService : AccessibilityService() {
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_media_play)
             .setContentTitle("Auto Clicker")
-            .setContentText(if (isRunning) "Clicking\u2026" else "Ready. Place the ring, then tap Start.")
+            .setContentText(notificationText())
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -511,6 +797,16 @@ class ClickAccessibilityService : AccessibilityService() {
         } catch (_: SecurityException) {
             // Notification permission denied; the on-screen controls still work.
         }
+    }
+
+    private fun notificationText(): String = when {
+        isRecording -> "Recording your touches\u2026 Stop from the bubble or here."
+        isRunning && mode == MODE_PLAY -> "Replaying ${playing?.name ?: "recording"}\u2026"
+        isRunning && mode == MODE_SCROLL -> "Scrolling\u2026"
+        isRunning -> "Clicking\u2026"
+        mode == MODE_PLAY -> "Ready to replay ${RecordingStore.get(this, recordingId)?.name ?: "a recording"}."
+        mode == MODE_SCROLL -> "Ready. Place the ring where to swipe, then tap Start."
+        else -> "Ready. Place the ring, then tap Start."
     }
 
     private fun actionIntent(action: String, requestCode: Int): PendingIntent = PendingIntent.getBroadcast(

@@ -21,6 +21,14 @@ abstract class IAutoClickerRepository {
   /// Pushes new settings to a running overlay; they apply from the next tap.
   Future<void> updateConfig(AutoClickerConfig config);
 
+  /// Starts recording touches (after this app has stepped aside). Throws [AutoClickerException].
+  Future<void> startRecording();
+  Future<void> stopRecording();
+
+  Future<List<AutoClickerRecording>> getRecordings();
+  Future<void> renameRecording(String id, String name);
+  Future<void> deleteRecording(String id);
+
   Future<void> openAccessibilitySettings();
   Future<void> openAppInfo();
 

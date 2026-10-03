@@ -139,6 +139,38 @@ class MainActivity : FlutterFragmentActivity() {
                 result.success(null)
             }
 
+            "startRecording" -> {
+                val service = ClickAccessibilityService.instance
+                if (service == null) {
+                    result.error("SERVICE_NOT_RUNNING", "The accessibility service isn't running.", null)
+                    return
+                }
+                val problem = service.startRecording(APP_START_DELAY_MS)
+                if (problem != null) result.error("CANNOT_RECORD", problem, null) else result.success(null)
+            }
+
+            "stopRecording" -> {
+                ClickAccessibilityService.instance?.stopRecording(save = true)
+                result.success(null)
+            }
+
+            "getRecordings" -> result.success(RecordingStore.all(applicationContext).map { it.summary() })
+
+            "renameRecording" -> {
+                RecordingStore.rename(applicationContext, call.argument<String>("id") ?: "", call.argument<String>("name") ?: "")
+                ClickAccessibilityService.recordingsVersion++
+                result.success(null)
+            }
+
+            "deleteRecording" -> {
+                val id = call.argument<String>("id") ?: ""
+                RecordingStore.delete(applicationContext, id)
+                if (ClickAccessibilityService.recordingId == id) ClickAccessibilityService.recordingId = null
+                ClickAccessibilityService.recordingsVersion++
+                ClickAccessibilityService.instance?.onConfigChanged()
+                result.success(null)
+            }
+
             "moveToBackground" -> {
                 moveTaskToBack(true)
                 result.success(null)
@@ -301,6 +333,12 @@ class MainActivity : FlutterFragmentActivity() {
         call.argument<Number>("maxClicks")?.let {
             ClickAccessibilityService.maxClicks = maxOf(it.toInt(), 0)
         }
+        call.argument<String>("mode")?.let { ClickAccessibilityService.mode = it }
+        call.argument<String>("scrollDirection")?.let { ClickAccessibilityService.scrollDirection = it }
+        call.argument<Number>("scrollDistancePct")?.let { ClickAccessibilityService.scrollDistancePct = it.toInt() }
+        call.argument<Number>("swipeMs")?.let { ClickAccessibilityService.swipeMs = it.toLong() }
+        if (call.hasArgument("recordingId")) ClickAccessibilityService.recordingId = call.argument<String>("recordingId")
+        ClickAccessibilityService.instance?.onConfigChanged()
     }
 
     private fun openSettings(result: MethodChannel.Result, intent: Intent) {
@@ -320,6 +358,11 @@ class MainActivity : FlutterFragmentActivity() {
             "overlayVisible" to (service?.overlayVisible ?: false),
             "running" to (service?.isRunning ?: false),
             "taps" to (service?.tapCount ?: 0),
+            "recording" to (service?.isRecording ?: false),
+            "recordedCount" to (service?.recordedCount ?: 0),
+            "mode" to ClickAccessibilityService.mode,
+            "recordingId" to (ClickAccessibilityService.recordingId ?: ""),
+            "recordingsVersion" to ClickAccessibilityService.recordingsVersion,
             "isXiaomi" to isXiaomiFamily(),
         )
     }
