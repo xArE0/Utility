@@ -52,6 +52,21 @@ class _FakeRepository implements IAutoClickerRepository {
       calls.add('updateConfig(${config.intervalMs},${config.maxClicks})');
 
   @override
+  Future<void> startRecording() async => calls.add('startRecording');
+
+  @override
+  Future<void> stopRecording() async => calls.add('stopRecording');
+
+  @override
+  Future<List<AutoClickerRecording>> getRecordings() async => const [];
+
+  @override
+  Future<void> renameRecording(String id, String name) async => calls.add('renameRecording($id,$name)');
+
+  @override
+  Future<void> deleteRecording(String id) async => calls.add('deleteRecording($id)');
+
+  @override
   Future<void> openAccessibilitySettings() async => calls.add('openAccessibilitySettings');
 
   @override
@@ -75,6 +90,9 @@ void main() {
     repo = _FakeRepository();
     controller = AutoClickerController(repository: repo);
     await controller.init();
+    // init hands the saved settings to the service once; the tests below look at what follows.
+    expect(repo.calls, ['updateConfig(500,0)']);
+    repo.calls.clear();
   });
 
   tearDown(() => controller.dispose());
@@ -96,11 +114,12 @@ void main() {
     expect(controller.config.maxClicks, 0);
   });
 
-  test('config is only pushed to native while the overlay is on screen', () async {
+  test('config is only pushed to native while the service is connected', () async {
     await controller.setInterval(250);
     expect(repo.calls, isEmpty);
 
-    repo.push(const AutoClickerStatus(serviceConnected: true, overlayVisible: true));
+    // Connected but no overlay yet: still pushed, so a mode picked now applies to the bubble later.
+    repo.push(const AutoClickerStatus(serviceConnected: true));
     await Future<void>.delayed(Duration.zero);
     await controller.setInterval(400);
     expect(repo.calls, ['updateConfig(400,0)']);
